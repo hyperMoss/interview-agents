@@ -1,0 +1,4 @@
+interface:
+  display_name: "软件工厂"
+  short_description: "按业务能力建设项目并从完成项目的可复现验收证据中持续成长"
+  default_prompt: "使用 $software-factory 按业务需求装配项目，生成设计与验收上下文，并记录可复用的交付经验。"

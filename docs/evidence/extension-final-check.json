@@ -1,0 +1,15 @@
+{
+  "tests": 97,
+  "chrome": {
+    "startTime": "2026-10-14T13:55:13.227Z",
+    "duration": 60657.017,
+    "expected": 7,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "missingLocalLinks": [],
+  "devApi": "ok",
+  "testDatabase": "removed",
+  "paidProviders": "not-tested"
+}

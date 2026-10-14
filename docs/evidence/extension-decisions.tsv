@@ -1,0 +1,22 @@
+ts	phase	decision	why	evidence	result
+2026-10-14T05:00:00+08:00	frame	以当前面试应用为修改目标，参考项目只读	用户要求在当前产品加入完整规划和题库能力	/Users/gooingyu/Projects/interview-agent/models/schemas.py	open
+2026-10-14T08:14:04Z	frame	补记实际启动时间，首行时间是占位值	使用日志脚本写入实际时钟，保留原行并更正	docs/evidence/extension-decisions.tsv	open
+2026-10-14T08:14:04Z	baseline	保留既有流程的构建与单元基线	先验证现有产物再开始结构修改	tests/domain.test.ts	build passed; 32 passed; 24 integration skipped
+2026-10-14T08:14:04Z	design	记录外部设计与解释角色不可用	不替换配置供应商，不声称多供应商共识	.audit/interview-extension/architect-claude.json	Claude child-failed; Grok unavailable-cli; native design continues
+2026-10-14T08:27:10Z	foundation	修复期限到达后仍安排新阶段及空严格题库问题	独立设计检查复现边界，修改规则和行为测试	tests/planning.test.ts	verification running
+2026-10-14T08:35:25Z	design	选会话聚合方案，保留版本与题库快照，舍弃五表读投影	最多30轮可沿用已验证的任务事务；独立评分支持该选择	.audit/interview-extension/design-judgement.md	native review complete; external review unavailable
+2026-10-14T08:35:25Z	permissions	仅授权新增表，广泛授权被自动审批拒绝	保持既有数据库安全边界	infra/migrations/003-interview-extension.sql	specific table grants applied
+2026-10-14T08:38:14Z	imports	真实PDF/DOCX/TXT解析及私有题库首次回归通过	先验证文件与数据库边界，再接生成链	tests/resume.test.ts	17 tests passed across resume/planner/bank
+2026-10-14T08:40:37Z	io	上传、题库和搜索边界通过25项真实文件、数据库及HTTP测试	先确认秘密与归属隔离再接持久问答	tests/search.test.ts	25 passed; typecheck passed
+2026-10-14T09:57:50Z	verification	扩展状态链和完整回归通过90项测试	真实数据库和协议夹具验证既有恢复及新增计划资料	docs/evidence/extension-test-results.json	90 passed; build passed
+2026-10-14T10:00:39Z	browser	修正测试控件定位、第二场规划设置并停止共享目录的并行测试	旧测试选择器已过期；并发Playwright写入同一证据目录造成文件竞争	tests/e2e/extension.spec.ts	new browser checks pending; serialize final run
+2026-10-14T13:44:15Z	review	独立Astra审查因额度中断，保留为未完成；删除两条注释并明确尽力唤醒与草稿清理的命名	不把失败的审查记为通过；行为通过函数名表达	.audit/interview-extension/session-digest.md	Astra unavailable; 2 comments removed; native review pending
+2026-10-14T13:46:16Z	browser	保存完整浏览器验收失败记录，6项通过，公开导入题面定位超时	已返回导入成功与去重结果，但测试过滤器错误引用了外层对话框	docs/evidence/extension-browser-failed-run.json	6 passed; 1 failed; locator fixed; rerun pending
+2026-10-14T13:49:41Z	browser	新增和旧页面的7项Chrome验收通过，包含真实LeetCode链接导入与去重	修正控件与相对定位错误后顺序验收，保留前次失败记录	docs/evidence/browser-results.json	7 passed; screenshots inspected
+2026-10-14T13:49:41Z	review	修复有效题库长标题超出面试标签上限的问题	独立Sol审查复现合法输入导致Agent拒绝；保留原题库标题，只限制派生标签	tests/extension.integration.test.ts	fix applied; full regression running
+2026-10-14T13:55:59Z	review	修复超额题库不可见与编程阶段重规划重新安排已过环节	独立Sol给出实际复现，采用owner事务容量限制与关闭前序阶段	tests/bank.test.ts	fixes applied; fresh review and regression running
+2026-10-14T13:57:04Z	verification	三项审查缺陷修复后96项测试、7项Chrome与构建通过	覆盖真实文件、数据库、协议、公开导入及并发和阶段回归	docs/evidence/extension-test-results.json	96 passed; 7 Chrome passed; final fix review pending
+2026-10-14T13:57:04Z	audit	按Luna审计补记浏览器失败与随后通过，初始验收文档标为历史	保留失败证据，不用新版成功覆盖此前缺口	docs/evidence/extension-browser-failed-run.json	trail flags addressed; provider gaps explicit
+2026-10-14T14:00:46Z	review	派生能力标签截断不拆开emoji，加入真实JSONB持久链测试	新鲜Sol审查用数据库证明UTF16半个代理字符会拒绝任务保存	tests/extension.integration.test.ts	Unicode fix applied; regression running; no other fix-review findings
+2026-10-14T14:03:43Z	verification	合法30题长中文历史实际超过旧2MiB内部请求限制，增加有界容量并验证	新增题量与题面上限组合必须能够通过已认证Agent接口	tests/integration.test.ts	8MiB bound; full regression running
+2026-10-14T14:06:20Z	complete	最终97项测试、7项Chrome、构建和独立修复审查通过；临时库已清理，开发API为ok	归还可运行产品与可复核证据，保留真实付费供应商验收和外部模型审查缺口	docs/evidence/extension-final-check.json	complete for requested local text application; paid providers not tested

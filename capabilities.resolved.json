@@ -1,0 +1,267 @@
+{
+  "schemaVersion": 1,
+  "factoryVersion": "0.1.0",
+  "spec": {
+    "schema_version": "1",
+    "project": {
+      "id": "interview-agents",
+      "display_name": "面试练习室"
+    },
+    "blueprint": "interview-practice",
+    "business": {
+      "summary": "用户粘贴真实简历和岗位描述，完成有限轮次模拟面试并复盘反馈。",
+      "roles": [
+        "candidate"
+      ],
+      "requirements": [
+        {
+          "id": "REQ-001",
+          "statement": "简历和岗位描述驱动个性化问题，演示模式明确标识。",
+          "acceptance": "建立练习后得到问题，模式标识与运行时一致。",
+          "capabilities": [
+            "interview.practice"
+          ]
+        },
+        {
+          "id": "REQ-002",
+          "statement": "每题只接收一次作答，反馈依据来自实际答案。",
+          "acceptance": "并发提交只有一个有效答案，伪造依据被拒绝。",
+          "capabilities": [
+            "interview.practice"
+          ]
+        },
+        {
+          "id": "REQ-003",
+          "statement": "浏览器断开不丢失任务，取消后不能提交迟到结果。",
+          "acceptance": "重启 Worker 后恢复；取消与迟到结果竞争时保持 cancelled。",
+          "capabilities": [
+            "agent.runtime"
+          ]
+        },
+        {
+          "id": "REQ-004",
+          "statement": "用户只能查看自己的资料和面试历史，删除传播到派生数据。",
+          "acceptance": "另一浏览器身份得到 404，删除后业务记录与运行时产物均清理。",
+          "capabilities": [
+            "core.platform"
+          ]
+        },
+        {
+          "id": "REQ-005",
+          "statement": "应用内启用自带模型连接，面试固定模型快照且密钥不进入业务记录。",
+          "acceptance": "读取模型列表、测试并启用后完成 AI 面试；切换连接不改变旧面试；报告和浏览器存储无密钥。",
+          "capabilities": [
+            "agent.runtime"
+          ]
+        },
+        {
+          "id": "REQ-006",
+          "statement": "生成失败保留原作答，可显式选择连接重试或取消。",
+          "acceptance": "模型故障后恢复原作答，重复重试请求只生成一个有效轮次。",
+          "capabilities": [
+            "jobs.async"
+          ]
+        },
+        {
+          "id": "REQ-007",
+          "statement": "恢复资料和作答草稿，提供分维度复盘与可阅读的导出。",
+          "acceptance": "刷新恢复当前标签页草稿；完成报告后导出 Markdown 或 JSON，并用相同资料重新练习。",
+          "capabilities": [
+            "interview.practice"
+          ]
+        },
+        {
+          "id": "REQ-008",
+          "statement": "上传 PDF、DOCX 或文本简历，本地提取后校正再使用。",
+          "acceptance": "上传后填入可编辑预览；不支持、无文本或超限文件明确失败。",
+          "capabilities": [
+            "resume.import"
+          ]
+        },
+        {
+          "id": "REQ-009",
+          "statement": "配置联网搜索连接并明确启用，搜索只外发岗位关键词。",
+          "acceptance": "实际调用配置的搜索服务，展示真实来源；简历与密钥不进入查询或报告。",
+          "capabilities": [
+            "web.search"
+          ]
+        },
+        {
+          "id": "REQ-010",
+          "statement": "按时长、回答长度、候选人级别及轮次规划环节，支持动态重规划。",
+          "acceptance": "HR 时长不超过 30 分钟且没有编程题；已完成回答及当前题保持稳定。",
+          "capabilities": [
+            "interview.practice"
+          ]
+        },
+        {
+          "id": "REQ-011",
+          "statement": "编程题仅求职者技术岗生效，自建和 LeetCode 导入题库支持严格、混合和灵活改编。",
+          "acceptance": "题库归属隔离，导入可重复；严格模式问答和编程题保留原题。",
+          "capabilities": [
+            "interview.practice"
+          ]
+        },
+        {
+          "id": "REQ-012",
+          "statement": "报告评估技术能力、沟通表达、综合素质，并提供结构化逐题 QA。",
+          "acceptance": "逐题原文依据可核对，HR 技术能力为不适用，导出与页面一致。",
+          "capabilities": [
+            "interview.practice"
+          ]
+        }
+      ],
+      "out_of_scope": [
+        "招聘自动筛选",
+        "声音克隆",
+        "实时语音面试",
+        "向量检索",
+        "不可信代码执行"
+      ]
+    },
+    "capabilities": {
+      "interview.practice": true,
+      "files.manage": false,
+      "rag.knowledge": false,
+      "resume.import": true,
+      "web.search": true,
+      "speech.asr": false,
+      "speech.tts": false
+    },
+    "providers": {
+      "ai.text": "openai-compatible",
+      "web.search": "tavily"
+    },
+    "options": {
+      "rag_mode": "lexical",
+      "rag_sources": [
+        "text"
+      ],
+      "asr_mode": "realtime",
+      "persist_audio": false,
+      "search_mode": "byok",
+      "require_email_verification": false
+    },
+    "policy": {
+      "allow_cloud_processing": true,
+      "forbidden_capabilities": []
+    }
+  },
+  "capabilities": [
+    {
+      "id": "agent.runtime",
+      "version": "0.1.0",
+      "maturity": "supported",
+      "reasons": [
+        "REQ-003",
+        "REQ-005",
+        "interview.practice"
+      ]
+    },
+    {
+      "id": "ai.text",
+      "version": "0.1.0",
+      "maturity": "supported",
+      "reasons": [
+        "agent.runtime"
+      ]
+    },
+    {
+      "id": "core.platform",
+      "version": "0.1.0",
+      "maturity": "supported",
+      "reasons": [
+        "REQ-004",
+        "ai.text",
+        "factory baseline",
+        "jobs.async",
+        "resume.import",
+        "web.search"
+      ]
+    },
+    {
+      "id": "interview.practice",
+      "version": "0.1.0",
+      "maturity": "supported",
+      "reasons": [
+        "REQ-001",
+        "REQ-002",
+        "REQ-007",
+        "REQ-010",
+        "REQ-011",
+        "REQ-012",
+        "blueprint:interview-practice",
+        "explicit"
+      ]
+    },
+    {
+      "id": "jobs.async",
+      "version": "0.1.0",
+      "maturity": "supported",
+      "reasons": [
+        "REQ-006",
+        "agent.runtime"
+      ]
+    },
+    {
+      "id": "resume.import",
+      "version": "0.1.0",
+      "maturity": "supported",
+      "reasons": [
+        "REQ-008",
+        "explicit"
+      ]
+    },
+    {
+      "id": "web.search",
+      "version": "0.1.0",
+      "maturity": "supported",
+      "reasons": [
+        "REQ-009",
+        "explicit"
+      ]
+    }
+  ],
+  "providers": [
+    {
+      "capability": "ai.text",
+      "provider": "openai-compatible"
+    },
+    {
+      "capability": "web.search",
+      "provider": "tavily"
+    }
+  ],
+  "services": [
+    "agent",
+    "api",
+    "postgres",
+    "redis",
+    "web",
+    "worker"
+  ],
+  "env": {
+    "agent": [
+      "AGENT_DATABASE_URL",
+      "ALLOW_LOCAL_SEARCH",
+      "INTERNAL_SERVICE_TOKEN",
+      "LLM_API_KEY",
+      "LLM_MODEL",
+      "MODEL_MODE",
+      "SEARCH_ACCESS",
+      "SEARCH_ALLOWED_HOSTS"
+    ],
+    "api": [
+      "COOKIE_SECRET",
+      "DATABASE_URL",
+      "REDIS_URL",
+      "WEB_ORIGIN"
+    ],
+    "worker": [
+      "AGENT_URL",
+      "DATABASE_URL",
+      "INTERNAL_SERVICE_TOKEN",
+      "REDIS_URL"
+    ]
+  }
+}

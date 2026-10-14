@@ -1,0 +1,146 @@
+{
+  "checkedAt": "2026-10-14",
+  "timezone": "Asia/Shanghai",
+  "method": "GitHub public repository metadata, commit API, recursive tree, pinned raw README/source/license; static inspection only",
+  "copiedCode": false,
+  "executedThirdPartyCode": false,
+  "repositories": [
+    {
+      "repository": "zmy15/interview-agent",
+      "url": "https://github.com/zmy15/interview-agent",
+      "commit": "c0052311fbac5bec6207d5783fab7c9bcb65c6fc",
+      "branch": "master",
+      "license": "MIT",
+      "licenseEvidence": "Read license file at fixed commit",
+      "metadataUrl": "https://api.github.com/repos/zmy15/interview-agent",
+      "commitUrl": "https://api.github.com/repos/zmy15/interview-agent/commits/c0052311fbac5bec6207d5783fab7c9bcb65c6fc",
+      "treeUrl": "https://api.github.com/repos/zmy15/interview-agent/git/trees/c0052311fbac5bec6207d5783fab7c9bcb65c6fc?recursive=1",
+      "sources": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/zmy15/interview-agent/blob/c0052311fbac5bec6207d5783fab7c9bcb65c6fc/README.md",
+          "evidence": "readme_claim"
+        },
+        {
+          "path": "LICENSE",
+          "url": "https://github.com/zmy15/interview-agent/blob/c0052311fbac5bec6207d5783fab7c9bcb65c6fc/LICENSE",
+          "evidence": "license_text"
+        },
+        {
+          "path": "routers/interview.py",
+          "url": "https://github.com/zmy15/interview-agent/blob/c0052311fbac5bec6207d5783fab7c9bcb65c6fc/routers/interview.py",
+          "evidence": "source_inspection"
+        },
+        {
+          "path": "routers/sessions.py",
+          "url": "https://github.com/zmy15/interview-agent/blob/c0052311fbac5bec6207d5783fab7c9bcb65c6fc/routers/sessions.py",
+          "evidence": "source_inspection"
+        },
+        {
+          "path": "models/schemas.py",
+          "url": "https://github.com/zmy15/interview-agent/blob/c0052311fbac5bec6207d5783fab7c9bcb65c6fc/models/schemas.py",
+          "evidence": "source_inspection"
+        }
+      ]
+    },
+    {
+      "repository": "zunff/interview-agent",
+      "url": "https://github.com/zunff/interview-agent",
+      "commit": "9223e8352118101b4c84456caddfda7a6f1fab5d",
+      "branch": "main",
+      "license": null,
+      "licenseEvidence": "GitHub metadata license=null; recursive tree contained no LICENSE file; permission not established",
+      "metadataUrl": "https://api.github.com/repos/zunff/interview-agent",
+      "commitUrl": "https://api.github.com/repos/zunff/interview-agent/commits/9223e8352118101b4c84456caddfda7a6f1fab5d",
+      "treeUrl": "https://api.github.com/repos/zunff/interview-agent/git/trees/9223e8352118101b4c84456caddfda7a6f1fab5d?recursive=1",
+      "sources": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/zunff/interview-agent/blob/9223e8352118101b4c84456caddfda7a6f1fab5d/README.md",
+          "evidence": "readme_claim"
+        },
+        {
+          "path": "src/main/java/com/zunff/interview/agent/nodes/round/FollowUpDecisionNode.java",
+          "url": "https://github.com/zunff/interview-agent/blob/9223e8352118101b4c84456caddfda7a6f1fab5d/src/main/java/com/zunff/interview/agent/nodes/round/FollowUpDecisionNode.java",
+          "evidence": "source_inspection"
+        },
+        {
+          "path": "src/main/java/com/zunff/interview/agent/checkpoint/PostgresCheckpointSaver.java",
+          "url": "https://github.com/zunff/interview-agent/blob/9223e8352118101b4c84456caddfda7a6f1fab5d/src/main/java/com/zunff/interview/agent/checkpoint/PostgresCheckpointSaver.java",
+          "evidence": "source_inspection"
+        }
+      ]
+    },
+    {
+      "repository": "yizucodes/interview-agent",
+      "url": "https://github.com/yizucodes/interview-agent",
+      "commit": "e07e5718b76cc993b186631d35801869e6ff384e",
+      "branch": "main",
+      "license": null,
+      "licenseEvidence": "GitHub metadata license=null; recursive tree contained no LICENSE file; permission not established",
+      "metadataUrl": "https://api.github.com/repos/yizucodes/interview-agent",
+      "commitUrl": "https://api.github.com/repos/yizucodes/interview-agent/commits/e07e5718b76cc993b186631d35801869e6ff384e",
+      "treeUrl": "https://api.github.com/repos/yizucodes/interview-agent/git/trees/e07e5718b76cc993b186631d35801869e6ff384e?recursive=1",
+      "sources": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/yizucodes/interview-agent/blob/e07e5718b76cc993b186631d35801869e6ff384e/README.md",
+          "evidence": "readme_claim"
+        },
+        {
+          "path": "backend/agent.py",
+          "url": "https://github.com/yizucodes/interview-agent/blob/e07e5718b76cc993b186631d35801869e6ff384e/backend/agent.py",
+          "evidence": "source_inspection"
+        },
+        {
+          "path": "backend/token_server.py",
+          "url": "https://github.com/yizucodes/interview-agent/blob/e07e5718b76cc993b186631d35801869e6ff384e/backend/token_server.py",
+          "evidence": "source_inspection"
+        },
+        {
+          "path": "backend/tools.py",
+          "url": "https://github.com/yizucodes/interview-agent/blob/e07e5718b76cc993b186631d35801869e6ff384e/backend/tools.py",
+          "evidence": "source_inspection"
+        }
+      ]
+    },
+    {
+      "repository": "Azure-Samples/interview-coach-agent-framework",
+      "url": "https://github.com/Azure-Samples/interview-coach-agent-framework",
+      "commit": "a448cb2d67d51777527c1a578857c29391c41351",
+      "branch": "main",
+      "license": "MIT",
+      "licenseEvidence": "Read license file at fixed commit",
+      "metadataUrl": "https://api.github.com/repos/Azure-Samples/interview-coach-agent-framework",
+      "commitUrl": "https://api.github.com/repos/Azure-Samples/interview-coach-agent-framework/commits/a448cb2d67d51777527c1a578857c29391c41351",
+      "treeUrl": "https://api.github.com/repos/Azure-Samples/interview-coach-agent-framework/git/trees/a448cb2d67d51777527c1a578857c29391c41351?recursive=1",
+      "sources": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/Azure-Samples/interview-coach-agent-framework/blob/a448cb2d67d51777527c1a578857c29391c41351/README.md",
+          "evidence": "readme_claim"
+        },
+        {
+          "path": "LICENSE.md",
+          "url": "https://github.com/Azure-Samples/interview-coach-agent-framework/blob/a448cb2d67d51777527c1a578857c29391c41351/LICENSE.md",
+          "evidence": "license_text"
+        },
+        {
+          "path": "src/InterviewCoach.Agent/AgentDelegateFactory.cs",
+          "url": "https://github.com/Azure-Samples/interview-coach-agent-framework/blob/a448cb2d67d51777527c1a578857c29391c41351/src/InterviewCoach.Agent/AgentDelegateFactory.cs",
+          "evidence": "source_inspection"
+        },
+        {
+          "path": "src/InterviewCoach.Mcp.InterviewData/InterviewSessionTool.cs",
+          "url": "https://github.com/Azure-Samples/interview-coach-agent-framework/blob/a448cb2d67d51777527c1a578857c29391c41351/src/InterviewCoach.Mcp.InterviewData/InterviewSessionTool.cs",
+          "evidence": "source_inspection"
+        },
+        {
+          "path": "tests/InterviewCoach.Agent.Tests/InterviewSessionToolTests.cs",
+          "url": "https://github.com/Azure-Samples/interview-coach-agent-framework/blob/a448cb2d67d51777527c1a578857c29391c41351/tests/InterviewCoach.Agent.Tests/InterviewSessionToolTests.cs",
+          "evidence": "source_inspection"
+        }
+      ]
+    }
+  ]
+}

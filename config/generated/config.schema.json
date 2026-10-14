@@ -1,0 +1,100 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "AGENT_DATABASE_URL": {
+      "type": "string",
+      "service": [
+        "agent"
+      ]
+    },
+    "ALLOW_LOCAL_SEARCH": {
+      "type": "string",
+      "service": [
+        "agent"
+      ]
+    },
+    "INTERNAL_SERVICE_TOKEN": {
+      "type": "string",
+      "service": [
+        "agent",
+        "worker"
+      ]
+    },
+    "LLM_API_KEY": {
+      "type": "string",
+      "service": [
+        "agent"
+      ]
+    },
+    "LLM_MODEL": {
+      "type": "string",
+      "service": [
+        "agent"
+      ]
+    },
+    "MODEL_MODE": {
+      "type": "string",
+      "service": [
+        "agent"
+      ]
+    },
+    "SEARCH_ACCESS": {
+      "type": "string",
+      "service": [
+        "agent"
+      ]
+    },
+    "SEARCH_ALLOWED_HOSTS": {
+      "type": "string",
+      "service": [
+        "agent"
+      ]
+    },
+    "COOKIE_SECRET": {
+      "type": "string",
+      "service": [
+        "api"
+      ]
+    },
+    "DATABASE_URL": {
+      "type": "string",
+      "service": [
+        "api",
+        "worker"
+      ]
+    },
+    "REDIS_URL": {
+      "type": "string",
+      "service": [
+        "api",
+        "worker"
+      ]
+    },
+    "WEB_ORIGIN": {
+      "type": "string",
+      "service": [
+        "api"
+      ]
+    },
+    "AGENT_URL": {
+      "type": "string",
+      "service": [
+        "worker"
+      ]
+    }
+  },
+  "required": [
+    "AGENT_DATABASE_URL",
+    "ALLOW_LOCAL_SEARCH",
+    "INTERNAL_SERVICE_TOKEN",
+    "MODEL_MODE",
+    "SEARCH_ACCESS",
+    "SEARCH_ALLOWED_HOSTS",
+    "COOKIE_SECRET",
+    "DATABASE_URL",
+    "REDIS_URL",
+    "WEB_ORIGIN",
+    "AGENT_URL"
+  ]
+}

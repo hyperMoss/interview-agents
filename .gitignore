@@ -1,0 +1,11 @@
+node_modules/
+.cache/
+dist/
+.env
+.env.*
+!.env.example
+playwright-report/
+test-results/
+.factory-learning/
+*.log
+.audit/

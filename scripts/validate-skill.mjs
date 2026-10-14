@@ -1,0 +1,17 @@
+import { readFile, access } from 'node:fs/promises';
+import { parse } from 'yaml';
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { tmpdir } from 'node:os';
+const root=new URL('../skills/software-factory/',import.meta.url);
+const text=await readFile(new URL('SKILL.md',root),'utf8');
+const match=text.match(/^---\n([\s\S]*?)\n---/);assert.ok(match,'YAML frontmatter required');
+const frontmatter=parse(match[1]);assert.equal(frontmatter.name,'software-factory');assert.equal(typeof frontmatter.description,'string');
+assert.ok(frontmatter.description.length>10);assert.ok(Object.keys(frontmatter).every(key=>['name','description','metadata','license','allowed-tools'].includes(key)));
+for(const ref of ['references/build.md','references/evolution.md','scripts/factory.mjs'])await access(new URL(ref,root));
+const ui=parse(await readFile(new URL('agents/openai.yaml',root),'utf8'));assert.ok(ui.interface.default_prompt.includes('$software-factory'));
+assert.ok(ui.interface.short_description.length>=25&&ui.interface.short_description.length<=64);
+const result=spawnSync(process.execPath,[fileURLToPath(new URL('scripts/factory.mjs',root)),'--help'],{cwd:tmpdir(),encoding:'utf8'});
+assert.equal(result.status,0,'Installed-style standalone bundle must execute');assert.ok(result.stdout.includes('Software Factory v0.1'));
+process.stdout.write('Skill frontmatter, metadata, references and bundled script validated.\n');

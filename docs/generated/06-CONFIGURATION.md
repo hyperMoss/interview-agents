@@ -1,0 +1,28 @@
+# 分服务配置
+
+## agent
+
+- AGENT_DATABASE_URL
+- ALLOW_LOCAL_SEARCH
+- INTERNAL_SERVICE_TOKEN
+- LLM_API_KEY
+- LLM_MODEL
+- MODEL_MODE
+- SEARCH_ACCESS
+- SEARCH_ALLOWED_HOSTS
+
+## api
+
+- COOKIE_SECRET
+- DATABASE_URL
+- REDIS_URL
+- WEB_ORIGIN
+
+## worker
+
+- AGENT_URL
+- DATABASE_URL
+- INTERNAL_SERVICE_TOKEN
+- REDIS_URL
+
+配置只保存地址与凭据；能力由 spec 决定。真实 .env 不进入文档、源码、锁文件或经验库。MODEL_MODE=demo 只适用于开发和验收；生产必须 live。

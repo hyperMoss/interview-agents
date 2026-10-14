@@ -1,0 +1,392 @@
+{
+  "config": {
+    "argv": [
+      "/opt/homebrew/Cellar/node/26.7.0/bin/node",
+      "/Users/gooingyu/Documents/ChatGPT/interview-agents/node_modules/.pnpm/@playwright+test@1.64.0/node_modules/@playwright/test/cli.js",
+      "test"
+    ],
+    "configFile": "/Users/gooingyu/Documents/ChatGPT/interview-agents/playwright.config.ts",
+    "rootDir": "/Users/gooingyu/Documents/ChatGPT/interview-agents/tests/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/Users/gooingyu/Documents/ChatGPT/interview-agents/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "/Users/gooingyu/Documents/ChatGPT/interview-agents/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 45000
+      }
+    ],
+    "filteredProjects": [
+      {
+        "grep": {},
+        "grepInvert": null,
+        "outputDir": "/Users/gooingyu/Documents/ChatGPT/interview-agents/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "name": "",
+        "testDir": "/Users/gooingyu/Documents/ChatGPT/interview-agents/tests/e2e",
+        "snapshotDir": "/Users/gooingyu/Documents/ChatGPT/interview-agents/tests/e2e",
+        "testIgnore": [],
+        "testMatch": "**/*.@(spec|test).?(c|m)[jt]s?(x)",
+        "timeout": 45000,
+        "use": {
+          "baseURL": "http://localhost:5173",
+          "channel": "chrome",
+          "trace": "retain-on-failure"
+        },
+        "dependencies": [],
+        "ignoreSnapshots": false,
+        "__projectId": ""
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "docs/evidence/browser-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "default",
+    "updateSourceMethod": "patch",
+    "version": "1.64.0",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "extension.spec.ts",
+      "file": "extension.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "resume preview, owned bank CRUD/import, coding gates and replan preserve the current draft",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 12453,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-14T13:43:36.828Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "da119938d3268322a91b-d1ea1471bdf9a0ba1181",
+          "file": "extension.spec.ts",
+          "line": 18,
+          "column": 1
+        },
+        {
+          "title": "confirmed search query and sources survive clearing a connection; failed search supports explicit off retry",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 12463,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-14T13:43:50.386Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "da119938d3268322a91b-f4880cc929b6e39c75f6",
+          "file": "extension.spec.ts",
+          "line": 52,
+          "column": 1
+        },
+        {
+          "title": "public LeetCode URL imports through the application and repeated import is idempotent",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 12011,
+                  "error": {
+                    "message": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('dialog', { name: '题库管理' }).locator('.bank-card').filter({ has: getByRole('dialog', { name: '题库管理' }).getByText('两数之和', { exact: true }) }).getByText('查看题面', { exact: true })\u001b[22m\n",
+                    "stack": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('dialog', { name: '题库管理' }).locator('.bank-card').filter({ has: getByRole('dialog', { name: '题库管理' }).getByText('两数之和', { exact: true }) }).getByText('查看题面', { exact: true })\u001b[22m\n\n    at /Users/gooingyu/Documents/ChatGPT/interview-agents/tests/e2e/extension.spec.ts:73:133",
+                    "location": {
+                      "file": "/Users/gooingyu/Documents/ChatGPT/interview-agents/tests/e2e/extension.spec.ts",
+                      "column": 133,
+                      "line": 73
+                    },
+                    "snippet": "  71 |   await panel.getByLabel('LeetCode 公开题目链接').fill('https://leetcode.cn/problems/two-sum/');\n  72 |   for(let n=0;n<2;n++){await panel.getByRole('button',{name:'导入公开题目',exact:true}).click();await expect(panel.getByRole('status')).toContainText(n?'导入 0 题，跳过 1':'导入 1 题，跳过 0',{timeout:20000});}\n> 73 |   const row=panel.locator('.bank-card').filter({has:panel.getByText('两数之和',{exact:true})});await row.getByText('查看题面',{exact:true}).click();await expect(row.getByRole('link',{name:'查看原始来源'})).toHaveAttribute('href','https://leetcode.cn/problems/two-sum/');await row.getByRole('button',{name:'删除 两数之和',exact:true}).click();await expect(panel.getByRole('status')).toContainText('已删除');\n     |                                                                                                                                     ^\n  74 | });\n  75 |"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "/Users/gooingyu/Documents/ChatGPT/interview-agents/tests/e2e/extension.spec.ts",
+                        "column": 133,
+                        "line": 73
+                      },
+                      "message": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('dialog', { name: '题库管理' }).locator('.bank-card').filter({ has: getByRole('dialog', { name: '题库管理' }).getByText('两数之和', { exact: true }) }).getByText('查看题面', { exact: true })\u001b[22m\n\n\n  71 |   await panel.getByLabel('LeetCode 公开题目链接').fill('https://leetcode.cn/problems/two-sum/');\n  72 |   for(let n=0;n<2;n++){await panel.getByRole('button',{name:'导入公开题目',exact:true}).click();await expect(panel.getByRole('status')).toContainText(n?'导入 0 题，跳过 1':'导入 1 题，跳过 0',{timeout:20000});}\n> 73 |   const row=panel.locator('.bank-card').filter({has:panel.getByText('两数之和',{exact:true})});await row.getByText('查看题面',{exact:true}).click();await expect(row.getByRole('link',{name:'查看原始来源'})).toHaveAttribute('href','https://leetcode.cn/problems/two-sum/');await row.getByRole('button',{name:'删除 两数之和',exact:true}).click();await expect(panel.getByRole('status')).toContainText('已删除');\n     |                                                                                                                                     ^\n  74 | });\n  75 |\n    at /Users/gooingyu/Documents/ChatGPT/interview-agents/tests/e2e/extension.spec.ts:73:133"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-14T13:44:02.865Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/Users/gooingyu/Documents/ChatGPT/interview-agents/test-results/extension-public-LeetCode--57dc9-peated-import-is-idempotent/error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "/Users/gooingyu/Documents/ChatGPT/interview-agents/test-results/extension-public-LeetCode--57dc9-peated-import-is-idempotent/trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "/Users/gooingyu/Documents/ChatGPT/interview-agents/tests/e2e/extension.spec.ts",
+                    "column": 133,
+                    "line": 73
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "da119938d3268322a91b-6c4c2dd5e4d9cbf572cd",
+          "file": "extension.spec.ts",
+          "line": 68,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "interview.spec.ts",
+      "file": "interview.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "browser: intake → interview → report → reload/history → deletion, with mobile layout",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 8926,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-14T13:44:15.678Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5e7cd2a6f7ac0afddfa8-6c54df971054b342c601",
+          "file": "interview.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "HTTP boundary: Origin, signed cookie, cross browser ownership and cancellation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 254,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-14T13:44:25.239Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5e7cd2a6f7ac0afddfa8-2d7c4d3639f6c2e59f78",
+          "file": "interview.spec.ts",
+          "line": 23,
+          "column": 1
+        },
+        {
+          "title": "model settings actually enable live interview, export excludes keys, clear restores defaults",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 9923,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-14T13:44:25.515Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5e7cd2a6f7ac0afddfa8-06f5e207a2daa0db2dc4",
+          "file": "interview.spec.ts",
+          "line": 32,
+          "column": 1
+        },
+        {
+          "title": "browser preserves intake/answer drafts and recovers failed generation using saved answer",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 12020,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-14T13:44:35.448Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5e7cd2a6f7ac0afddfa8-7b48c5f1be14c4862d65",
+          "file": "interview.spec.ts",
+          "line": 58,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-14T13:43:36.257Z",
+    "duration": 71511.169,
+    "expected": 6,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "services": [
+    "agent",
+    "api",
+    "postgres",
+    "redis",
+    "web",
+    "worker"
+  ],
+  "deployable": true,
+  "note": "逻辑服务清单；镜像与生产部署仍需要审查，实际开发 Compose 为 infra/compose.yaml。"
+}

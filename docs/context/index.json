@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "global": [
+    "docs/generated/00-PROJECT-BRIEF.md",
+    "docs/generated/03-CAPABILITY-MATRIX.md",
+    "docs/generated/07-SECURITY.md"
+  ],
+  "tasks": {
+    "implement-agent.runtime": [
+      "docs/generated/modules/agent.runtime.md",
+      "docs/generated/05-API-CONTRACT.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "implement-ai.text": [
+      "docs/generated/modules/ai.text.md",
+      "docs/generated/05-API-CONTRACT.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "implement-core.platform": [
+      "docs/generated/modules/core.platform.md",
+      "docs/generated/05-API-CONTRACT.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "implement-interview.practice": [
+      "docs/generated/modules/interview.practice.md",
+      "docs/generated/05-API-CONTRACT.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "implement-jobs.async": [
+      "docs/generated/modules/jobs.async.md",
+      "docs/generated/05-API-CONTRACT.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "implement-resume.import": [
+      "docs/generated/modules/resume.import.md",
+      "docs/generated/05-API-CONTRACT.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "implement-web.search": [
+      "docs/generated/modules/web.search.md",
+      "docs/generated/05-API-CONTRACT.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ]
+  }
+}

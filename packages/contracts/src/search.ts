@@ -1,0 +1,14 @@
+import { z } from 'zod';
+import { endpointSchema } from './models';
+export const searchProviderSchema=z.enum(['tavily','firecrawl']);
+export const searchDraftSchema=z.strictObject({provider:searchProviderSchema,baseUrl:endpointSchema,apiKey:z.string().trim().min(1).max(4096),remember:z.boolean().default(false)}).superRefine((value,ctx)=>{if(value.baseUrl.includes(value.apiKey))ctx.addIssue({code:'custom',message:'密钥不能写入地址。'});});
+export type SearchDraft=z.infer<typeof searchDraftSchema>;
+export const searchProfileSchema=z.strictObject({id:z.uuid(),provider:searchProviderSchema,baseUrl:z.string(),hasKey:z.boolean(),expiresAt:z.iso.datetime(),remember:z.boolean()});
+export const searchSettingsSchema=z.strictObject({enabled:z.boolean(),allowLocal:z.boolean(),active:searchProfileSchema.nullable()});
+export const searchSourceSchema=z.strictObject({title:z.string().max(200),url:z.url().refine(url=>['http:','https:'].includes(new URL(url).protocol)),snippet:z.string().max(1200)});
+export const searchSnapshotSchema=z.strictObject({connectionId:z.uuid(),query:z.string().min(2).max(200),fetchedAt:z.iso.datetime(),sources:z.array(searchSourceSchema).max(5)});
+export type SearchSnapshot=z.infer<typeof searchSnapshotSchema>;
+export const searchChoiceSchema=z.discriminatedUnion('kind',[z.strictObject({kind:z.literal('off')}),z.strictObject({kind:z.literal('on'),connectionId:z.uuid(),query:z.string().trim().min(2).max(200)})]);
+export const researchSchema=z.discriminatedUnion('kind',[z.strictObject({kind:z.literal('off')}),z.strictObject({kind:z.literal('fetch'),connectionId:z.uuid(),query:z.string().min(2).max(200)}),z.strictObject({kind:z.literal('snapshot'),value:searchSnapshotSchema})]);
+export const searchProbeSchema=z.strictObject({draft:searchDraftSchema,query:z.string().trim().min(2).max(200)});
+export const searchProbeResultSchema=z.strictObject({ok:z.literal(true),sources:z.array(searchSourceSchema).max(5)});

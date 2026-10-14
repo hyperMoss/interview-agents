@@ -1,0 +1,18 @@
+name: interview-agents-tests
+services:
+  postgres_test:
+    image: postgres:17.6-alpine
+    environment:
+      POSTGRES_DB: interview_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: local-admin-password
+    ports: ["127.0.0.1:55440:5432"]
+    volumes:
+      - ./migrations/001-init.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./migrations/002-model-connections.sql:/docker-entrypoint-initdb.d/02-models.sql:ro
+      - ./migrations/003-interview-extension.sql:/docker-entrypoint-initdb.d/03-extension.sql:ro
+      - ./init-dev.sql:/docker-entrypoint-initdb.d/04-users.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d interview_test"]
+      interval: 2s
+      retries: 20
