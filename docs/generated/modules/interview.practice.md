@@ -2,7 +2,7 @@
 
 简历/JD、轮次问答、逐题反馈与报告
 
-当前成熟度：supported；选择原因：REQ-001, REQ-002, REQ-007, REQ-010, REQ-011, REQ-012, blueprint:interview-practice, explicit。
+当前成熟度：supported；选择原因：REQ-001, REQ-002, REQ-007, REQ-010, REQ-011, REQ-012, REQ-013, REQ-014, REQ-015, REQ-016, REQ-017, REQ-018, blueprint:interview-practice, explicit。
 
 依赖：agent.runtime。
 

@@ -2,12 +2,15 @@ import { createServer,type Server } from 'node:http';
 import { z } from 'zod';
 import { createInterviewSchema,questionSchema } from '../packages/contracts/src/index';
 import { planSchema } from '../packages/contracts/src/planning';
+import { preparationInputSchema } from '../packages/contracts/src/preparation';
+import { demoPreparation } from '../apps/agent/src/preparation';
 export async function startProviderFixture(){
   const calls:Array<{model:string;authorization:string;content:string}>=[];
-  const state={failure:false,badEvidence:false};
+  const state={failure:false,badEvidence:false,badPreparationEvidence:false,rateLimited:false};
   const server=createServer(async(req,res)=>{
     res.setHeader('connection','close');
     if(req.url?.endsWith('/models')){res.setHeader('content-type','application/json');res.end(JSON.stringify({data:[{id:'coach-alpha'},{id:'coach-beta'},{id:'coach-alpha'}]}));return;}
+    if(state.rateLimited){res.writeHead(429,{'content-type':'application/json'});res.end(JSON.stringify({error:{message:'fixture rate limit'}}));return;}
     if(state.failure){res.writeHead(503,{'content-type':'application/json'});res.end(JSON.stringify({error:{message:'fixture unavailable'}}));return;}
     let text='';for await(const chunk of req)text+=String(chunk);
     const body=z.object({model:z.string(),messages:z.array(z.object({role:z.string(),content:z.string()})),max_tokens:z.number().optional()}).parse(JSON.parse(text));
@@ -16,7 +19,12 @@ export async function startProviderFixture(){
     const credentials:Record<string,string>={'coach-alpha':'fixture-alpha-key','coach-beta':'fixture-beta-key'};
     if(req.headers.authorization!==`Bearer ${credentials[body.model]}`){res.writeHead(401,{'content-type':'application/json'});res.end(JSON.stringify({error:{message:'fixture authentication failed'}}));return;}
     let output:string;
-    if(body.max_tokens===16)output='OK';else{
+    const preparation=z.object({kind:z.literal('jd-preparation'),input:preparationInputSchema}).safeParse(JSON.parse(content.startsWith('{')?content:'null'));
+    if(body.max_tokens===16)output='OK';else if(preparation.success){
+      const result=demoPreparation(preparation.data.input);
+      if(state.badPreparationEvidence&&result.requirements[0])result.requirements[0].quote='这段岗位要求不存在于 JD 中';
+      output=JSON.stringify(result);
+    }else{
       const context=z.object({input:createInterviewSchema,completedCount:z.number(),current:z.object({question:questionSchema,answer:z.string()}).nullable(),plan:planSchema.optional()}).parse(JSON.parse(content));
       const answered=context.completedCount+(context.current?1:0);
       const applicable=context.plan&&context.plan.options.round!=='hr'&&context.plan.options.roleType==='technical'&&['qa','coding'].includes(context.current?.question.stage??'qa');

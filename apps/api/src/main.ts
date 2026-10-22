@@ -17,6 +17,7 @@ import { importResume } from './resume';
 import { bankCreateSchema,bankUpdateSchema,leetcodeImportSchema,leetcodeBatchSchema } from '../../../packages/contracts/src/bank';
 import { searchDraftSchema,searchProbeSchema } from '../../../packages/contracts/src/search';
 import { previewPlanSchema,replanSchema } from '../../../packages/contracts/src/planning';
+import { preparationRequestSchema, savePreparationSchema } from '../../../packages/contracts/src/preparation';
 await checkReferenceRuntime();
 const config = readApiConfig();
 function owner(req: Request) { return z.string().parse(req.headers['x-owner-id']); }
@@ -53,6 +54,8 @@ class InterviewController {
   @UseInterceptors(FileInterceptor('file',{storage:memoryStorage(),limits:{fileSize:5*1024*1024,files:1}}))
   uploadResume(@UploadedFile() file:unknown){return importResume(file);}
   @Get('question-bank') listBank(@Req() req:Request){return this.service.bank.list(owner(req));}
+  @Post('preparations/generate') prepare(@Req() req:Request,@Body() body:unknown){return this.service.preparation.generate(owner(req),parse(preparationRequestSchema,body));}
+  @Post('question-bank/import/preparation') savePreparation(@Req() req:Request,@Body() body:unknown){return this.service.bank.createBatch(owner(req),parse(savePreparationSchema,body));}
   @Post('question-bank') createQuestion(@Req() req:Request,@Body() body:unknown){const input=parse(bankCreateSchema,body);return this.service.bank.create(owner(req),input.requestId,input.draft);}
   @Patch('question-bank/:id') updateQuestion(@Req() req:Request,@Param('id') id:string,@Body() body:unknown){const input=parse(bankUpdateSchema,body);return this.service.bank.update(owner(req),uuid(id),input.revision,input.draft);}
   @Delete('question-bank/:id') deleteQuestion(@Req() req:Request,@Param('id') id:string){return this.service.bank.remove(owner(req),uuid(id));}
@@ -65,6 +68,7 @@ class ApiModule {}
 const app = await NestFactory.create(ApiModule, { bodyParser: false });
 app.use(signedIdentity(config));
 app.use('/api/v1/question-bank/import/json',json({limit:'8mb'}));
+app.use('/api/v1/question-bank/import/preparation',json({limit:'2mb'}));
 app.use(json({ limit: '128kb' }));
 app.enableShutdownHooks();
 await app.listen(config.API_PORT, '0.0.0.0');

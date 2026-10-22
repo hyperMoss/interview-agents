@@ -6,6 +6,12 @@ import { z } from 'zod';
 import { modelDraftSchema,modelAccessSchema,modelProfileSchema,saveModelSchema,type ModelDraft } from '../../../packages/contracts/src/models';
 import type { AgentConfig } from '../../../packages/config/src/index';
 
+export function modelFailure(error:unknown){
+  const parsed=z.object({statusCode:z.number()}).safeParse(error);
+  if(parsed.success&&(parsed.data.statusCode===401||parsed.data.statusCode===403))return{error:'MODEL_AUTH_FAILED',message:'模型鉴权失败，请检查 API Key 与模型权限。'};
+  if(parsed.success&&parsed.data.statusCode===429)return{error:'MODEL_RATE_LIMITED',message:'模型服务请求过于频繁或额度不足，请稍后重试或检查供应商额度。'};
+  return null;
+}
 export class ModelAccessError extends Error {
   constructor(readonly code:string,readonly status:number,message:string){super(message);}
 }

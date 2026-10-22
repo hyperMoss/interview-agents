@@ -6,10 +6,12 @@ import { Pool } from 'pg';
 import { z } from 'zod';
 import { runtimeRequestSchema, runtimeResponseSchema,type RuntimeRequest } from '../../../packages/contracts/src/index';
 import { createEvaluator } from './evaluator';
-import { ModelConnections,modelPolicy,listModels,probeModel,ModelAccessError,defaultModelReference } from './models';
+import { ModelConnections,modelPolicy,listModels,probeModel,ModelAccessError,defaultModelReference,modelFailure } from './models';
 import type { AgentConfig } from '../../../packages/config/src/index';
 import { SearchConnections,searchProvider } from './search';
 import { searchProbeSchema } from '../../../packages/contracts/src/search';
+import { preparationRuntimeSchema } from '../../../packages/contracts/src/preparation';
+import { generatePreparation } from './preparation';
 
 export async function createAgentServer(config: AgentConfig) {
   const pool = new Pool({ connectionString: config.AGENT_DATABASE_URL, max: 5, connectionTimeoutMillis: 5000 });
@@ -42,6 +44,19 @@ export async function createAgentServer(config: AgentConfig) {
   app.post('/internal/v1/search-settings/:owner',async c=>c.json(await searchConnections.save(z.uuid().parse(c.req.param('owner')),await c.req.json())));
   app.delete('/internal/v1/search-settings/:owner',async c=>c.json(await searchConnections.clear(z.uuid().parse(c.req.param('owner')))));
   app.post('/internal/v1/search-probe',async c=>{const input=searchProbeSchema.parse(await c.req.json());return c.json({ok:true,sources:await searchProvider(input.draft,input.query,config)});});
+  app.post('/internal/v1/preparations/generate', async c => {
+    const request = preparationRuntimeSchema.parse(await c.req.json());
+    const connection = request.modelConnectionId ? await connections.resolve(request.ownerId, request.modelConnectionId) : undefined;
+    const signal = AbortSignal.any([c.req.raw.signal, AbortSignal.timeout(connection ? Math.min(55000, connection.timeoutMs) : 55000)]);
+    try { return c.json(await generatePreparation(config, request.input, signal, connection)); }
+    catch (error) {
+      if (error instanceof ModelAccessError) throw error;
+      const provider = modelFailure(error);
+      if (provider) return c.json(provider, 503);
+      if (error instanceof z.ZodError || error instanceof Error && error.message.startsWith('PREPARATION_')) return c.json({ error: 'INVALID_JD_PREPARATION', message: '备题生成失败：模型输出的题量、类型或 JD 原文依据无效。输入和已有题单保留，可重新生成。' }, 502);
+      return c.json({ error: 'PREPARATION_FAILED', message: '备题生成失败或输出不符合岗位要求。输入和已有题单保留，可检查模型后重新生成。' }, 503);
+    }
+  });
   app.post('/internal/v1/generate', async c => {
     const parsed = runtimeRequestSchema.safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) return c.json({ error: 'INVALID_REQUEST' }, 400);
@@ -83,7 +98,7 @@ export async function createAgentServer(config: AgentConfig) {
     } catch(error) {
       await client.query('ROLLBACK');
       if(error instanceof ModelAccessError)return c.json({error:error.code,message:error.message},error.status===403?403:error.status===409?409:503);
-      const providerStatus=z.object({statusCode:z.number()}).safeParse(error);if(providerStatus.success&&(providerStatus.data.statusCode===401||providerStatus.data.statusCode===403))return c.json({error:'MODEL_AUTH_FAILED'},503);if(providerStatus.success&&providerStatus.data.statusCode===429)return c.json({error:'MODEL_RATE_LIMITED'},503);
+      const provider=modelFailure(error);if(provider)return c.json(provider,503);
       return c.json({ error: 'GENERATION_FAILED' }, 503);
     } finally { client.release(); }
   });

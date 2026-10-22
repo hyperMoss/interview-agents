@@ -5,6 +5,7 @@ import { type InterviewInput, type Session,type RuntimeRequest, answerSchema, se
 import type { ModelSource } from '../../../packages/contracts/src/models';
 import { ModelGateway } from './models';
 import { SearchGateway } from './search';
+import { PreparationGateway } from './preparation';
 import { QuestionBank } from './bank';
 import { newSession, cancelSession,sessionBase } from '../../../packages/interview/src/domain';
 import { interviews, jobs, deletions,interviewMaterials,interviewCommands } from '../../../packages/database/src/schema';
@@ -24,6 +25,7 @@ export class InterviewService {
   readonly queue;
   readonly models;
   readonly search;
+  readonly preparation;
   readonly bank;
   constructor(readonly config: ApiConfig) {
     this.database = openDatabase(config.DATABASE_URL);
@@ -31,6 +33,7 @@ export class InterviewService {
     this.queue.on('error', () => {});
     this.models=new ModelGateway(config);
     this.search=new SearchGateway(config);
+    this.preparation=new PreparationGateway(config);
     this.bank=new QuestionBank(this.database.pool);
   }
   async onModuleDestroy() { await Promise.all([this.database.pool.end(), this.queue.close()]); }

@@ -1,0 +1,4 @@
+interface:
+  display_name: "算法编程练习"
+  short_description: "用 LeetCode Hot 100 练习 Python 思路、套路与复盘"
+  default_prompt: "使用 $algorithm-practice 从 Hot 100 选择一道题，先练思路，再给提示与 Python 核心代码。"

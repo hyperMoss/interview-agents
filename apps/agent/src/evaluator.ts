@@ -1,9 +1,9 @@
 import { Agent } from '@mastra/core/agent';
 import { Mastra } from '@mastra/core';
 import { PostgresStore } from '@mastra/pg';
-import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import type { ModelDraft } from '../../../packages/contracts/src/models';
-import { modelFetch,ModelAccessError } from './models';
+import { ModelAccessError } from './models';
+import { coachModel } from './coach-model';
 import { scoreFromDimensions } from '../../../packages/interview/src/rubric';
 import { evaluationScore } from '../../../packages/interview/src/planner';
 import { z } from 'zod';
@@ -25,7 +25,7 @@ next.kind=fixed 时题面由服务端固定，你只评估当前答案。next.ki
 export function createEvaluator(config: AgentConfig,connection?:ModelDraft,sharedStorage?:PostgresStore) {
   const interviewer = config.MODEL_MODE === 'live' ? new Agent({
     id: 'interview-coach', name: 'Interview Coach', instructions:instructions+'\n'+planningInstructions, maxRetries: 0,
-    model: connection?createOpenAICompatible({name:'custom',baseURL:connection.baseUrl,apiKey:connection.apiKey||undefined,fetch:modelFetch(config)}).chatModel(connection.model):{ providerId: config.LLM_MODEL.split('/')[0] ?? 'openai', modelId: config.LLM_MODEL.split('/').slice(1).join('/'), apiKey: config.LLM_API_KEY, ...(config.LLM_BASE_URL ? { url: config.LLM_BASE_URL, api: 'chat' satisfies 'chat' } : {}) },
+    model: coachModel(config, connection),
   }) : undefined;
   const storage=sharedStorage??new PostgresStore({id:'interview-runtime',connectionString:config.AGENT_DATABASE_URL,schemaName:'agent_runtime'});
   const mastra = interviewer ? new Mastra({ agents: { interviewer },storage,logger:false }) : new Mastra({storage,logger:false});

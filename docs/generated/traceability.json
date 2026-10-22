@@ -142,5 +142,77 @@
     ],
     "acceptance": "TEST-REQ-012",
     "task": "TASK-REQ-012"
+  },
+  {
+    "requirement": "REQ-013",
+    "capabilities": [
+      "interview.practice"
+    ],
+    "docs": [
+      "docs/generated/00-PROJECT-BRIEF.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "acceptance": "TEST-REQ-013",
+    "task": "TASK-REQ-013"
+  },
+  {
+    "requirement": "REQ-014",
+    "capabilities": [
+      "interview.practice"
+    ],
+    "docs": [
+      "docs/generated/00-PROJECT-BRIEF.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "acceptance": "TEST-REQ-014",
+    "task": "TASK-REQ-014"
+  },
+  {
+    "requirement": "REQ-015",
+    "capabilities": [
+      "interview.practice"
+    ],
+    "docs": [
+      "docs/generated/00-PROJECT-BRIEF.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "acceptance": "TEST-REQ-015",
+    "task": "TASK-REQ-015"
+  },
+  {
+    "requirement": "REQ-016",
+    "capabilities": [
+      "interview.practice"
+    ],
+    "docs": [
+      "docs/generated/00-PROJECT-BRIEF.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "acceptance": "TEST-REQ-016",
+    "task": "TASK-REQ-016"
+  },
+  {
+    "requirement": "REQ-017",
+    "capabilities": [
+      "interview.practice"
+    ],
+    "docs": [
+      "docs/generated/00-PROJECT-BRIEF.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "acceptance": "TEST-REQ-017",
+    "task": "TASK-REQ-017"
+  },
+  {
+    "requirement": "REQ-018",
+    "capabilities": [
+      "interview.practice"
+    ],
+    "docs": [
+      "docs/generated/00-PROJECT-BRIEF.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "acceptance": "TEST-REQ-018",
+    "task": "TASK-REQ-018"
   }
 ]

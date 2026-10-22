@@ -1,0 +1,1257 @@
+{
+  "source": {
+    "url": "https://leetcode.cn/studyplan/top-100-liked/",
+    "capturedAt": "2026-10-22",
+    "sha256": "616fd666238a373eac20b7867fafa536e2a8906f420d412ff8d7b86623f2a93b"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "title": "两数之和",
+      "slug": "two-sum",
+      "difficulty": "easy",
+      "group": "哈希",
+      "tags": [
+        "数组",
+        "哈希表"
+      ]
+    },
+    {
+      "id": 49,
+      "title": "字母异位词分组",
+      "slug": "group-anagrams",
+      "difficulty": "medium",
+      "group": "哈希",
+      "tags": [
+        "数组",
+        "哈希表",
+        "字符串",
+        "排序"
+      ]
+    },
+    {
+      "id": 128,
+      "title": "最长连续序列",
+      "slug": "longest-consecutive-sequence",
+      "difficulty": "medium",
+      "group": "哈希",
+      "tags": [
+        "并查集",
+        "数组",
+        "哈希表"
+      ]
+    },
+    {
+      "id": 283,
+      "title": "移动零",
+      "slug": "move-zeroes",
+      "difficulty": "easy",
+      "group": "双指针",
+      "tags": [
+        "数组",
+        "双指针"
+      ]
+    },
+    {
+      "id": 11,
+      "title": "盛最多水的容器",
+      "slug": "container-with-most-water",
+      "difficulty": "medium",
+      "group": "双指针",
+      "tags": [
+        "贪心",
+        "数组",
+        "双指针"
+      ]
+    },
+    {
+      "id": 15,
+      "title": "三数之和",
+      "slug": "3sum",
+      "difficulty": "medium",
+      "group": "双指针",
+      "tags": [
+        "数组",
+        "双指针",
+        "排序"
+      ]
+    },
+    {
+      "id": 42,
+      "title": "接雨水",
+      "slug": "trapping-rain-water",
+      "difficulty": "hard",
+      "group": "双指针",
+      "tags": [
+        "栈",
+        "数组",
+        "双指针",
+        "动态规划",
+        "单调栈"
+      ]
+    },
+    {
+      "id": 3,
+      "title": "无重复字符的最长子串",
+      "slug": "longest-substring-without-repeating-characters",
+      "difficulty": "medium",
+      "group": "滑动窗口",
+      "tags": [
+        "哈希表",
+        "字符串",
+        "滑动窗口"
+      ]
+    },
+    {
+      "id": 438,
+      "title": "找到字符串中所有字母异位词",
+      "slug": "find-all-anagrams-in-a-string",
+      "difficulty": "medium",
+      "group": "滑动窗口",
+      "tags": [
+        "哈希表",
+        "字符串",
+        "滑动窗口"
+      ]
+    },
+    {
+      "id": 560,
+      "title": "和为 K 的子数组",
+      "slug": "subarray-sum-equals-k",
+      "difficulty": "medium",
+      "group": "子串",
+      "tags": [
+        "数组",
+        "哈希表",
+        "前缀和"
+      ]
+    },
+    {
+      "id": 239,
+      "title": "滑动窗口最大值",
+      "slug": "sliding-window-maximum",
+      "difficulty": "hard",
+      "group": "子串",
+      "tags": [
+        "队列",
+        "数组",
+        "滑动窗口",
+        "单调队列",
+        "堆（优先队列）",
+        "区间最值查询"
+      ]
+    },
+    {
+      "id": 76,
+      "title": "最小覆盖子串",
+      "slug": "minimum-window-substring",
+      "difficulty": "hard",
+      "group": "子串",
+      "tags": [
+        "哈希表",
+        "字符串",
+        "滑动窗口"
+      ]
+    },
+    {
+      "id": 53,
+      "title": "最大子数组和",
+      "slug": "maximum-subarray",
+      "difficulty": "medium",
+      "group": "普通数组",
+      "tags": [
+        "数组",
+        "分治",
+        "动态规划"
+      ]
+    },
+    {
+      "id": 56,
+      "title": "合并区间",
+      "slug": "merge-intervals",
+      "difficulty": "medium",
+      "group": "普通数组",
+      "tags": [
+        "数组",
+        "排序",
+        "快速排序"
+      ]
+    },
+    {
+      "id": 189,
+      "title": "轮转数组",
+      "slug": "rotate-array",
+      "difficulty": "medium",
+      "group": "普通数组",
+      "tags": [
+        "数组",
+        "数学",
+        "双指针"
+      ]
+    },
+    {
+      "id": 238,
+      "title": "除了自身以外数组的乘积",
+      "slug": "product-of-array-except-self",
+      "difficulty": "medium",
+      "group": "普通数组",
+      "tags": [
+        "数组",
+        "前缀和"
+      ]
+    },
+    {
+      "id": 41,
+      "title": "缺失的第一个正数",
+      "slug": "first-missing-positive",
+      "difficulty": "hard",
+      "group": "普通数组",
+      "tags": [
+        "数组",
+        "哈希表"
+      ]
+    },
+    {
+      "id": 73,
+      "title": "矩阵置零",
+      "slug": "set-matrix-zeroes",
+      "difficulty": "medium",
+      "group": "矩阵",
+      "tags": [
+        "数组",
+        "哈希表",
+        "矩阵"
+      ]
+    },
+    {
+      "id": 54,
+      "title": "螺旋矩阵",
+      "slug": "spiral-matrix",
+      "difficulty": "medium",
+      "group": "矩阵",
+      "tags": [
+        "数组",
+        "矩阵",
+        "模拟"
+      ]
+    },
+    {
+      "id": 48,
+      "title": "旋转图像",
+      "slug": "rotate-image",
+      "difficulty": "medium",
+      "group": "矩阵",
+      "tags": [
+        "数组",
+        "数学",
+        "矩阵"
+      ]
+    },
+    {
+      "id": 240,
+      "title": "搜索二维矩阵 II",
+      "slug": "search-a-2d-matrix-ii",
+      "difficulty": "medium",
+      "group": "矩阵",
+      "tags": [
+        "数组",
+        "二分查找",
+        "分治",
+        "矩阵"
+      ]
+    },
+    {
+      "id": 160,
+      "title": "相交链表",
+      "slug": "intersection-of-two-linked-lists",
+      "difficulty": "easy",
+      "group": "链表",
+      "tags": [
+        "哈希表",
+        "链表",
+        "双指针"
+      ]
+    },
+    {
+      "id": 206,
+      "title": "反转链表",
+      "slug": "reverse-linked-list",
+      "difficulty": "easy",
+      "group": "链表",
+      "tags": [
+        "递归",
+        "链表"
+      ]
+    },
+    {
+      "id": 234,
+      "title": "回文链表",
+      "slug": "palindrome-linked-list",
+      "difficulty": "easy",
+      "group": "链表",
+      "tags": [
+        "栈",
+        "递归",
+        "链表",
+        "双指针"
+      ]
+    },
+    {
+      "id": 141,
+      "title": "环形链表",
+      "slug": "linked-list-cycle",
+      "difficulty": "easy",
+      "group": "链表",
+      "tags": [
+        "哈希表",
+        "链表",
+        "双指针",
+        "Floyd 判圈算法"
+      ]
+    },
+    {
+      "id": 142,
+      "title": "环形链表 II",
+      "slug": "linked-list-cycle-ii",
+      "difficulty": "medium",
+      "group": "链表",
+      "tags": [
+        "哈希表",
+        "链表",
+        "双指针",
+        "Floyd 判圈算法"
+      ]
+    },
+    {
+      "id": 21,
+      "title": "合并两个有序链表",
+      "slug": "merge-two-sorted-lists",
+      "difficulty": "easy",
+      "group": "链表",
+      "tags": [
+        "递归",
+        "链表"
+      ]
+    },
+    {
+      "id": 2,
+      "title": "两数相加",
+      "slug": "add-two-numbers",
+      "difficulty": "medium",
+      "group": "链表",
+      "tags": [
+        "递归",
+        "链表",
+        "数学"
+      ]
+    },
+    {
+      "id": 19,
+      "title": "删除链表的倒数第 N 个结点",
+      "slug": "remove-nth-node-from-end-of-list",
+      "difficulty": "medium",
+      "group": "链表",
+      "tags": [
+        "链表",
+        "双指针"
+      ]
+    },
+    {
+      "id": 24,
+      "title": "两两交换链表中的节点",
+      "slug": "swap-nodes-in-pairs",
+      "difficulty": "medium",
+      "group": "链表",
+      "tags": [
+        "递归",
+        "链表"
+      ]
+    },
+    {
+      "id": 25,
+      "title": "K 个一组翻转链表",
+      "slug": "reverse-nodes-in-k-group",
+      "difficulty": "hard",
+      "group": "链表",
+      "tags": [
+        "递归",
+        "链表"
+      ]
+    },
+    {
+      "id": 138,
+      "title": "随机链表的复制",
+      "slug": "copy-list-with-random-pointer",
+      "difficulty": "medium",
+      "group": "链表",
+      "tags": [
+        "哈希表",
+        "链表"
+      ]
+    },
+    {
+      "id": 148,
+      "title": "排序链表",
+      "slug": "sort-list",
+      "difficulty": "medium",
+      "group": "链表",
+      "tags": [
+        "链表",
+        "双指针",
+        "分治",
+        "排序",
+        "归并排序"
+      ]
+    },
+    {
+      "id": 23,
+      "title": "合并 K 个升序链表",
+      "slug": "merge-k-sorted-lists",
+      "difficulty": "hard",
+      "group": "链表",
+      "tags": [
+        "链表",
+        "分治",
+        "堆（优先队列）",
+        "归并排序",
+        "锦标赛排序"
+      ]
+    },
+    {
+      "id": 146,
+      "title": "LRU 缓存",
+      "slug": "lru-cache",
+      "difficulty": "medium",
+      "group": "链表",
+      "tags": [
+        "设计",
+        "哈希表",
+        "链表",
+        "双向链表"
+      ]
+    },
+    {
+      "id": 94,
+      "title": "二叉树的中序遍历",
+      "slug": "binary-tree-inorder-traversal",
+      "difficulty": "easy",
+      "group": "二叉树",
+      "tags": [
+        "栈",
+        "树",
+        "深度优先搜索",
+        "二叉树"
+      ]
+    },
+    {
+      "id": 104,
+      "title": "二叉树的最大深度",
+      "slug": "maximum-depth-of-binary-tree",
+      "difficulty": "easy",
+      "group": "二叉树",
+      "tags": [
+        "树",
+        "深度优先搜索",
+        "广度优先搜索",
+        "二叉树"
+      ]
+    },
+    {
+      "id": 226,
+      "title": "翻转二叉树",
+      "slug": "invert-binary-tree",
+      "difficulty": "easy",
+      "group": "二叉树",
+      "tags": [
+        "树",
+        "深度优先搜索",
+        "广度优先搜索",
+        "二叉树"
+      ]
+    },
+    {
+      "id": 101,
+      "title": "对称二叉树",
+      "slug": "symmetric-tree",
+      "difficulty": "easy",
+      "group": "二叉树",
+      "tags": [
+        "树",
+        "深度优先搜索",
+        "广度优先搜索",
+        "二叉树"
+      ]
+    },
+    {
+      "id": 543,
+      "title": "二叉树的直径",
+      "slug": "diameter-of-binary-tree",
+      "difficulty": "easy",
+      "group": "二叉树",
+      "tags": [
+        "树",
+        "深度优先搜索",
+        "二叉树",
+        "树形 DP"
+      ]
+    },
+    {
+      "id": 102,
+      "title": "二叉树的层序遍历",
+      "slug": "binary-tree-level-order-traversal",
+      "difficulty": "medium",
+      "group": "二叉树",
+      "tags": [
+        "树",
+        "广度优先搜索",
+        "二叉树"
+      ]
+    },
+    {
+      "id": 108,
+      "title": "将有序数组转换为二叉搜索树",
+      "slug": "convert-sorted-array-to-binary-search-tree",
+      "difficulty": "easy",
+      "group": "二叉树",
+      "tags": [
+        "树",
+        "二叉搜索树",
+        "数组",
+        "分治",
+        "二叉树"
+      ]
+    },
+    {
+      "id": 98,
+      "title": "验证二叉搜索树",
+      "slug": "validate-binary-search-tree",
+      "difficulty": "medium",
+      "group": "二叉树",
+      "tags": [
+        "树",
+        "深度优先搜索",
+        "二叉搜索树",
+        "二叉树"
+      ]
+    },
+    {
+      "id": 230,
+      "title": "二叉搜索树中第 K 小的元素",
+      "slug": "kth-smallest-element-in-a-bst",
+      "difficulty": "medium",
+      "group": "二叉树",
+      "tags": [
+        "树",
+        "深度优先搜索",
+        "二叉搜索树",
+        "二叉树"
+      ]
+    },
+    {
+      "id": 199,
+      "title": "二叉树的右视图",
+      "slug": "binary-tree-right-side-view",
+      "difficulty": "medium",
+      "group": "二叉树",
+      "tags": [
+        "树",
+        "深度优先搜索",
+        "广度优先搜索",
+        "二叉树"
+      ]
+    },
+    {
+      "id": 114,
+      "title": "二叉树展开为链表",
+      "slug": "flatten-binary-tree-to-linked-list",
+      "difficulty": "medium",
+      "group": "二叉树",
+      "tags": [
+        "栈",
+        "树",
+        "深度优先搜索",
+        "链表",
+        "二叉树"
+      ]
+    },
+    {
+      "id": 105,
+      "title": "从前序与中序遍历序列构造二叉树",
+      "slug": "construct-binary-tree-from-preorder-and-inorder-traversal",
+      "difficulty": "medium",
+      "group": "二叉树",
+      "tags": [
+        "树",
+        "数组",
+        "哈希表",
+        "分治",
+        "二叉树"
+      ]
+    },
+    {
+      "id": 437,
+      "title": "路径总和 III",
+      "slug": "path-sum-iii",
+      "difficulty": "medium",
+      "group": "二叉树",
+      "tags": [
+        "树",
+        "深度优先搜索",
+        "二叉树"
+      ]
+    },
+    {
+      "id": 236,
+      "title": "二叉树的最近公共祖先",
+      "slug": "lowest-common-ancestor-of-a-binary-tree",
+      "difficulty": "medium",
+      "group": "二叉树",
+      "tags": [
+        "树",
+        "深度优先搜索",
+        "二叉树",
+        "最近公共祖先",
+        "Binary Lifting"
+      ]
+    },
+    {
+      "id": 124,
+      "title": "二叉树中的最大路径和",
+      "slug": "binary-tree-maximum-path-sum",
+      "difficulty": "hard",
+      "group": "二叉树",
+      "tags": [
+        "树",
+        "深度优先搜索",
+        "动态规划",
+        "二叉树",
+        "树形 DP"
+      ]
+    },
+    {
+      "id": 200,
+      "title": "岛屿数量",
+      "slug": "number-of-islands",
+      "difficulty": "medium",
+      "group": "图论",
+      "tags": [
+        "深度优先搜索",
+        "广度优先搜索",
+        "并查集",
+        "数组",
+        "矩阵"
+      ]
+    },
+    {
+      "id": 994,
+      "title": "腐烂的橘子",
+      "slug": "rotting-oranges",
+      "difficulty": "medium",
+      "group": "图论",
+      "tags": [
+        "广度优先搜索",
+        "数组",
+        "矩阵"
+      ]
+    },
+    {
+      "id": 207,
+      "title": "课程表",
+      "slug": "course-schedule",
+      "difficulty": "medium",
+      "group": "图论",
+      "tags": [
+        "深度优先搜索",
+        "广度优先搜索",
+        "图",
+        "拓扑排序",
+        "有向无环图"
+      ]
+    },
+    {
+      "id": 208,
+      "title": "实现 Trie (前缀树)",
+      "slug": "implement-trie-prefix-tree",
+      "difficulty": "medium",
+      "group": "图论",
+      "tags": [
+        "设计",
+        "字典树",
+        "哈希表",
+        "字符串"
+      ]
+    },
+    {
+      "id": 46,
+      "title": "全排列",
+      "slug": "permutations",
+      "difficulty": "medium",
+      "group": "回溯",
+      "tags": [
+        "数组",
+        "回溯"
+      ]
+    },
+    {
+      "id": 78,
+      "title": "子集",
+      "slug": "subsets",
+      "difficulty": "medium",
+      "group": "回溯",
+      "tags": [
+        "位运算",
+        "数组",
+        "回溯"
+      ]
+    },
+    {
+      "id": 17,
+      "title": "电话号码的字母组合",
+      "slug": "letter-combinations-of-a-phone-number",
+      "difficulty": "medium",
+      "group": "回溯",
+      "tags": [
+        "哈希表",
+        "字符串",
+        "回溯"
+      ]
+    },
+    {
+      "id": 39,
+      "title": "组合总和",
+      "slug": "combination-sum",
+      "difficulty": "medium",
+      "group": "回溯",
+      "tags": [
+        "数组",
+        "回溯"
+      ]
+    },
+    {
+      "id": 22,
+      "title": "括号生成",
+      "slug": "generate-parentheses",
+      "difficulty": "medium",
+      "group": "回溯",
+      "tags": [
+        "字符串",
+        "动态规划",
+        "回溯",
+        "括号序列"
+      ]
+    },
+    {
+      "id": 79,
+      "title": "单词搜索",
+      "slug": "word-search",
+      "difficulty": "medium",
+      "group": "回溯",
+      "tags": [
+        "深度优先搜索",
+        "数组",
+        "字符串",
+        "回溯",
+        "矩阵"
+      ]
+    },
+    {
+      "id": 131,
+      "title": "分割回文串",
+      "slug": "palindrome-partitioning",
+      "difficulty": "medium",
+      "group": "回溯",
+      "tags": [
+        "字符串",
+        "动态规划",
+        "回溯"
+      ]
+    },
+    {
+      "id": 51,
+      "title": "N 皇后",
+      "slug": "n-queens",
+      "difficulty": "hard",
+      "group": "回溯",
+      "tags": [
+        "数组",
+        "回溯",
+        "X 算法"
+      ]
+    },
+    {
+      "id": 35,
+      "title": "搜索插入位置",
+      "slug": "search-insert-position",
+      "difficulty": "easy",
+      "group": "二分查找",
+      "tags": [
+        "数组",
+        "二分查找"
+      ]
+    },
+    {
+      "id": 74,
+      "title": "搜索二维矩阵",
+      "slug": "search-a-2d-matrix",
+      "difficulty": "medium",
+      "group": "二分查找",
+      "tags": [
+        "数组",
+        "二分查找",
+        "矩阵"
+      ]
+    },
+    {
+      "id": 34,
+      "title": "在排序数组中查找元素的第一个和最后一个位置",
+      "slug": "find-first-and-last-position-of-element-in-sorted-array",
+      "difficulty": "medium",
+      "group": "二分查找",
+      "tags": [
+        "数组",
+        "二分查找"
+      ]
+    },
+    {
+      "id": 33,
+      "title": "搜索旋转排序数组",
+      "slug": "search-in-rotated-sorted-array",
+      "difficulty": "medium",
+      "group": "二分查找",
+      "tags": [
+        "数组",
+        "二分查找"
+      ]
+    },
+    {
+      "id": 153,
+      "title": "寻找旋转排序数组中的最小值",
+      "slug": "find-minimum-in-rotated-sorted-array",
+      "difficulty": "medium",
+      "group": "二分查找",
+      "tags": [
+        "数组",
+        "二分查找"
+      ]
+    },
+    {
+      "id": 4,
+      "title": "寻找两个正序数组的中位数",
+      "slug": "median-of-two-sorted-arrays",
+      "difficulty": "hard",
+      "group": "二分查找",
+      "tags": [
+        "数组",
+        "二分查找",
+        "分治"
+      ]
+    },
+    {
+      "id": 20,
+      "title": "有效的括号",
+      "slug": "valid-parentheses",
+      "difficulty": "easy",
+      "group": "栈",
+      "tags": [
+        "栈",
+        "字符串",
+        "括号序列"
+      ]
+    },
+    {
+      "id": 155,
+      "title": "最小栈",
+      "slug": "min-stack",
+      "difficulty": "medium",
+      "group": "栈",
+      "tags": [
+        "栈",
+        "设计"
+      ]
+    },
+    {
+      "id": 394,
+      "title": "字符串解码",
+      "slug": "decode-string",
+      "difficulty": "medium",
+      "group": "栈",
+      "tags": [
+        "栈",
+        "递归",
+        "字符串"
+      ]
+    },
+    {
+      "id": 739,
+      "title": "每日温度",
+      "slug": "daily-temperatures",
+      "difficulty": "medium",
+      "group": "栈",
+      "tags": [
+        "栈",
+        "数组",
+        "单调栈"
+      ]
+    },
+    {
+      "id": 84,
+      "title": "柱状图中最大的矩形",
+      "slug": "largest-rectangle-in-histogram",
+      "difficulty": "hard",
+      "group": "栈",
+      "tags": [
+        "栈",
+        "数组",
+        "单调栈",
+        "区间最值查询"
+      ]
+    },
+    {
+      "id": 215,
+      "title": "数组中的第K个最大元素",
+      "slug": "kth-largest-element-in-an-array",
+      "difficulty": "medium",
+      "group": "堆",
+      "tags": [
+        "数组",
+        "分治",
+        "快速选择",
+        "排序",
+        "堆（优先队列）"
+      ]
+    },
+    {
+      "id": 347,
+      "title": "前 K 个高频元素",
+      "slug": "top-k-frequent-elements",
+      "difficulty": "medium",
+      "group": "堆",
+      "tags": [
+        "数组",
+        "哈希表",
+        "分治",
+        "桶排序",
+        "计数",
+        "快速选择",
+        "排序",
+        "堆（优先队列）"
+      ]
+    },
+    {
+      "id": 295,
+      "title": "数据流的中位数",
+      "slug": "find-median-from-data-stream",
+      "difficulty": "hard",
+      "group": "堆",
+      "tags": [
+        "设计",
+        "双指针",
+        "数据流",
+        "排序",
+        "堆（优先队列）"
+      ]
+    },
+    {
+      "id": 121,
+      "title": "买卖股票的最佳时机",
+      "slug": "best-time-to-buy-and-sell-stock",
+      "difficulty": "easy",
+      "group": "贪心算法",
+      "tags": [
+        "数组",
+        "动态规划"
+      ]
+    },
+    {
+      "id": 55,
+      "title": "跳跃游戏",
+      "slug": "jump-game",
+      "difficulty": "medium",
+      "group": "贪心算法",
+      "tags": [
+        "贪心",
+        "数组",
+        "动态规划"
+      ]
+    },
+    {
+      "id": 45,
+      "title": "跳跃游戏 II",
+      "slug": "jump-game-ii",
+      "difficulty": "medium",
+      "group": "贪心算法",
+      "tags": [
+        "贪心",
+        "数组",
+        "动态规划"
+      ]
+    },
+    {
+      "id": 763,
+      "title": "划分字母区间",
+      "slug": "partition-labels",
+      "difficulty": "medium",
+      "group": "贪心算法",
+      "tags": [
+        "贪心",
+        "哈希表",
+        "双指针",
+        "字符串"
+      ]
+    },
+    {
+      "id": 70,
+      "title": "爬楼梯",
+      "slug": "climbing-stairs",
+      "difficulty": "easy",
+      "group": "动态规划",
+      "tags": [
+        "记忆化",
+        "数学",
+        "动态规划"
+      ]
+    },
+    {
+      "id": 118,
+      "title": "杨辉三角",
+      "slug": "pascals-triangle",
+      "difficulty": "easy",
+      "group": "动态规划",
+      "tags": [
+        "数组",
+        "动态规划"
+      ]
+    },
+    {
+      "id": 198,
+      "title": "打家劫舍",
+      "slug": "house-robber",
+      "difficulty": "medium",
+      "group": "动态规划",
+      "tags": [
+        "数组",
+        "动态规划"
+      ]
+    },
+    {
+      "id": 279,
+      "title": "完全平方数",
+      "slug": "perfect-squares",
+      "difficulty": "medium",
+      "group": "动态规划",
+      "tags": [
+        "广度优先搜索",
+        "数学",
+        "动态规划",
+        "背包问题",
+        "完全背包"
+      ]
+    },
+    {
+      "id": 322,
+      "title": "零钱兑换",
+      "slug": "coin-change",
+      "difficulty": "medium",
+      "group": "动态规划",
+      "tags": [
+        "广度优先搜索",
+        "数组",
+        "动态规划",
+        "背包问题",
+        "完全背包"
+      ]
+    },
+    {
+      "id": 139,
+      "title": "单词拆分",
+      "slug": "word-break",
+      "difficulty": "medium",
+      "group": "动态规划",
+      "tags": [
+        "字典树",
+        "记忆化",
+        "数组",
+        "哈希表",
+        "字符串",
+        "动态规划",
+        "Brute-Force Search"
+      ]
+    },
+    {
+      "id": 300,
+      "title": "最长递增子序列",
+      "slug": "longest-increasing-subsequence",
+      "difficulty": "medium",
+      "group": "动态规划",
+      "tags": [
+        "数组",
+        "二分查找",
+        "动态规划",
+        "最长上升子序列"
+      ]
+    },
+    {
+      "id": 152,
+      "title": "乘积最大子数组",
+      "slug": "maximum-product-subarray",
+      "difficulty": "medium",
+      "group": "动态规划",
+      "tags": [
+        "数组",
+        "动态规划"
+      ]
+    },
+    {
+      "id": 416,
+      "title": "分割等和子集",
+      "slug": "partition-equal-subset-sum",
+      "difficulty": "medium",
+      "group": "动态规划",
+      "tags": [
+        "数组",
+        "动态规划",
+        "背包问题",
+        "0-1 背包"
+      ]
+    },
+    {
+      "id": 32,
+      "title": "最长有效括号",
+      "slug": "longest-valid-parentheses",
+      "difficulty": "hard",
+      "group": "动态规划",
+      "tags": [
+        "栈",
+        "字符串",
+        "动态规划",
+        "括号序列"
+      ]
+    },
+    {
+      "id": 62,
+      "title": "不同路径",
+      "slug": "unique-paths",
+      "difficulty": "medium",
+      "group": "多维动态规划",
+      "tags": [
+        "数学",
+        "动态规划",
+        "组合数学"
+      ]
+    },
+    {
+      "id": 64,
+      "title": "最小路径和",
+      "slug": "minimum-path-sum",
+      "difficulty": "medium",
+      "group": "多维动态规划",
+      "tags": [
+        "数组",
+        "动态规划",
+        "矩阵"
+      ]
+    },
+    {
+      "id": 5,
+      "title": "最长回文子串",
+      "slug": "longest-palindromic-substring",
+      "difficulty": "medium",
+      "group": "多维动态规划",
+      "tags": [
+        "双指针",
+        "字符串",
+        "动态规划",
+        "Manacher 算法"
+      ]
+    },
+    {
+      "id": 1143,
+      "title": "最长公共子序列",
+      "slug": "longest-common-subsequence",
+      "difficulty": "medium",
+      "group": "多维动态规划",
+      "tags": [
+        "字符串",
+        "动态规划",
+        "最长公共子序列"
+      ]
+    },
+    {
+      "id": 72,
+      "title": "编辑距离",
+      "slug": "edit-distance",
+      "difficulty": "medium",
+      "group": "多维动态规划",
+      "tags": [
+        "字符串",
+        "动态规划"
+      ]
+    },
+    {
+      "id": 136,
+      "title": "只出现一次的数字",
+      "slug": "single-number",
+      "difficulty": "easy",
+      "group": "技巧",
+      "tags": [
+        "位运算",
+        "数组"
+      ]
+    },
+    {
+      "id": 169,
+      "title": "多数元素",
+      "slug": "majority-element",
+      "difficulty": "easy",
+      "group": "技巧",
+      "tags": [
+        "数组",
+        "哈希表",
+        "分治",
+        "计数",
+        "排序",
+        "摩尔投票算法"
+      ]
+    },
+    {
+      "id": 75,
+      "title": "颜色分类",
+      "slug": "sort-colors",
+      "difficulty": "medium",
+      "group": "技巧",
+      "tags": [
+        "数组",
+        "双指针",
+        "冒泡排序",
+        "排序",
+        "快速排序"
+      ]
+    },
+    {
+      "id": 31,
+      "title": "下一个排列",
+      "slug": "next-permutation",
+      "difficulty": "medium",
+      "group": "技巧",
+      "tags": [
+        "数组",
+        "双指针"
+      ]
+    },
+    {
+      "id": 287,
+      "title": "寻找重复数",
+      "slug": "find-the-duplicate-number",
+      "difficulty": "medium",
+      "group": "技巧",
+      "tags": [
+        "位运算",
+        "数组",
+        "双指针",
+        "二分查找",
+        "Floyd 判圈算法",
+        "抽屉原理"
+      ]
+    }
+  ]
+}

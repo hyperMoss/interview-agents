@@ -9,3 +9,5 @@
 开发或验收软件工厂、跨项目复盘时读取 `skills/software-factory/SKILL.md`。核心文档工厂只生成设计上下文与配置索引；不要把 planned 能力描述成已经接通。
 
 真实环境文件和简历资料不进入公开报告或经验库。测试固定 fixture 不代表真实用户经历或多个已交付项目。
+
+算法编程练习、Hot 100 选题或解法复盘时，读取 `skills/algorithm-practice/SKILL.md`。网页、题单工具与 skill 共用同一份题目数据。

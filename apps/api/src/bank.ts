@@ -2,6 +2,7 @@ import type { Pool,PoolClient } from 'pg';
 import { BadRequestException,ConflictException,NotFoundException } from '@nestjs/common';
 import { z } from 'zod';
 import { bankDraftSchema,bankQuestionSchema,leetcodeImportSchema,leetcodeBatchSchema,type BankDraft,type BankQuestion } from '../../../packages/contracts/src/bank';
+import type { savePreparationSchema } from '../../../packages/contracts/src/preparation';
 
 const rowSchema=z.object({id:z.uuid(),owner:z.string().nullable(),source:z.enum(['builtin','custom','leetcode']),source_url:z.string().nullable(),payload:bankDraftSchema,revision:z.number(),created_at:z.date()});
 const seeds:Array<BankDraft & {key:number}>=[
@@ -29,11 +30,17 @@ export class QuestionBank {
     catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}
   }
   private async ensureCapacity(client:PoolClient,owner:string){const result=await client.query('SELECT count(*)::int AS total FROM app.bank_questions WHERE owner=$1 OR owner IS NULL',[owner]);if(result.rows[0].total>=500)throw new ConflictException('题库最多 500 题，包含内置题。请删除不需要的题目后再创建或导入。');}
-  async create(owner:string,id:string,draft:BankDraft){return this.withOwnerTransaction(owner,async client=>{
+  async create(owner:string,id:string,draft:BankDraft){return this.withOwnerTransaction(owner,client=>this.createInTransaction(client,owner,id,draft));}
+  async createBatch(owner:string,batch:z.infer<typeof savePreparationSchema>){return this.withOwnerTransaction(owner,async client=>{
+    const saved:BankQuestion[]=[];
+    for(const {requestId,draft} of batch.questions)saved.push(await this.createInTransaction(client,owner,requestId,draft));
+    return saved;
+  });}
+  private async createInTransaction(client:PoolClient,owner:string,id:string,draft:BankDraft){
     let result=await client.query('SELECT * FROM app.bank_questions WHERE id=$1 AND owner=$2',[id,owner]);
     if(!result.rows[0]){await this.ensureCapacity(client,owner);await client.query("INSERT INTO app.bank_questions(id,owner,source,payload) VALUES($1,$2,'custom',$3) ON CONFLICT(id) DO NOTHING",[id,owner,JSON.stringify(draft)]);result=await client.query('SELECT * FROM app.bank_questions WHERE id=$1 AND owner=$2',[id,owner]);}
     if(!result.rows[0])throw new ConflictException('题目创建键已使用。');const row=rowSchema.parse(result.rows[0]);if(JSON.stringify(row.payload)!==JSON.stringify(draft))throw new ConflictException('同一请求键对应不同题目。');return this.view(row);
-  });}
+  }
   async update(owner:string,id:string,revision:number,draft:BankDraft){const result=await this.pool.query('UPDATE app.bank_questions SET payload=$4,revision=revision+1 WHERE id=$1 AND owner=$2 AND revision=$3 RETURNING *',[id,owner,revision,JSON.stringify(draft)]);if(result.rows[0])return this.view(result.rows[0]);const existing=await this.pool.query('SELECT 1 FROM app.bank_questions WHERE id=$1 AND owner=$2',[id,owner]);if(!existing.rows.length)throw new NotFoundException('题目不存在。');throw new ConflictException('题目已改变，请重新读取后编辑。');}
   async remove(owner:string,id:string){const result=await this.pool.query('DELETE FROM app.bank_questions WHERE id=$1 AND owner=$2',[id,owner]);if(!result.rowCount)throw new NotFoundException('题目不存在或不可删除。');return{deleted:true};}
   private async insertImported(client:PoolClient,owner:string,slug:string,region:'cn'|'com',draft:BankDraft){

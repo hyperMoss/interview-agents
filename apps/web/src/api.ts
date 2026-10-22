@@ -4,6 +4,7 @@ import { modelSettingsSchema,modelProfileSchema,modelListSchema,modelProbeSchema
 import { planningOptionsSchema,planSchema,replanSchema } from '../../../packages/contracts/src/planning';
 import { bankListSchema,bankQuestionSchema,bankDraftSchema,bankImportResultSchema } from '../../../packages/contracts/src/bank';
 import { searchSettingsSchema,searchProfileSchema,searchDraftSchema,searchChoiceSchema,searchProbeResultSchema } from '../../../packages/contracts/src/search';
+import { preparationRequestSchema, preparationResultSchema, savePreparationSchema, savedPreparationSchema } from '../../../packages/contracts/src/preparation';
 async function request<T>(path: string, schema: z.ZodType<T>, init?: RequestInit): Promise<T> {
   const response = await fetch(`/api/v1${path}`, { ...init, credentials: 'same-origin', headers: { ...(init?.body instanceof FormData?{}:{'content-type': 'application/json'}), ...init?.headers } });
   const body: unknown = await response.json().catch(()=>null);
@@ -15,6 +16,8 @@ async function request<T>(path: string, schema: z.ZodType<T>, init?: RequestInit
 }
 export const api = {
   identity:()=>request('/identity',z.object({ready:z.literal(true)})),
+  prepare:(body:z.infer<typeof preparationRequestSchema>)=>request('/preparations/generate',preparationResultSchema,{method:'POST',body:JSON.stringify(body)}),
+  savePreparation:(body:z.infer<typeof savePreparationSchema>)=>request('/question-bank/import/preparation',savedPreparationSchema,{method:'POST',body:JSON.stringify(body)}),
   list: () => request('/interviews', sessionListSchema),
   get: (id: string) => request(`/interviews/${id}`, sessionSchema),
   create: (input: InterviewInput,modelConnectionId:string|null=null,search:z.infer<typeof searchChoiceSchema>={kind:'off'}) => request('/interviews', sessionSchema, { method: 'POST', body: JSON.stringify({input,modelConnectionId,search}) }),

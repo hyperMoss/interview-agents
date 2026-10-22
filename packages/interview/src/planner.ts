@@ -1,12 +1,13 @@
 import type { InterviewPlan,PlanningOptions,PlanProgress } from '../../contracts/src/planning';
 
 export function emptyProgress():PlanProgress{return{elapsedSeconds:0,completed:{intro:0,qa:0,coding:0,reverse:0},qaSeconds:[]};}
+export function candidateDifficulty(options:Pick<PlanningOptions,'candidateLevel'|'round'>){return options.candidateLevel==='intern'?'easy':options.candidateLevel==='experienced'||options.round==='second'?'hard':'medium';}
 export function planInterview(options:PlanningOptions,progress:PlanProgress=emptyProgress(),availableQa:number|null=null,revision=0):InterviewPlan{
   const durationMinutes=options.round==='hr'?Math.min(30,options.durationMinutes):options.durationMinutes;
   const normalized={...options,durationMinutes};
   const codingEnabled=options.codingRequested&&options.practiceMode==='candidate'&&options.roleType==='technical'&&options.round!=='hr';
   const codingReason=!options.codingRequested?'未选择编程题':options.round==='hr'?'HR 面禁用编程题':options.practiceMode!=='candidate'?'编程题仅限求职者模式':options.roleType!=='technical'?'非技术岗不安排编程题':'从符合岗位的题库选择编程题';
-  const difficulty=options.candidateLevel==='intern'?'easy':options.candidateLevel==='experienced'||options.round==='second'?'hard':'medium';
+  const difficulty=candidateDifficulty(options);
   const totalSeconds=durationMinutes*60;
   const introSeconds=Math.min(180,totalSeconds*.2),reverseSeconds=Math.min(180,totalSeconds*.2);
   const codingSeconds=codingEnabled?Math.min({intern:600,new_grad:900,experienced:1200}[options.candidateLevel],totalSeconds*.4):0;

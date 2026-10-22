@@ -55,6 +55,30 @@ business:
       statement: 报告评估技术能力、沟通表达、综合素质，并提供结构化逐题 QA。
       acceptance: 逐题原文依据可核对，HR 技术能力为不适用，导出与页面一致。
       capabilities: [interview.practice]
+    - id: REQ-013
+      statement: 提供 JD 可在面试前生成可编辑题单，按级别与轮次匹配难度，区分岗位必备项和加分项并保留原文依据。
+      acceptance: 仅填岗位与 JD 可生成指定数量题目和答案要点；HR 与非技术岗只生成行为题；虚构 JD 依据或无效模型输出被拒绝，失败保留草稿。
+      capabilities: [interview.practice]
+    - id: REQ-014
+      statement: 预生成题目经用户选择后批量入库，可导出备题单并带入严格模式练习。
+      acceptance: 编辑后原文入库，重复保存不新增题目，越权与容量限制有效，失败整批回滚；严格练习呈现所选题面，刷新恢复标签页草稿。
+      capabilities: [interview.practice]
+    - id: REQ-015
+      statement: 算法练习按题面关键词推荐候选模式，展示匹配依据、适用边界、解题步骤与 Python 核心代码，可从编程题库带入题面。
+      acceptance: 至少覆盖十二种常见模式；无匹配明确提示，负数子数组和与加权最短路提示适用限制；题库题面和套路示例独立展示，不将通用模板称为当前题的已验证答案。
+      capabilities: [interview.practice]
+    - id: REQ-016
+      statement: 支持题面与核心代码照着跟打，逐行对照并定位首次差异，按练习对象恢复当前标签页草稿。
+      acceptance: 中文及 Unicode 字符、换行和缩进对照正确；切换模式、切换题目及刷新后可恢复，重置只清空当前对象；明确跟打一致不代表算法判题通过，不执行用户代码。
+      capabilities: [interview.practice]
+    - id: REQ-017
+      statement: 接入官方 LeetCode Hot 100 题单快照，按专题、难度、关键词与练习状态筛选，支持逐题独立写 Python、记录思路和复习状态，并可带入套路跟打。
+      acceptance: 官方元数据完整一百题并保留来源和快照日期；每题有原创学习摘要与提示，题号和 slug 唯一；不同题的代码与思路独立恢复，状态为用户自评；未覆盖模板明确提示，不能把跟打或自评称为判题通过。
+      capabilities: [interview.practice]
+    - id: REQ-018
+      statement: 提供项目内算法编程练习 skill 与确定性题单工具，共用 Hot 100 数据，可查询练习卡并导出兼容现有题库的 JSON。
+      acceptance: skill 能按题号和专题引导 Python 思路、提示、实现与复盘；工具实际查询并导出一百题，通过现有导入契约；不重复维护数据，不执行网页输入代码，不改变全局 skill 或经验库。
+      capabilities: [interview.practice]
   out_of_scope: [招聘自动筛选, 声音克隆, 实时语音面试, 向量检索, 不可信代码执行]
 capabilities:
   interview.practice: true
