@@ -9,3 +9,4 @@ test-results/
 .factory-learning/
 *.log
 .audit/
+.ci-output/

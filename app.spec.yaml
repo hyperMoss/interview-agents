@@ -99,6 +99,10 @@ business:
       statement: 启动诊断提供运行时与依赖连通性检查，页面统一加载、断网恢复和错误操作提示。
       acceptance: doctor 不输出配置密钥、不调用收费模型、不自动改环境；桌面与手机主流程可完成，失败保留输入并显式重试。
       capabilities: [core.platform]
+    - id: REQ-024
+      statement: 推送与合并请求自动验证构建、隔离数据库测试和浏览器主流程，并保留失败证据。
+      acceptance: GitHub Actions 实际完成完整回归，失败退出且上传测试结果与浏览器 trace；只使用合成资料及本地协议 fixture，不读取部署密钥或调用收费模型。
+      capabilities: [core.platform]
   out_of_scope: [招聘自动筛选, 声音克隆, 实时语音面试, 向量检索, 不可信代码执行]
 capabilities:
   interview.practice: true

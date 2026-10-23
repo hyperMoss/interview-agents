@@ -93,3 +93,10 @@ Arena 阶段：Frame → 两个结构候选 → 独立比较 → 选基线 → �
 - 最终构建与 skill 校验通过；186 项单元和数据库集成通过，Chrome 24 项通过、1 项公网导入按开关跳过。算法页面 axe 扫描 0 类明确违规、1 类人工核对结果。
 - 修复独立审阅及浏览器发现的首次记录覆盖、设置返回、长标题、禁用导航和滚动锚定吞点击问题。详情见 `docs/evidence/usability-acceptance.md` 与 `docs/evidence/usability-review.md`。
 - 没有运行用户代码或调用真实付费账号，未修改全局 skill、记忆或跨项目工厂规则。
+
+## 2026-10-23 自动回归
+
+- 体验改造形成提交 `b8c4ae5`，原有 `.npmrc` 改动保留且不纳入提交。
+- 增加 REQ-024 并同步生成上下文，新增 GitHub Actions 的构建、全部隔离数据库测试、启动诊断与 Chrome 流程。
+- 固定 Action 提交哈希，使用只读仓库权限和公开 fixture 配置，上传限定路径的验收产物，完成后清理临时数据库。
+- README 更新至最新本机回归记录，运行机制及数据边界见 `docs/continuous-verification.md`。云端结果以对应提交的 GitHub Actions 实际运行记录为准。

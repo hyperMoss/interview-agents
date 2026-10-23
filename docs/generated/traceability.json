@@ -274,5 +274,17 @@
     ],
     "acceptance": "TEST-REQ-023",
     "task": "TASK-REQ-023"
+  },
+  {
+    "requirement": "REQ-024",
+    "capabilities": [
+      "core.platform"
+    ],
+    "docs": [
+      "docs/generated/00-PROJECT-BRIEF.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "acceptance": "TEST-REQ-024",
+    "task": "TASK-REQ-024"
   }
 ]

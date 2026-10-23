@@ -2,7 +2,7 @@
 
 | 能力 | 选择 | 成熟度 | 原因 |
 |---|---|---|---|
-| core.platform | 装配 | supported | REQ-004, REQ-023, ai.text, factory baseline, jobs.async, resume.import, web.search |
+| core.platform | 装配 | supported | REQ-004, REQ-023, REQ-024, ai.text, factory baseline, jobs.async, resume.import, web.search |
 | ai.text | 装配 | supported | agent.runtime |
 | jobs.async | 装配 | supported | REQ-006, agent.runtime |
 | agent.runtime | 装配 | supported | REQ-003, REQ-005, interview.practice |

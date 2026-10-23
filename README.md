@@ -255,10 +255,15 @@ docker compose -f infra/compose.test.yaml down --volumes
 pnpm test:e2e
 ```
 
-公网 LeetCode 导入测试默认跳过，需显式设置 `RUN_PUBLIC_IMPORT=1` 才会访问上游。最新可查验记录为 **2026-10-22**，默认测试 93 项通过、58 项按环境开关跳过，Hot 100 的 4 个 Chrome 场景通过，并已验证一百题导入和重复去重。完整范围和跳过项见对应验收记录。
+公网 LeetCode 导入测试默认跳过，需显式设置 `RUN_PUBLIC_IMPORT=1` 才会访问上游。2026-10-23 的完整本机回归为 186 项单元与数据库集成通过，Chrome 24 项通过、1 项公网导入跳过。完整范围和验证边界见 [个人练习体验验收](docs/evidence/usability-acceptance.md)。
+
+[Verify 工作流](.github/workflows/verify.yml) 在推送 main、codex 分支或向 main 提交合并请求时运行，也可在 [GitHub Actions](https://github.com/hyperMoss/interview-agents/actions/workflows/verify.yml) 手动触发。它在 Ubuntu 上安装锁定依赖，使用一次性的 PostgreSQL 与 Redis，执行构建、全部数据库测试、启动诊断及 Chrome 桌面和手机流程。公网题目导入保持关闭，模型和搜索只连接本地 fixture。
+
+每次运行保存测试 JSON、应用日志、截图及失败 trace，保留 7 天。产物按文件路径明确列出，不上传环境文件。工作流只申请仓库读取权限，第三方 Action 固定到提交哈希。当前每次运行的状态以 GitHub Actions 页面为准，主分支保护规则需在仓库设置中单独启用。
 
 | 验收记录 | 覆盖范围 |
 | --- | --- |
+| [个人练习体验](docs/evidence/usability-acceptance.md) | 本机持久化、备份、资料档案、导航、编辑器、复习和历史分页。 |
 | [Hot 100](docs/evidence/hot100-acceptance.md) | 官方数据快照、独立作答、恢复、题库导入及 skill 前向试用。 |
 | [算法跟打](docs/evidence/algorithm-acceptance.md) | Python 模板边界用例、文本比较、草稿和桌面与手机交互。 |
 | [JD 备题](docs/evidence/jd-acceptance.md) | 原文依据、编辑与恢复、批量入库和严格模式带入。 |

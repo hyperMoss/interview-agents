@@ -197,6 +197,14 @@
           "capabilities": [
             "core.platform"
           ]
+        },
+        {
+          "id": "REQ-024",
+          "statement": "推送与合并请求自动验证构建、隔离数据库测试和浏览器主流程，并保留失败证据。",
+          "acceptance": "GitHub Actions 实际完成完整回归，失败退出且上传测试结果与浏览器 trace；只使用合成资料及本地协议 fixture，不读取部署密钥或调用收费模型。",
+          "capabilities": [
+            "core.platform"
+          ]
         }
       ],
       "out_of_scope": [
@@ -261,6 +269,7 @@
       "reasons": [
         "REQ-004",
         "REQ-023",
+        "REQ-024",
         "ai.text",
         "factory baseline",
         "jobs.async",

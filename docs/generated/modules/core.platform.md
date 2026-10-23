@@ -2,7 +2,7 @@
 
 身份、资源归属、配置和健康检查
 
-当前成熟度：supported；选择原因：REQ-004, REQ-023, ai.text, factory baseline, jobs.async, resume.import, web.search。
+当前成熟度：supported；选择原因：REQ-004, REQ-023, REQ-024, ai.text, factory baseline, jobs.async, resume.import, web.search。
 
 依赖：无。
 
