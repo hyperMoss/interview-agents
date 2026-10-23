@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { Body, Controller, Delete, Get, Inject, Module, Param, Post, Req, BadRequestException,Patch,UploadedFile,UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Inject, Module, Param, Post, Req, Query, BadRequestException,Patch,UploadedFile,UseInterceptors } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { Request } from 'express';
 import { json } from 'express';
@@ -18,6 +18,7 @@ import { bankCreateSchema,bankUpdateSchema,leetcodeImportSchema,leetcodeBatchSch
 import { searchDraftSchema,searchProbeSchema } from '../../../packages/contracts/src/search';
 import { previewPlanSchema,replanSchema } from '../../../packages/contracts/src/planning';
 import { preparationRequestSchema, savePreparationSchema } from '../../../packages/contracts/src/preparation';
+import { interviewHistoryQuerySchema } from '../../../packages/contracts/src/history';
 await checkReferenceRuntime();
 const config = readApiConfig();
 function owner(req: Request) { return z.string().parse(req.headers['x-owner-id']); }
@@ -34,6 +35,11 @@ class InterviewController {
   @Get('capabilities') capabilities() { return { installed: runtimeCapabilities, modelMode: config.MODEL_MODE }; }
   @Get('identity') identity(){return{ready:true};}
   @Get('interviews') list(@Req() req: Request) { return this.service.list(owner(req)); }
+  @Get('interviews/history') history(@Req() req: Request, @Query() query: unknown) {
+    const result = interviewHistoryQuerySchema.safeParse(query);
+    if (!result.success) throw new BadRequestException('无效的历史筛选或分页参数。');
+    return this.service.history(owner(req), result.data);
+  }
   @Post('interviews') create(@Req() req: Request, @Body() body: unknown) { const input=parse(startInterviewSchema,body);return this.service.create(owner(req),input.input,input.modelConnectionId,input.search); }
   @Post('interviews/plan') preview(@Req() req:Request,@Body() body:unknown){return this.service.previewPlan(owner(req),parse(previewPlanSchema,body).options);}
   @Post('interviews/:id/replan') replan(@Req() req:Request,@Param('id') id:string,@Body() body:unknown){return this.service.replan(owner(req),uuid(id),parse(replanSchema,body));}

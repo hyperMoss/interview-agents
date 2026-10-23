@@ -1,9 +1,10 @@
+import { settingsTab, nextStep, confirmDelete } from './ui-helpers';
 import { test,expect,type Page } from '@playwright/test';
 import { input,answer } from '../fixtures';
 import { startProviderFixture } from '../provider-fixture';
 test('browser: intake → interview → report → reload/history → deletion, with mobile layout',async({page})=>{
   const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
-  await page.goto('/');
+  await page.goto('/#/interviews/new');
   await expect(page.getByRole('heading',{name:'准备练习资料'})).toBeVisible();
   await page.getByRole('button',{name:'填入示例'}).click();
   await configureShortStrict(page);
@@ -13,12 +14,25 @@ test('browser: intake → interview → report → reload/history → deletion, 
   await expect(page.getByRole('heading',{name:'练习完成，可以开始复盘了。'})).toBeVisible({timeout:20000});
   await expect(page.getByLabel('练习报告')).toContainText('规则演示');
   await page.screenshot({path:'docs/evidence/screenshots/report-desktop.png',fullPage:true});
+  await page.getByRole('button',{name:/加入第 \d 题复习/}).first().click();
+  await expect(page.getByRole('status')).toContainText('已加入面试复习清单');
+  await page.getByRole('button',{name:'面试复习清单',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'面试复习清单',exact:true})).toBeVisible();
+  await expect(page.locator('.review-card')).toHaveCount(1);
+  await page.getByRole('button',{name:'标记已复习',exact:true}).click();
+  await page.getByRole('button',{name:'查看已复习',exact:true}).click();
+  await page.getByRole('button',{name:'回看原始 QA',exact:true}).click();
+  await expect(page.getByLabel('练习报告')).toBeVisible();
   await page.reload();await expect(page.getByRole('heading',{name:'练习完成，可以开始复盘了。'})).toBeVisible();
   const download=page.waitForEvent('download');await page.getByRole('button',{name:'导出本次记录'}).click();expect((await download).suggestedFilename()).toMatch(/^interview-/);
   await page.setViewportSize({width:390,height:844});await page.evaluate(()=>window.scrollTo(0,0));await expect(page.locator('.sidebar')).toHaveCSS('position','static');await page.screenshot({path:'docs/evidence/screenshots/report-mobile.png',fullPage:true});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
-  await page.getByRole('button',{name:'删除此练习及简历资料'}).click();
-  await expect(page.getByRole('heading',{name:'准备练习资料'})).toBeVisible();expect(errors).toEqual([]);
+  await page.getByRole('button',{name:'删除此练习及简历资料'}).click();await confirmDelete(page);
+  await expect(page.getByRole('heading',{name:'准备练习资料'})).toBeVisible();
+  await page.getByRole('button',{name:'面试复习清单',exact:true}).click();
+  await expect(page.locator('.review-card')).toHaveCount(0);
+  await page.getByRole('button',{name:'查看已复习',exact:true}).click();
+  await expect(page.locator('.review-card')).toHaveCount(0);expect(errors).toEqual([]);
 });
 test('HTTP boundary: Origin, signed cookie, cross browser ownership and cancellation',async({browser})=>{
   const a=await browser.newContext();const b=await browser.newContext();
@@ -32,7 +46,7 @@ test('HTTP boundary: Origin, signed cookie, cross browser ownership and cancella
 test('model settings actually enable live interview, export excludes keys, clear restores defaults',async({page})=>{
   const provider=await startProviderFixture();
   try{
-    await page.goto('/');await page.getByRole('tab',{name:'模型设置',exact:true}).click();
+    await page.goto('/#/interviews/new');await settingsTab(page, '模型设置');
     const panel=page.locator('section[aria-labelledby="model-panel-title"]');
     await panel.getByLabel('API 根地址').fill(provider.baseUrl);await panel.getByLabel('API Key',{exact:true}).fill('fixture-alpha-key');
     await panel.getByRole('button',{name:'读取模型列表'}).click();await expect(panel.getByRole('status')).toContainText('模型列表已加载');
@@ -51,21 +65,21 @@ test('model settings actually enable live interview, export excludes keys, clear
     await page.evaluate(()=>window.scrollTo(0,0));await expect(page.getByRole('navigation',{name:'练习历史'})).toContainText('已完成');
     await page.screenshot({path:'docs/evidence/screenshots/live-report.png',fullPage:true});
     await page.getByRole('button',{name:'用相同资料再练一次'}).click();await expect(page.getByLabel('目标岗位')).toHaveValue('Web 全栈工程师');await expect(page.getByLabel('简历与项目经历')).not.toHaveValue('');await page.getByRole('navigation',{name:'练习历史'}).getByRole('button').click();await expect(page.getByLabel('练习报告')).toBeVisible();
-    await page.getByRole('tab',{name:'模型设置',exact:true}).click();await page.getByRole('button',{name:'清除连接并恢复默认'}).click();await expect(page.locator('section[aria-labelledby="model-panel-title"]')).not.toBeVisible();
-    await page.getByRole('button',{name:'删除此练习及简历资料'}).click();await expect(page.locator('.mode-indicator')).toContainText('规则演示');
+    await settingsTab(page, '模型设置');await page.getByRole('button',{name:'清除连接并恢复默认'}).click();await page.getByRole('button',{name:'确认清除',exact:true}).click();await expect(page.locator('section[aria-labelledby="model-panel-title"]')).not.toBeVisible();
+    await page.getByRole('button',{name:'删除此练习及简历资料'}).click();await confirmDelete(page);await expect(page.locator('.mode-indicator')).toContainText('规则演示');
   }finally{await provider.close();}
 });
 test('browser preserves intake/answer drafts and recovers failed generation using saved answer',async({page})=>{
   const provider=await startProviderFixture();
   try{
-    await page.goto('/');await page.getByRole('button',{name:'填入示例'}).click();await page.reload();await expect(page.getByLabel('目标岗位')).toHaveValue('Web 全栈工程师');
-    await page.getByRole('tab',{name:'模型设置',exact:true}).click();const panel=page.locator('section[aria-labelledby="model-panel-title"]');
+    await page.goto('/#/interviews/new');await page.getByRole('button',{name:'填入示例'}).click();await page.reload();await expect(page.getByLabel('目标岗位')).toHaveValue('Web 全栈工程师');
+    await settingsTab(page, '模型设置');const panel=page.locator('section[aria-labelledby="model-panel-title"]');
     await panel.getByLabel('API 根地址').fill(provider.baseUrl);await panel.getByLabel('API Key',{exact:true}).fill('fixture-alpha-key');await panel.getByLabel('模型名',{exact:true}).fill('coach-alpha');await panel.getByRole('button',{name:'保存并启用'}).click();await expect(panel).not.toBeVisible();
     await configureShortStrict(page);await page.getByRole('button',{name:'开始练习',exact:true}).click();await expect(page.getByLabel('你的回答')).toBeVisible({timeout:20000});
     await page.getByLabel('你的回答').fill(answer);await page.reload();await expect(page.getByLabel('你的回答')).toHaveValue(answer);
     provider.state.failure=true;await page.getByRole('button',{name:'提交回答',exact:true}).click();await expect(page.getByRole('button',{name:'用当前模型重试本轮'})).toBeVisible({timeout:25000});await expect(page.locator('.recovery-panel')).toContainText(answer);
     provider.state.failure=false;await page.getByRole('button',{name:'用当前模型重试本轮'}).click();await expect(page.locator('.question-label')).toContainText('第 2 题',{timeout:20000});await expect(page.locator('.feedback')).toHaveCount(1);
-    await page.getByRole('button',{name:'取消练习',exact:true}).click();await page.getByRole('tab',{name:'模型设置',exact:true}).click();await page.getByRole('button',{name:'清除连接并恢复默认'}).click();await page.getByRole('button',{name:'删除此练习及简历资料'}).click();
+    await page.getByRole('button',{name:'取消练习',exact:true}).click();await page.getByRole('button',{name:'确认取消',exact:true}).click();await settingsTab(page, '模型设置');await page.getByRole('button',{name:'清除连接并恢复默认'}).click();await page.getByRole('button',{name:'确认清除',exact:true}).click();await page.getByRole('button',{name:'删除此练习及简历资料'}).click();await confirmDelete(page);
   }finally{await provider.close();}
 });
 
@@ -74,8 +88,10 @@ async function choose(page:Page,name:string,label:string){
   await page.getByRole('option',{name:label,exact:true}).click();
 }
 async function configureShortStrict(page:Page){
+  await nextStep(page);
   await page.getByLabel('面试时长（分钟）',{exact:true}).fill('10');
   await choose(page,'题库使用模式','严格，保持原题');
+  await nextStep(page);
   await expect(page.getByRole('button',{name:'开始练习',exact:true})).toBeEnabled();
 }
 async function answerUntilReport(page:Page){

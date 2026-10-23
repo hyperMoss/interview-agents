@@ -1,5 +1,5 @@
 import { useEffect,useRef,useState } from 'react';
-import { Alert,Button,Checkbox,ConfigProvider,Input,Select,Spin } from 'antd';
+import { Alert,Button,Checkbox,ConfigProvider,Input,Popconfirm,Select,Spin } from 'antd';
 import { useQuery,useQueryClient } from '@tanstack/react-query';
 import { api } from './api';
 import { searchDraftSchema,searchProviderSchema } from '../../../packages/contracts/src/search';
@@ -10,7 +10,9 @@ export function SearchPanel({onClose}:{onClose:()=>void}){
   const settings=useQuery({queryKey:['search-settings'],queryFn:api.searchSettings,enabled:identity.isSuccess});
   const [provider,setProvider]=useState(()=>settings.data?.active?.provider??'tavily'),[baseUrl,setBaseUrl]=useState(()=>settings.data?.active?.baseUrl??endpoints.tavily),[key,setKey]=useState(''),[remember,setRemember]=useState(false),[query,setQuery]=useState('后端岗位公开资料'),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
   useEffect(()=>()=>{version.current++;},[]);
-  function reset(){version.current++;setMessage('');setError('');}
+  const edited=useRef(false);
+  useEffect(()=>{if(settings.data&&!edited.current){setProvider(settings.data.active?.provider??'tavily');setBaseUrl(settings.data.active?.baseUrl??endpoints.tavily);setRemember(settings.data.active?.remember??false);}},[settings.data]);
+  function reset(){edited.current=true;version.current++;setMessage('');setError('');}
   async function run(action:'save'|'probe'){
     const draft=searchDraftSchema.safeParse({provider,baseUrl,apiKey:key,remember});if(!draft.success){setError('请检查搜索接口地址与密钥。');return;}
     const current=version.current;setBusy(true);setError('');try{if(action==='save'){await api.saveSearch(draft.data);setKey('');await cache.invalidateQueries({queryKey:['search-settings']});onClose();}else{const result=await api.probeSearch(draft.data,query);if(current===version.current)setMessage(`搜索连接成功，返回 ${result.sources.length} 条来源。`);}}catch(error){if(current===version.current)setError(error instanceof Error?error.message:'搜索请求失败。');}finally{if(current===version.current)setBusy(false);}
@@ -36,6 +38,6 @@ export function SearchPanel({onClose}:{onClose:()=>void}){
       <div className="panel-actions"><Button loading={busy} onClick={()=>void run('probe')}>测试搜索</Button><Button type="primary" loading={busy} onClick={()=>void run('save')}>保存搜索连接</Button></div>
     </ConfigProvider>
     {message?<div role="status"><Alert type="success" showIcon message={message} /></div>:null}{error?<Alert type="error" showIcon message={error} />:null}
-    <div className="panel-footer"><Button type="text" danger disabled={busy} loading={busy} onClick={()=>void clear()}>清除搜索连接</Button><p className="storage-note">清除不会删除历史面试已经取得的来源资料。尚未取得资料的旧任务会提示连接失效。</p></div>
+    <div className="panel-footer"><Popconfirm title="清除搜索连接？" description="已取得的历史来源保留，尚未搜索的任务可能需要重新配置。" okText="确认清除" cancelText="保留连接" onConfirm={clear}><Button type="text" danger disabled={busy} loading={busy}>清除搜索连接</Button></Popconfirm><p className="storage-note">清除不会删除历史面试已经取得的来源资料。尚未取得资料的旧任务会提示连接失效。</p></div>
   </section>;
 }

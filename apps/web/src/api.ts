@@ -5,6 +5,7 @@ import { planningOptionsSchema,planSchema,replanSchema } from '../../../packages
 import { bankListSchema,bankQuestionSchema,bankDraftSchema,bankImportResultSchema } from '../../../packages/contracts/src/bank';
 import { searchSettingsSchema,searchProfileSchema,searchDraftSchema,searchChoiceSchema,searchProbeResultSchema } from '../../../packages/contracts/src/search';
 import { preparationRequestSchema, preparationResultSchema, savePreparationSchema, savedPreparationSchema } from '../../../packages/contracts/src/preparation';
+import { interviewHistoryPageSchema, type InterviewHistoryQuery } from '../../../packages/contracts/src/history';
 async function request<T>(path: string, schema: z.ZodType<T>, init?: RequestInit): Promise<T> {
   const response = await fetch(`/api/v1${path}`, { ...init, credentials: 'same-origin', headers: { ...(init?.body instanceof FormData?{}:{'content-type': 'application/json'}), ...init?.headers } });
   const body: unknown = await response.json().catch(()=>null);
@@ -19,6 +20,11 @@ export const api = {
   prepare:(body:z.infer<typeof preparationRequestSchema>)=>request('/preparations/generate',preparationResultSchema,{method:'POST',body:JSON.stringify(body)}),
   savePreparation:(body:z.infer<typeof savePreparationSchema>)=>request('/question-bank/import/preparation',savedPreparationSchema,{method:'POST',body:JSON.stringify(body)}),
   list: () => request('/interviews', sessionListSchema),
+  history: (input: Partial<InterviewHistoryQuery> = {}) => {
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(input)) if (value !== undefined && value !== '') query.set(key, String(value));
+    return request(`/interviews/history?${query}`, interviewHistoryPageSchema);
+  },
   get: (id: string) => request(`/interviews/${id}`, sessionSchema),
   create: (input: InterviewInput,modelConnectionId:string|null=null,search:z.infer<typeof searchChoiceSchema>={kind:'off'}) => request('/interviews', sessionSchema, { method: 'POST', body: JSON.stringify({input,modelConnectionId,search}) }),
   answer: (id: string, input: { answer: string; revision: number; requestId: string }) => request(`/interviews/${id}/answers`, sessionSchema, { method: 'POST', body: JSON.stringify(input) }),

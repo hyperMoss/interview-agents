@@ -1,0 +1,86 @@
+{
+  "success": true,
+  "data": {
+    "axeVersion": "4.12.1",
+    "counts": {
+      "inapplicable": 31,
+      "incomplete": 1,
+      "passes": 29,
+      "violations": 0
+    },
+    "incomplete": [
+      {
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=axeAPI",
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodeCount": 5,
+        "nodes": [
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element",
+            "html": "<div class=\"ant-select-content ant-select-content-has-value\" title=\"全部状态\">全部状态<input id=\"_r_1_\" aria-label=\"筛选练习状态\" readonly=\"\" autocomplete=\"new-password\" class=\"ant-select-input\" role=\"combobox\" aria-expanded=\"false\" aria-haspopup=\"listbox\" aria-autocomplete=\"list\" type=\"text\" value=\"\"></div>",
+            "target": [
+              ".history-filter > .ant-select-content.ant-select-content-has-value[title=\"全部状态\"]"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element",
+            "html": "<div class=\"ant-select-content ant-select-content-has-value\" title=\"全部专题\">全部专题<input id=\"_r_7_\" aria-label=\"Hot 100 专题\" readonly=\"\" autocomplete=\"new-password\" class=\"ant-select-input\" role=\"combobox\" aria-expanded=\"false\" aria-haspopup=\"listbox\" aria-autocomplete=\"list\" type=\"text\" value=\"\"></div>",
+            "target": [
+              "div[title=\"全部专题\"]"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element",
+            "html": "<div class=\"ant-select-content ant-select-content-has-value\" title=\"全部难度\">全部难度<input id=\"_r_9_\" aria-label=\"Hot 100 难度\" readonly=\"\" autocomplete=\"new-password\" class=\"ant-select-input\" role=\"combobox\" aria-expanded=\"false\" aria-haspopup=\"listbox\" aria-autocomplete=\"list\" type=\"text\" value=\"\"></div>",
+            "target": [
+              "div[title=\"全部难度\"]"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element",
+            "html": "<div class=\"ant-select-content ant-select-content-has-value\" title=\"全部状态\">",
+            "target": [
+              ".ant-select.ant-select-outlined.ant-select-css-var:nth-child(3) > .ant-select-content.ant-select-content-has-value[title=\"全部状态\"]"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element content is too short to determine if it is actual text content",
+            "html": "<div class=\"cm-gutterElement cm-activeLineGutter\" style=\"height: 14px;\">1</div>",
+            "target": [
+              ".cm-activeLineGutter"
+            ]
+          }
+        ],
+        "tags": [
+          "cat.color",
+          "wcag2aa",
+          "wcag143",
+          "TTv5",
+          "TT13.c",
+          "EN-301-549",
+          "EN-9.1.4.3",
+          "ACT",
+          "RGAAv4",
+          "RGAA-3.2.1"
+        ]
+      }
+    ],
+    "lifecycle": {
+      "effectiveLaunch": {
+        "browserLaunched": true,
+        "engine": "chrome",
+        "launchHash": 11677035664275012000
+      },
+      "launched": false,
+      "relaunchedBrowser": false,
+      "restartedBackground": false,
+      "restoreStatus": "not_configured",
+      "reused": true,
+      "saveStatus": "not_attempted"
+    },
+    "url": "http://localhost:5173/#/algorithms/hot100/1",
+    "violations": []
+  },
+  "error": null
+}

@@ -19,6 +19,21 @@ import { planInterview,emptyProgress } from '../../../packages/interview/src/pla
 import { eligibleQa,eligibleCoding,questionDirective } from '../../../packages/interview/src/questions';
 import { acceptedProgress,pinCurrentQuestion } from '../../../packages/interview/src/progress';
 import { z } from 'zod';
+import { interviewHistoryPageSchema, type InterviewHistoryQuery, type InterviewHistoryPage } from '../../../packages/contracts/src/history';
+
+const historyCursorSchema = z.strictObject({
+  version: z.literal(1), createdAt: z.iso.datetime({ precision: 6 }), id: z.uuid(),
+});
+function historyCursor(value: string) {
+  try {
+    if (value.length > 512 || !/^[A-Za-z0-9_-]+$/.test(value)) throw new Error('Invalid encoding');
+    const decoded = Buffer.from(value, 'base64url');
+    if (decoded.toString('base64url') !== value) throw new Error('Non-canonical encoding');
+    return historyCursorSchema.parse(JSON.parse(decoded.toString('utf8')));
+  } catch {
+    throw new BadRequestException('无效的历史分页位置，请重新加载历史。');
+  }
+}
 
 export class InterviewService {
   readonly database;
@@ -40,6 +55,30 @@ export class InterviewService {
   async list(owner: string) {
     const rows = await this.database.db.select().from(interviews).where(eq(interviews.owner, owner)).orderBy(desc(interviews.createdAt)).limit(50);
     return rows.map(row => sessionSchema.parse(row.state));
+  }
+  async history(owner: string, query: InterviewHistoryQuery): Promise<InterviewHistoryPage> {
+    const cursor = query.cursor ? historyCursor(query.cursor) : null;
+    const filters = [eq(interviews.owner, owner)];
+    if (query.role) filters.push(sql`position(lower(${query.role}) in lower(${interviews.state}->>'role')) > 0`);
+    if (query.status) filters.push(sql`${interviews.state}->>'status' = ${query.status}`);
+    if (cursor) filters.push(sql`(${interviews.createdAt}, ${interviews.id}) < (${cursor.createdAt}::timestamptz, ${cursor.id}::uuid)`);
+    const rows = await this.database.db.select({
+      id: interviews.id,
+      role: sql<string>`${interviews.state}->>'role'`,
+      status: sql<string>`${interviews.state}->>'status'`,
+      createdAt: sql<string>`to_char(${interviews.createdAt} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`,
+      turnCount: sql<number>`jsonb_array_length(${interviews.state}->'turns')`,
+      questionCount: sql<number>`(${interviews.state}->'input'->>'questionCount')::int`,
+      modelMode: sql<string>`${interviews.state}->>'modelMode'`,
+      overallScore: sql<number | null>`(${interviews.state}->'report'->>'overallScore')::float8`,
+    }).from(interviews).where(and(...filters))
+      .orderBy(desc(interviews.createdAt), desc(interviews.id)).limit(query.limit + 1);
+    const items = rows.slice(0, query.limit);
+    const last = items.at(-1);
+    const nextCursor = rows.length > query.limit && last
+      ? Buffer.from(JSON.stringify({ version: 1, createdAt: last.createdAt, id: last.id })).toString('base64url')
+      : null;
+    return interviewHistoryPageSchema.parse({ items, nextCursor });
   }
   async get(owner: string, id: string) {
     const [row] = await this.database.db.select().from(interviews).where(and(eq(interviews.id, id), eq(interviews.owner, owner)));

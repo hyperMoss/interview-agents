@@ -79,6 +79,26 @@ business:
       statement: 提供项目内算法编程练习 skill 与确定性题单工具，共用 Hot 100 数据，可查询练习卡并导出兼容现有题库的 JSON。
       acceptance: skill 能按题号和专题引导 Python 思路、提示、实现与复盘；工具实际查询并导出一百题，通过现有导入契约；不重复维护数据，不执行网页输入代码，不改变全局 skill 或经验库。
       capabilities: [interview.practice]
+    - id: REQ-019
+      statement: 本机长期保存资料、备题、答案与算法草稿，迁移旧标签页数据，提供保存状态、多标签页冲突保护及脱敏备份恢复。
+      acceptance: 关闭重开后恢复，损坏条目不影响其他草稿；冲突保留双方内容；备份默认排除个人资料且永不包含凭据，恢复失败保持原数据。
+      capabilities: [interview.practice]
+    - id: REQ-020
+      statement: 提供首页、可恢复导航、岗位资料档案与分步面试准备，设置后返回原任务。
+      acceptance: 前进后退与刷新回到原页面；资料可保存复制切换删除，校验定位字段；JD 备题与题库带入不丢输入。
+      capabilities: [interview.practice]
+    - id: REQ-021
+      statement: 算法练习提供 Python 编辑器、收藏、专题进度与按自评安排复习，套路跟打后可返回原题。
+      acceptance: 复习间隔为一三七十四天，需要再练安排次日；下一题遵循筛选和到期优先；编辑器可键盘退出，跟打不自动补全，不执行用户代码。
+      capabilities: [interview.practice]
+    - id: REQ-022
+      statement: 面试报告的重点关联 QA 并可加入复习清单，历史支持轻量分页搜索，危险操作确认影响范围。
+      acceptance: 超过五十场仍可找到记录，分页稳定且隔离归属；摘要不携带简历或答案；报告复习可回看依据；删除同步清理本机答案及关联复习，独立岗位档案保留。
+      capabilities: [interview.practice]
+    - id: REQ-023
+      statement: 启动诊断提供运行时与依赖连通性检查，页面统一加载、断网恢复和错误操作提示。
+      acceptance: doctor 不输出配置密钥、不调用收费模型、不自动改环境；桌面与手机主流程可完成，失败保留输入并显式重试。
+      capabilities: [core.platform]
   out_of_scope: [招聘自动筛选, 声音克隆, 实时语音面试, 向量检索, 不可信代码执行]
 capabilities:
   interview.practice: true

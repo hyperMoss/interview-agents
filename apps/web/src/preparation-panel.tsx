@@ -124,7 +124,7 @@ export function PreparationPanel({ onUse, onModelSettings, seed }: { onUse: (pra
       {generate.isPending ? <p role="status">正在生成。输入已保留，成功后替换已有题单。</p> : null}
       {validation || generate.error || settings.error ? <p role="alert" className="error">{validation || generate.error?.message || settings.error?.message}</p> : null}
     </form>
-    {storageFailed ? <p role="alert" className="error">当前标签页无法保存草稿，请先导出题单再刷新。</p> : null}
+    {storageFailed ? <p role="alert" className="error">当前无法保存到本机，请先导出题单并检查数据管理。</p> : null}
     {notice ? <p role="status">{notice}</p> : null}
     {draft ? <div className="preparation-result">
       <div className="form-heading"><h2>{draft.input.role} · {draft.cards.length} 道备题</h2><Button disabled={busy} onClick={download}>导出备题单</Button></div>
@@ -139,6 +139,6 @@ export function PreparationPanel({ onUse, onModelSettings, seed }: { onUse: (pra
         <details><summary>{card.savedId ? '回答要点与追问' : '回答要点与追问，可编辑'}</summary><label htmlFor={`prep-answer-${index}`}>题目 {index + 1} 回答要点<Input.TextArea id={`prep-answer-${index}`} maxLength={8000} rows={6} value={card.draft.expectedAnswer} disabled={busy} readOnly={Boolean(card.savedId)} onChange={event => changeCard(index, { expectedAnswer: event.target.value })} /></label></details>
       </article>)}
       <div className="preparation-actions"><p>保存后可在题库继续编辑。带入练习会选用严格模式，并保留已有简历草稿。实际题量仍按时长与环节估算。</p><div className="panel-actions"><Button aria-label="保存所选到题库" loading={save.isPending} disabled={busy || !selected.length || selected.some(card => !bankDraftSchema.safeParse(card.draft).success)} onClick={() => save.mutate(false)}>保存所选到题库</Button><Button type="primary" aria-label="保存并带入练习" loading={save.isPending} disabled={busy || !selected.length || selected.some(card => !bankDraftSchema.safeParse(card.draft).success)} onClick={() => save.mutate(true)}>保存并带入练习</Button></div>{save.error ? <p role="alert" className="error">{save.error.message}。未确认成功时可重试相同题目。</p> : null}</div>
-    </div> : <p className="context-note">题单会保留在当前标签页。题目保存后属于当前浏览器身份。</p>}
+    </div> : <p className="context-note">题单会自动保存在本机。题目保存后属于当前浏览器身份。</p>}
   </section>;
 }

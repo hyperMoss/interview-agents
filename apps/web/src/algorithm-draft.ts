@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { defaultAlgorithmPattern, getAlgorithmPattern } from '../../../packages/interview/src/algorithm-patterns';
+import { readDraftValue } from './storage';
 
 const originSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('example'), title: z.string().max(200), patternId: z.string().max(80) }),
@@ -39,7 +40,7 @@ export function defaultAlgorithmDraft(): AlgorithmDraft {
 
 export function restoreAlgorithmDraft() {
   let raw: string | null;
-  try { raw = sessionStorage.getItem(algorithmDraftKey); }
+  try { raw = readDraftValue(algorithmDraftKey); }
   catch { return { draft: defaultAlgorithmDraft(), warning: '当前浏览器无法读取草稿，刷新前请复制需要保留的练习。' }; }
   if (!raw) return { draft: defaultAlgorithmDraft(), warning: '' };
   try {

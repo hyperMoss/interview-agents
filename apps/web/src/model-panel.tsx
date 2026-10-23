@@ -1,5 +1,5 @@
 import { useEffect,useRef,useState } from 'react';
-import { Alert,Button,Checkbox,ConfigProvider,Input,Select,Spin } from 'antd';
+import { Alert,Button,Checkbox,ConfigProvider,Input,Popconfirm,Select,Spin } from 'antd';
 import { useMutation,useQueryClient,useQuery } from '@tanstack/react-query';
 import { api } from './api';
 import { modelAccessSchema,modelDraftSchema } from '../../../packages/contracts/src/models';
@@ -9,10 +9,11 @@ export function ModelPanel({onClose}:{onClose:()=>void}){
   const settings=useQuery({queryKey:['model-settings'],queryFn:api.modelSettings,enabled:identity.isSuccess});
   const [baseUrl,setBaseUrl]=useState(()=>settings.data?.active?.baseUrl??'');const [apiKey,setApiKey]=useState('');const [model,setModel]=useState(()=>settings.data?.active?.model??'');
   const [remember,setRemember]=useState(false);const [models,setModels]=useState<string[]>([]);const [probe,setProbe]=useState('');const [error,setError]=useState('');const [busy,setBusy]=useState<'list'|'probe'|null>(null);const version=useRef(0);
-  const [saving,setSaving]=useState(false);
+  const [saving,setSaving]=useState(false);const edited=useRef(false);
+  useEffect(()=>{if(settings.data&&!edited.current){setBaseUrl(settings.data.active?.baseUrl??'');setModel(settings.data.active?.model??'');setRemember(settings.data.active?.remember??false);}},[settings.data]);
   const clear=useMutation({mutationFn:api.clearModel,onSuccess:async()=>{setApiKey('');await cache.invalidateQueries({queryKey:['model-settings']});onClose();},onError:error=>setError(error.message)});
   useEffect(()=>()=>{version.current++;},[]);
-  function invalidate(){version.current++;setModels([]);setProbe('');setError('');setBusy(null);}
+  function invalidate(){edited.current=true;version.current++;setModels([]);setProbe('');setError('');setBusy(null);}
   async function list(){const draft=modelAccessSchema.safeParse({baseUrl,apiKey});if(!draft.success){setError('请先填写有效的 API 根地址与密钥（本地服务可留空）。');return;}
     const current=version.current;setBusy('list');setError('');try{const result=await api.modelList(draft.data);if(current===version.current){setModels(result.models);setProbe(result.models.length?'模型列表已加载，也可以手动填写。':'列表为空，请手动填写模型名。');}}catch(error){if(current===version.current)setError(error instanceof Error?error.message:'读取列表失败。');}finally{if(current===version.current)setBusy(null);}
   }
@@ -33,10 +34,10 @@ export function ModelPanel({onClose}:{onClose:()=>void}){
         <label htmlFor="model-base-url">API 根地址</label>
         <Input id="model-base-url" required type="url" value={baseUrl} placeholder="https://你的模型服务/v1" onChange={event=>{invalidate();setApiKey('');setBaseUrl(event.target.value);}} />
         <label htmlFor="model-api-key">API Key</label>
-        <Input.Password id="model-api-key" value={apiKey} autoComplete="off" placeholder="经业务 API 转交 Agent 与所选模型接口" onChange={event=>{invalidate();setApiKey(event.target.value);}} />
+        <Input.Password id="model-api-key" value={apiKey} autoComplete="off" placeholder="填写服务商提供的密钥" onChange={event=>{invalidate();setApiKey(event.target.value);}} />
         <label htmlFor="model-name">模型名</label>
-        <Input id="model-name" required value={model} placeholder="手动填写，或读取模型列表" onChange={event=>{version.current++;setProbe('');setError('');setBusy(null);setModel(event.target.value);}} />
-        {models.length?<><label htmlFor="model-candidates">已读取的模型</label><Select id="model-candidates" style={{width:'100%'}} showSearch value={models.includes(model)?model:undefined} placeholder="选择模型，或在上方手动填写" options={models.map(value=>({label:value,value}))} onChange={value=>{version.current++;setProbe('');setError('');setBusy(null);setModel(value);}} /></>:null}
+        <Input id="model-name" required value={model} placeholder="手动填写，或读取模型列表" onChange={event=>{edited.current=true;version.current++;setProbe('');setError('');setBusy(null);setModel(event.target.value);}} />
+        {models.length?<><label htmlFor="model-candidates">已读取的模型</label><Select id="model-candidates" style={{width:'100%'}} showSearch value={models.includes(model)?model:undefined} placeholder="选择模型，或在上方手动填写" options={models.map(value=>({label:value,value}))} onChange={value=>{edited.current=true;version.current++;setProbe('');setError('');setBusy(null);setModel(value);}} /></>:null}
         <div className="preset-actions"><Button disabled={!enabled||pending||Boolean(busy)} loading={busy==='list'} onClick={()=>void list()}>{busy==='list'?'读取中…':'读取模型列表'}</Button></div>
         <Checkbox checked={remember} onChange={event=>setRemember(event.target.checked)}>保留此连接 30 天</Checkbox>
         <p className="storage-note">默认临时连接 24 小时。密钥在 Agent 数据库加密保存，不写入浏览器存储、面试记录或导出文件。恢复默认会删除当前身份保存的全部自带连接。</p>
@@ -45,6 +46,6 @@ export function ModelPanel({onClose}:{onClose:()=>void}){
       </ConfigProvider>
     </form>
     {probe?<div role="status"><Alert type="success" showIcon message={probe} /></div>:null}{error?<Alert type="error" showIcon message={error} />:null}
-    <div className="panel-footer"><Button type="text" danger disabled={pending} loading={clear.isPending} onClick={()=>clear.mutate()}>清除连接并恢复默认</Button></div>
+    <div className="panel-footer"><Popconfirm title="清除当前模型连接？" description="删除保存的自带连接并恢复默认。正在使用旧连接的任务可能需要重新配置后重试。" okText="确认清除" cancelText="保留连接" onConfirm={()=>clear.mutateAsync()}><Button type="text" danger disabled={pending} loading={clear.isPending}>清除连接并恢复默认</Button></Popconfirm></div>
   </section>;
 }

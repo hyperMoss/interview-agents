@@ -1,3 +1,4 @@
+import { nextStep, confirmDelete } from './ui-helpers';
 import { test, expect, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { startProviderFixture } from '../provider-fixture';
@@ -14,7 +15,7 @@ async function openPreparation(page:Page){
   await page.getByLabel('预生成题量',{exact:true}).fill('3');
 }
 test('JD-only preview, edits, selected idempotent save, refresh, export and strict practice',async({page})=>{
-  await page.goto('/');await page.getByRole('button',{name:'填入示例',exact:true}).click();
+  await page.goto('/#/interviews/new');await page.getByRole('button',{name:'填入示例',exact:true}).click();
   const resume='固定测试经历：负责前端页面和接口，使用测试验证请求竞争与页面状态的一致性。';
   await page.getByRole('textbox',{name:'简历与项目经历',exact:true}).fill(resume);
   await page.getByRole('button',{name:'根据 JD 提前备题',exact:true}).click();
@@ -44,16 +45,17 @@ test('JD-only preview, edits, selected idempotent save, refresh, export and stri
   await page.setViewportSize({width:1280,height:900});
   await page.getByRole('button',{name:'保存并带入练习',exact:true}).click();
   await expect(page.getByRole('textbox',{name:'简历与项目经历',exact:true})).toHaveValue(resume);await expect(page.getByRole('textbox',{name:'岗位描述 / JD',exact:true})).toHaveValue(jd);
+  await nextStep(page);await nextStep(page);
   await page.getByRole('button',{name:'开始练习',exact:true}).click();await expect(page.getByLabel('你的回答',{exact:true})).toBeVisible({timeout:20000});
   await page.getByLabel('你的回答',{exact:true}).fill(answer);await page.getByRole('button',{name:'提交回答',exact:true}).click();
   await expect(page.locator('.question-panel h2')).toHaveText(edited,{timeout:20000});
-  await page.getByRole('button',{name:'删除此练习及简历资料',exact:true}).click();
+  await page.getByRole('button',{name:'删除此练习及简历资料',exact:true}).click();await confirmDelete(page);
   for(const question of saved)await page.request.delete(`/api/v1/question-bank/${question.id}`,{headers});
 });
 test('custom model failures preserve the previous JD draft and HR preparation stays behavioral',async({page})=>{
   const provider=await startProviderFixture();
   try{
-    await page.goto('/');await page.request.get('/api/v1/identity');
+    await page.goto('/#/interviews/new');await page.request.get('/api/v1/identity');
     const enabled=await page.request.post('/api/v1/models/settings',{headers,data:{baseUrl:provider.baseUrl,model:'coach-alpha',apiKey:'fixture-alpha-key',remember:false,timeoutMs:10000}});expect(enabled.ok()).toBe(true);
     await page.reload();await openPreparation(page);
     const round=page.getByRole('combobox',{name:/备题轮次/});await round.click();await round.press('ArrowDown');await round.press('ArrowDown');await round.press('Enter');
@@ -68,7 +70,7 @@ test('custom model failures preserve the previous JD draft and HR preparation st
   }finally{await page.request.delete('/api/v1/models/settings',{headers});await provider.close();}
 });
 test('the HTTP batch boundary accepts valid large Chinese notes and rejects duplicate save keys',async({page})=>{
-  await page.goto('/');await page.request.get('/api/v1/identity');
+  await page.goto('/#/interviews/new');await page.request.get('/api/v1/identity');
   const questions=Array.from({length:12},(_,index)=>({requestId:crypto.randomUUID(),draft:{title:`长备题 ${index}`,content:'请结合实际项目解释页面状态管理与异步请求竞争的验证方法。',category:'technical',difficulty:'medium',roleFamilies:['frontend'],tags:['JD备题'],expectedAnswer:'验证与证据'.repeat(1500),jdRequirement:{competency:'状态管理',priority:'required',quote:'能够解释实际项目中的状态管理与验证。'}}}));
   expect(Buffer.byteLength(JSON.stringify({questions}))).toBeGreaterThan(128*1024);
   const response=await page.request.post('/api/v1/question-bank/import/preparation',{headers,data:{questions}});expect(response.ok()).toBe(true);

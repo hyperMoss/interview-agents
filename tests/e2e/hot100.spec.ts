@@ -1,3 +1,4 @@
+import { expectEditorValue } from './ui-helpers';
 import { test, expect, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { bankListSchema, leetcodeBatchSchema } from '../../packages/contracts/src/bank';
@@ -6,8 +7,8 @@ test.setTimeout(90000);
 test.use({ actionTimeout: 12000 });
 const headers = { Origin: 'http://localhost:5173' };
 async function openHot100(page: Page) {
-  await page.goto('/');
-  await page.getByRole('tab', { name: '算法跟打', exact: true }).click();
+  await page.goto('/#/interviews/new');
+  await page.getByRole('tab', { name: '算法练习', exact: true }).click();
   await page.getByText('Hot 100 题单', { exact: true }).click();
   await expect(page.getByRole('heading', { name: '一题一练，把套路用起来。' })).toBeVisible();
 }
@@ -31,24 +32,24 @@ test('Hot 100 filters, independent Python drafts, self review and routine handof
   const code = page.getByRole('textbox', { name: 'Python 独立作答', exact: true });
   await code.fill('def group_anagrams(words):\n');
   await code.press('End'); await code.press('Tab');
-  await expect(code).toHaveValue('def group_anagrams(words):\n    ');
+  await expectEditorValue(code, 'def group_anagrams(words):\n    ');
   await page.getByRole('button', { name: '需要一点提示', exact: true }).click();
   await expect(page.locator('.hot100-hint')).toContainText('分组键');
   await page.locator('.hot100-review').getByText('已复习', { exact: true }).click();
   await page.getByRole('button', { name: '练习 1 两数之和', exact: true }).click();
-  await expect(code).toHaveValue(''); await code.fill('two sum draft');
+  await expectEditorValue(code, ''); await code.fill('two sum draft');
   await page.getByRole('button', { name: '练习 49 字母异位词分组', exact: true }).click();
-  await expect(code).toHaveValue('def group_anagrams(words):\n    ');
+  await expectEditorValue(code, 'def group_anagrams(words):\n    ');
   await expect(page.getByRole('radio', { name: '已复习', exact: true })).toBeChecked();
-  await page.reload(); await page.getByRole('tab', { name: '算法跟打', exact: true }).click();
-  await expect(code).toHaveValue('def group_anagrams(words):\n    ');
+  await page.reload(); await page.getByRole('tab', { name: '算法练习', exact: true }).click();
+  await expectEditorValue(code, 'def group_anagrams(words):\n    ');
   await expect(page.getByRole('radio', { name: '已复习', exact: true })).toBeChecked();
   await page.getByRole('button', { name: '练 哈希表', exact: true }).click();
   await expect(page.getByRole('textbox', { name: '题面或关键词', exact: true })).toHaveValue(/只改变字母顺序/);
   await expect(page.locator('.algorithm-example')).toContainText('模板例题 · 两数之和');
   await expect(page.locator('.algorithm-source')).toContainText('49. 字母异位词分组（Hot 100 学习摘要）');
   await page.getByText('Hot 100 题单', { exact: true }).click();
-  await expect(code).toHaveValue('def group_anagrams(words):\n    ');
+  await expectEditorValue(code, 'def group_anagrams(words):\n    ');
 });
 
 test('uncovered routines stay explicit and next question follows the selected topic', async ({ page }) => {
@@ -64,7 +65,7 @@ test('uncovered routines stay explicit and next question follows the selected to
   await page.getByRole('textbox', { name: '搜索题号、标题或关键词', exact: true }).fill('没有这道题');
   await expect(page.getByText('没有符合筛选条件的题目')).toBeVisible();
   await page.getByRole('button', { name: '下一道待练习', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('暂无其他待练习题');
+  await expect(page.getByRole('status')).toContainText('暂无其他到期复习或待练习题');
 });
 
 test('exported one hundred cards import through the real bank boundary and repeated imports skip duplicates', async ({ page }) => {
@@ -75,7 +76,7 @@ test('exported one hundred cards import through the real bank boundary and repea
   if (!path) throw new Error('Missing Hot 100 export');
   const exported = leetcodeBatchSchema.parse(JSON.parse(await readFile(path, 'utf8')));
   expect(exported.questions).toHaveLength(100);
-  await page.getByRole('tab', { name: '题库管理', exact: true }).click();
+  await page.getByRole('tab', { name: '题库', exact: true }).click();
   const panel = page.locator('section[aria-labelledby="bank-title"]');
   try {
     await panel.getByRole('tab', { name: '导入题目', exact: true }).click();
@@ -106,9 +107,9 @@ test('Hot 100 mobile layout and unavailable storage keep Python practice usable'
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: 'docs/evidence/screenshots/hot100-mobile.png', fullPage: true });
-  await page.addInitScript(() => { const original = Storage.prototype.setItem; Storage.prototype.setItem = function (key, value) { if (key === 'hot100-practice-v1') throw new DOMException('Quota', 'QuotaExceededError'); original.call(this, key, value); }; });
-  await page.reload(); await page.getByRole('tab', { name: '算法跟打', exact: true }).click();
-  await expect(page.getByText('浏览器无法保存 Hot 100 草稿，请及时导出作答；刷新可能丢失本次修改。')).toBeVisible();
+  await page.addInitScript(() => { Object.defineProperty(window, 'indexedDB', { value: undefined }); });
+  await page.reload(); await page.getByRole('tab', { name: '算法练习', exact: true }).click();
+  await expect(page.locator('.workspace-save-status')).toContainText('本机保存失败');
   await page.getByRole('textbox', { name: 'Python 独立作答', exact: true }).fill('still editable');
-  await expect(page.getByRole('textbox', { name: 'Python 独立作答', exact: true })).toHaveValue('still editable');
+  await expectEditorValue(page.getByRole('textbox', { name: 'Python 独立作答', exact: true }), 'still editable');
 });

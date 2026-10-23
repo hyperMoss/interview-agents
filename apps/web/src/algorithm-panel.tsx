@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Button, Empty, Input, Progress, Segmented, Select, Switch, Tag } from 'antd';
+import { Alert, Button, Empty, Input, Popconfirm, Progress, Segmented, Select, Switch, Tag } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import type { BankQuestion } from '../../../packages/contracts/src/bank';
 import { algorithmPatterns, getAlgorithmPattern, suggestPatterns } from '../../../packages/interview/src/algorithm-patterns';
@@ -7,11 +7,20 @@ import { compareTyping } from '../../../packages/interview/src/typing-practice';
 import { algorithmDraftKey, drillKindSchema, recordTyping, restoreAlgorithmDraft, sameDrill, type AlgorithmDraft, type DrillTarget } from './algorithm-draft';
 import { readSession, writeSession } from './storage';
 import { Hot100Panel } from './hot100-panel';
-import { hot100Brief } from '../../../packages/interview/src/hot100';
+import { findHot100Question, hot100Brief } from '../../../packages/interview/src/hot100';
+import { CodeEditor } from './code-editor';
 import { api } from './api';
 import './algorithm.css';
 
 export type AlgorithmSeed = Pick<BankQuestion, 'id' | 'title' | 'content'>;
+export type AlgorithmRoute = { view: 'hot100' | 'patterns'; questionId?: number; patternId?: string };
+type AlgorithmPanelProps = {
+  seed?: AlgorithmSeed;
+  initialView?: AlgorithmRoute['view'];
+  questionId?: number;
+  patternId?: string;
+  onNavigate?: (route: AlgorithmRoute) => void;
+};
 
 function characterLabel(value: string | null) {
   if (value === null) return '文本结束';
@@ -29,14 +38,23 @@ function withSeed(draft: AlgorithmDraft, seed: AlgorithmSeed): AlgorithmDraft {
   };
 }
 
-export function AlgorithmPanel({ seed }: { seed?: AlgorithmSeed }) {
+export function AlgorithmPanel({ seed, initialView, questionId, patternId, onNavigate }: AlgorithmPanelProps) {
   const [restored] = useState(restoreAlgorithmDraft);
-  const [draft, setDraft] = useState(() => seed ? withSeed(restored.draft, seed) : restored.draft);
+  const [draft, setDraft] = useState(() => {
+    const base = seed ? withSeed(restored.draft, seed) : restored.draft;
+    const question = questionId && initialView === 'patterns' ? findHot100Question(questionId) : undefined;
+    return {
+      ...base,
+      ...(question ? { problem: hot100Brief(question), origin: { kind: 'hot100', id: question.id, title: `${question.id}. ${question.title}` } } satisfies Partial<AlgorithmDraft> : {}),
+      ...(patternId ? { patternId: getAlgorithmPattern(patternId).id } : {}),
+    };
+  });
   const [storageWarning, setStorageWarning] = useState(restored.warning);
   const [showReference, setShowReference] = useState(true);
   const [checked, setChecked] = useState(false);
   const [notice, setNotice] = useState('');
-  const [view, setView] = useState(() => !seed && readSession('algorithm-view') === 'hot100' ? 'hot100' : 'patterns');
+  const [view, setView] = useState<AlgorithmRoute['view']>(() => seed ? 'patterns' : initialView ?? (readSession('algorithm-view') === 'hot100' ? 'hot100' : 'patterns'));
+  const [returnQuestionId, setReturnQuestionId] = useState(questionId ?? (restored.draft.origin.kind === 'hot100' ? restored.draft.origin.id : undefined));
   const identity = useQuery({ queryKey: ['identity'], queryFn: api.identity });
   const bank = useQuery({ queryKey: ['question-bank'], queryFn: api.bankList, enabled: identity.isSuccess });
   const pattern = getAlgorithmPattern(draft.patternId);
@@ -53,6 +71,18 @@ export function AlgorithmPanel({ seed }: { seed?: AlgorithmSeed }) {
     if (!writeSession(algorithmDraftKey, JSON.stringify(draft))) setStorageWarning('浏览器无法保存草稿，请保持页面打开，并及时复制自己的练习。');
   }, [draft]);
   useEffect(() => { writeSession('algorithm-view', view); }, [view]);
+  useEffect(() => {
+    if (initialView) setView(initialView);
+    if (patternId) setDraft(current => ({ ...current, patternId: getAlgorithmPattern(patternId).id }));
+    if (questionId) {
+      setReturnQuestionId(questionId);
+      const question = initialView === 'patterns' ? findHot100Question(questionId) : undefined;
+      if (question) setDraft(current => current.origin.kind === 'hot100' && current.origin.id === question.id ? current : {
+        ...current, problem: hot100Brief(question), origin: { kind: 'hot100', id: question.id, title: `${question.id}. ${question.title}` }, kind: 'code',
+      });
+    }
+    setChecked(false);
+  }, [initialView, patternId, questionId]);
 
   function changeTyping(value: string) {
     setDraft(current => recordTyping(current, target, value));
@@ -60,7 +90,9 @@ export function AlgorithmPanel({ seed }: { seed?: AlgorithmSeed }) {
     setNotice('');
   }
   function choosePattern(id: string) {
-    setDraft(current => ({ ...current, patternId: getAlgorithmPattern(id).id }));
+    const nextPatternId = getAlgorithmPattern(id).id;
+    setDraft(current => ({ ...current, patternId: nextPatternId }));
+    onNavigate?.({ view: 'patterns', questionId: returnQuestionId, patternId: nextPatternId });
     setChecked(false);
     setNotice('');
   }
@@ -80,11 +112,21 @@ export function AlgorithmPanel({ seed }: { seed?: AlgorithmSeed }) {
       <div className="algorithm-count"><strong>{algorithmPatterns.length}</strong><span>个常见模式</span></div>
     </header>
     {storageWarning ? <Alert type="warning" message={storageWarning} showIcon /> : null}
-    <Segmented className="algorithm-mode-picker" aria-label="算法练习模式" value={view} options={[{ value: 'patterns', label: '套路跟打' }, { value: 'hot100', label: 'Hot 100 题单' }]} onChange={value => { setView(value === 'hot100' ? 'hot100' : 'patterns'); setChecked(false); setNotice(''); }} />
-    {view === 'hot100' ? <Hot100Panel onUseRoutine={(question, patternId) => {
+    <Segmented className="algorithm-mode-picker" aria-label="算法练习模式" value={view} options={[{ value: 'hot100', label: 'Hot 100 题单' }, { value: 'patterns', label: '套路跟打' }]} onChange={value => {
+      const nextView = value === 'hot100' ? 'hot100' : 'patterns';
+      setView(nextView); setChecked(false); setNotice('');
+      onNavigate?.({ view: nextView, questionId: returnQuestionId, ...(nextView === 'patterns' ? { patternId: draft.patternId } : {}) });
+    }} />
+    {view === 'hot100' ? <Hot100Panel questionId={questionId ?? returnQuestionId} onSelectQuestion={id => {
+      setReturnQuestionId(id); onNavigate?.({ view: 'hot100', questionId: id });
+    }} onUseRoutine={(question, patternId) => {
       setDraft(current => ({ ...current, problem: hot100Brief(question), origin: { kind: 'hot100', id: question.id, title: `${question.id}. ${question.title}` }, patternId, kind: 'code' }));
-      setChecked(false); setNotice(''); setView('patterns');
+      setReturnQuestionId(question.id); setChecked(false); setNotice(''); setView('patterns');
+      onNavigate?.({ view: 'patterns', questionId: question.id, patternId });
     }} /> : <>
+    {returnQuestionId ? <div className="algorithm-return"><Button onClick={() => {
+      setView('hot100'); setNotice(''); setChecked(false); onNavigate?.({ view: 'hot100', questionId: returnQuestionId });
+    }}>← 返回 Hot 100 第 {returnQuestionId} 题</Button><span>原题的独立作答、思路与筛选已保留。</span></div> : null}
     <section className="algorithm-source" aria-labelledby="algorithm-source-title">
       <div className="algorithm-section-heading"><h2 id="algorithm-source-title">01 / 给一道题</h2><Tag>关键词辅助识别 · 无需模型</Tag></div>
       <div className="algorithm-source-grid">
@@ -139,22 +181,12 @@ export function AlgorithmPanel({ seed }: { seed?: AlgorithmSeed }) {
           {showReference ? <div className={`algorithm-reference ${draft.kind}`} aria-label="跟打参考文本">{target.reference.split('\n').map((line, index) => <div key={index} className={`algorithm-code-line ${typed && comparison.difference?.line === index + 1 ? 'current-line' : ''}`}><span className="algorithm-line-number" aria-hidden="true">{index + 1}</span><code>{line || '\u00a0'}</code></div>)}</div> : <div className="algorithm-reference-hidden">参考已隐藏。试着默写，完成后再核对。</div>}
         </div>
         <div className="algorithm-input-column"><label className="algorithm-editor-label" htmlFor="algorithm-typing">你的{draft.kind === 'code' ? '代码' : '题面'}</label>
-          <textarea id="algorithm-typing" aria-describedby="algorithm-typing-help" className="algorithm-typing" value={typed} disabled={!target.reference} maxLength={30000} rows={Math.min(24, Math.max(9, target.reference.split('\n').length))} spellCheck={false} autoComplete="off" autoCapitalize="off" placeholder={!target.reference ? '先填写题面，或使用一份模板例题。' : draft.kind === 'code' ? '看左侧参考，从第一行开始手打…' : '照着左侧题面逐字练习…'} onChange={event => changeTyping(event.target.value)} onKeyDown={event => {
-            if (draft.kind !== 'code' || event.key !== 'Tab' || event.shiftKey || event.nativeEvent.isComposing) return;
-            event.preventDefault();
-            const element = event.currentTarget;
-            const start = element.selectionStart;
-            const end = element.selectionEnd;
-            const next = `${typed.slice(0, start)}    ${typed.slice(end)}`;
-            if (next.length > 30000) return;
-            changeTyping(next);
-            requestAnimationFrame(() => element.setSelectionRange(start + 4, start + 4));
-          }} />
+          <CodeEditor key={`${target.key}:${target.kind}:${target.reference}`} id="algorithm-typing" label={`你的${draft.kind === 'code' ? '代码' : '题面'}`} describedBy="algorithm-typing-help" mode={draft.kind === 'code' ? 'drill-code' : 'text'} value={typed} disabled={!target.reference} maxLength={30000} placeholder={!target.reference ? '先填写题面，或使用一份模板例题。' : draft.kind === 'code' ? '看左侧参考，从第一行开始手打…' : '照着左侧题面逐字练习…'} onChange={changeTyping} />
         </div>
       </div>
-      <p id="algorithm-typing-help" className="algorithm-caption">保留空格与缩进，统一换行格式。代码区 Tab 输入四个空格，Shift + Tab 移出输入框。草稿保留在当前标签页，最多恢复最近 20 个跟打对象。</p>
-      <div className="algorithm-progress"><Progress percent={comparison.progress} showInfo={false} status={comparison.complete ? 'success' : 'normal'} /><span>连续匹配 {comparison.prefix} / {comparison.total} 字符{typed.length ? ` · 已输入 ${comparison.entered} 字符` : ''}</span></div>
-      <div className="algorithm-drill-actions"><Button type="primary" onClick={() => setChecked(true)} disabled={!target.reference}>核对跟打</Button><Button disabled={!typed} onClick={() => { changeTyping(''); setNotice('当前跟打已清空，其他对象的草稿保留。'); }}>重置本次跟打</Button>{draft.kind === 'code' ? <Button onClick={() => void copyCode()}>复制核心代码</Button> : null}<span>仅做文本对照，不执行代码或判题。</span></div>
+      <p id="algorithm-typing-help" className="algorithm-caption">保留空格与缩进，统一换行格式。跟打模式关闭自动补全、自动缩进与括号补齐。草稿自动保存在本机浏览器，最多恢复最近 20 个跟打对象。</p>
+      <div className="algorithm-progress"><Progress aria-label="跟打文本匹配进度" percent={comparison.progress} showInfo={false} status={comparison.complete ? 'success' : 'normal'} /><span>连续匹配 {comparison.prefix} / {comparison.total} 字符{typed.length ? ` · 已输入 ${comparison.entered} 字符` : ''}</span></div>
+      <div className="algorithm-drill-actions"><Button type="primary" onClick={() => setChecked(true)} disabled={!target.reference}>核对跟打</Button><Popconfirm title="清空当前跟打内容？" description="只清空当前对象的输入，其他对象的草稿保留。" okText="确认清空" cancelText="保留内容" disabled={!typed} onConfirm={() => { changeTyping(''); setNotice('当前跟打已清空，其他对象的草稿保留。'); }}><Button disabled={!typed}>重置本次跟打</Button></Popconfirm>{draft.kind === 'code' ? <Button onClick={() => void copyCode()}>复制核心代码</Button> : null}<span>仅做文本对照，不执行代码或判题。</span></div>
       {notice ? <p role="status">{notice}</p> : null}
       {checked ? <div className="algorithm-check" role="status">
         {comparison.complete ? <Alert type="success" showIcon message="跟打一致。你可以隐藏参考，再试一次默写。" /> : comparison.difference ? <Alert type="warning" showIcon message={`首次差异在第 ${comparison.difference.line} 行、第 ${comparison.difference.column} 列。应为${characterLabel(comparison.difference.expected)}，实际为${characterLabel(comparison.difference.actual)}。`} /> : null}
