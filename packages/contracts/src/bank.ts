@@ -5,12 +5,19 @@ export const difficultySchema=z.enum(['easy','medium','hard']);
 export const stageSchema=z.enum(['intro','qa','coding','reverse']);
 export const bankModeSchema=z.enum(['strict','mixed','adaptive']);
 export const jdRequirementSchema=z.strictObject({competency:z.string().trim().min(2).max(80),priority:z.enum(['required','preferred']),quote:z.string().trim().min(2).max(600)});
+const sha256=z.string().regex(/^[0-9a-f]{64}$/);
+// Provenance kept when a career (resume+JD) preparation question is saved into the owner bank.
+export const careerProvenanceSchema=z.strictObject({
+  kind:z.literal('resume_jd'),preparationId:z.uuid(),postingSnapshotHash:sha256,resumeVersionId:z.uuid(),
+  resumeTextSha256:sha256,jdSnapshotHash:sha256,purpose:z.enum(['jd_skill','resume_project','skill_gap']),
+});
+export type CareerProvenance=z.infer<typeof careerProvenanceSchema>;
 export const bankDraftSchema=z.strictObject({
   title:z.string().trim().min(2).max(200),content:z.string().trim().min(10).max(14000),
   category:z.enum(['intro','technical','behavioral','coding','reverse']),difficulty:difficultySchema,
   roleFamilies:z.array(roleFamilySchema).min(1).max(7),tags:z.array(z.string().trim().min(1).max(40)).max(12).default([]),
   expectedAnswer:z.string().trim().max(8000).default(''),
-  jdRequirement:jdRequirementSchema.optional(),
+  jdRequirement:jdRequirementSchema.optional(),career:careerProvenanceSchema.optional(),
 });
 export const bankQuestionSchema=bankDraftSchema.extend({id:z.uuid(),source:z.enum(['custom','builtin','leetcode']),sourceUrl:z.url().nullable(),editable:z.boolean(),createdAt:z.iso.datetime(),revision:z.number().int().nonnegative()});
 export type BankQuestion=z.infer<typeof bankQuestionSchema>;

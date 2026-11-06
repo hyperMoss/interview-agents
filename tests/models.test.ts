@@ -1,5 +1,6 @@
+import { z } from 'zod';
 import { describe,it,expect,beforeAll,afterAll,afterEach } from 'vitest';
-import { Pool } from 'pg';
+import { Pool } from "../packages/database/src/sqlite";
 import { ModelConnections,modelPolicy,validateModelUrl,defaultModelReference } from '../apps/agent/src/models';
 import { createAgentServer } from '../apps/agent/src/server';
 import { InterviewService } from '../apps/api/src/interviews';
@@ -28,13 +29,13 @@ suite('real model configuration → API → worker → Mastra → provider → r
   let provider:Awaited<ReturnType<typeof startProviderFixture>>;let runtime:Awaited<ReturnType<typeof createAgentServer>>;let bridge:Awaited<ReturnType<typeof serveFixture>>;let api:InterviewService;let runner:GenerationWorker;let agentPool:Pool;let store:ModelConnections;
   const owner=crypto.randomUUID(),other=crypto.randomUUID();
   beforeAll(async()=>{
-    provider=await startProviderFixture();const config={...agentConfig(),AGENT_DATABASE_URL:'postgresql://agent:local-agent-password@127.0.0.1:55440/interview_test'};
+    provider=await startProviderFixture();const config={...agentConfig(),AGENT_DATABASE_URL:(process.env.SQLITE_TEST_AGENT_URL ?? "file:/tmp/interview-tests-agent.sqlite")};
     runtime=await createAgentServer(config);bridge=await serveFixture(request=>runtime.app.fetch(request));
-    api=new InterviewService({...apiConfig(),DATABASE_URL:'postgresql://app:local-app-password@127.0.0.1:55440/interview_test',AGENT_URL:bridge.origin});
+    api=new InterviewService({...apiConfig(),DATABASE_URL:(process.env.SQLITE_TEST_APP_URL ?? "file:/tmp/interview-tests-app.sqlite"),AGENT_URL:bridge.origin});
     runner=new GenerationWorker({...workerConfig(),DATABASE_URL:api.config.DATABASE_URL,AGENT_URL:bridge.origin});
     agentPool=new Pool({connectionString:config.AGENT_DATABASE_URL});store=new ModelConnections(agentPool,config);
   });
-  afterEach(async()=>{provider.state.failure=false;provider.state.badEvidence=false;await api.database.pool.query('DELETE FROM app.interviews WHERE owner=$1 OR owner=$2',[owner,other]);await store.clear(owner);await store.clear(other);});
+  afterEach(async()=>{provider.state.failure=false;provider.state.badEvidence=false;await api.database.pool.query("DELETE FROM app_interviews WHERE owner=$1 OR owner=$2",[owner,other]);await store.clear(owner);await store.clear(other);});
   afterAll(async()=>{await Promise.all([api.onModuleDestroy(),runner.close(),runtime.close(),agentPool.end()]);await bridge.close();await provider.close();});
   const draft=(model='coach-alpha')=>({baseUrl:provider.baseUrl,model,apiKey:model==='coach-alpha'?'fixture-alpha-key':'fixture-beta-key',remember:false,timeoutMs:5000});
   it('reads model lists without a known model, probes briefly and returns no key',async()=>{
@@ -42,10 +43,10 @@ suite('real model configuration → API → worker → Mastra → provider → r
     const result=await api.models.probe(modelDraftSchema.parse({baseUrl:provider.baseUrl,model:'coach-alpha',apiKey:'fixture-alpha-key',timeoutMs:5000}));expect(result.ok).toBe(true);expect(JSON.stringify(result)).not.toContain('fixture-alpha-key');
   });
   it('encrypts credentials at rest, only exposes metadata and isolates owners',async()=>{
-    const profile=await api.models.save(owner,draft());const row=await agentPool.query('SELECT encrypted_key FROM agent_runtime.model_connections WHERE id=$1',[profile.id]);
-    expect(row.rows[0].encrypted_key).not.toContain('fixture-alpha-key');expect(JSON.stringify(profile)).not.toContain('fixture-alpha-key');expect((await store.resolve(owner,profile.id)).apiKey).toBe('fixture-alpha-key');
+    const profile=await api.models.save(owner,draft());const row=await agentPool.query("SELECT encrypted_key FROM agent_runtime_model_connections WHERE id=$1",[profile.id]);
+    expect(row.rows[0]?.encrypted_key).not.toContain('fixture-alpha-key');expect(JSON.stringify(profile)).not.toContain('fixture-alpha-key');expect((await store.resolve(owner,profile.id)).apiKey).toBe('fixture-alpha-key');
     await expect(store.resolve(other,profile.id)).rejects.toThrow('过期');expect((await api.models.settings(other)).active).toBeNull();
-    await expect(api.database.pool.query('SELECT encrypted_key FROM agent_runtime.model_connections')).rejects.toThrow('permission denied');
+    await expect(api.database.pool.query("SELECT encrypted_key FROM agent_runtime_model_connections")).rejects.toThrow('no such table');
   });
   it('saves a custom model and completes a real SDK interview instead of the deployment demo',async()=>{
     const profile=await api.models.save(owner,draft());let session=await api.create(owner,{...input,focus:'系统设计与故障恢复'},profile.id);
@@ -78,13 +79,14 @@ suite('real model configuration → API → worker → Mastra → provider → r
     try{
       const command={requestId:crypto.randomUUID(),revision:failed.revision,modelConnectionId:null};
       await liveApi.retry(owner,created.id,command);
-      const result=await api.database.pool.query('SELECT payload FROM app.jobs WHERE id=$1',[command.requestId]);
-      expect(result.rows[0].payload.modelConnectionId).toBeUndefined();expect(result.rows[0].payload.current.answer).toBe(answer);
+      const result=await api.database.pool.query("SELECT payload FROM app_jobs WHERE id=$1",[command.requestId]);
+      const payload=z.object({modelConnectionId:z.string().optional(),current:z.object({answer:z.string()})}).parse(result.rows[0]?.payload);
+      expect(payload.modelConnectionId).toBeUndefined();expect(payload.current.answer).toBe(answer);
       await expect(liveApi.retry(owner,created.id,{requestId:command.requestId,revision:command.revision})).rejects.toThrow('IDEMPOTENCY_CONFLICT');
     }finally{await liveApi.onModuleDestroy();}
   });
   it('expired connections and disabled custom access fail without a fallback',async()=>{
-    const profile=await api.models.save(owner,draft());await agentPool.query("UPDATE agent_runtime.model_connections SET expires_at=now()-interval '1 second' WHERE id=$1",[profile.id]);await expect(store.resolve(owner,profile.id)).rejects.toThrow('过期');
+    const profile=await api.models.save(owner,draft());await agentPool.query("UPDATE agent_runtime_model_connections SET expires_at=strftime('%Y-%m-%dT%H:%M:%f000Z','now','-1 second') WHERE id=$1",[profile.id]);await expect(store.resolve(owner,profile.id)).rejects.toThrow('过期');
     const disabled=new ModelConnections(agentPool,{...store.config,CUSTOM_MODELS:'off'});await expect(disabled.save(other,draft())).rejects.toThrow('关闭');
   });
   it('a changed deployment URL or credential blocks old default tasks before any provider call',async()=>{

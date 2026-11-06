@@ -1,4 +1,4 @@
-import type { Pool } from 'pg';
+import type { Pool } from "../../../packages/database/src/sqlite";
 import { z } from 'zod';
 import type { AgentConfig } from '../../../packages/config/src/index';
 import { searchDraftSchema,searchProfileSchema,searchProviderSchema,searchSourceSchema,searchSnapshotSchema,type SearchDraft } from '../../../packages/contracts/src/search';
@@ -16,15 +16,15 @@ export class SearchConnections {
   private readonly cipher:ConnectionCipher;
   constructor(readonly pool:Pool,readonly config:AgentConfig){this.cipher=new ConnectionCipher(config.INTERNAL_SERVICE_TOKEN,'interview-search-key-v1');}
   private profile(raw:unknown){const row=rowSchema.parse(raw);return searchProfileSchema.parse({id:row.id,provider:row.provider,baseUrl:row.base_url,hasKey:true,expiresAt:row.expires_at.toISOString(),remember:row.remember});}
-  async settings(owner:string){const policy=searchPolicy(this.config);const result=policy.enabled?await this.pool.query('SELECT * FROM agent_runtime.search_connections WHERE owner=$1 AND active=true AND expires_at>now()',[owner]):null;return{...policy,active:result?.rows[0]?this.profile(result.rows[0]):null};}
+  async settings(owner:string){const policy=searchPolicy(this.config);const result=policy.enabled?await this.pool.query("SELECT * FROM agent_runtime_search_connections WHERE owner=$1 AND active=true AND expires_at>(strftime('%Y-%m-%dT%H:%M:%f000Z','now'))",[owner]):null;return{...policy,active:result?.rows[0]?this.profile(result.rows[0]):null};}
   async describe(owner:string,id:string){return this.profile(await this.row(owner,id));}
-  private async row(owner:string,id:string){if(!searchPolicy(this.config).enabled)throw new ModelAccessError('SEARCH_DISABLED',403,'联网搜索接入已关闭。');const result=await this.pool.query('SELECT * FROM agent_runtime.search_connections WHERE id=$1 AND owner=$2 AND expires_at>now()',[id,owner]);if(!result.rows[0])throw new ModelAccessError('SEARCH_CONNECTION_EXPIRED',409,'搜索连接已清除或过期，请重新启用或明确关闭搜索后重试。');return rowSchema.parse(result.rows[0]);}
+  private async row(owner:string,id:string){if(!searchPolicy(this.config).enabled)throw new ModelAccessError('SEARCH_DISABLED',403,'联网搜索接入已关闭。');const result=await this.pool.query("SELECT * FROM agent_runtime_search_connections WHERE id=$1 AND owner=$2 AND expires_at>(strftime('%Y-%m-%dT%H:%M:%f000Z','now'))",[id,owner]);if(!result.rows[0])throw new ModelAccessError('SEARCH_CONNECTION_EXPIRED',409,'搜索连接已清除或过期，请重新启用或明确关闭搜索后重试。');return rowSchema.parse(result.rows[0]);}
   async save(owner:string,raw:unknown){const draft=searchDraftSchema.parse(raw);await validateSearchUrl(draft.baseUrl,this.config);const id=crypto.randomUUID(),expiresAt=new Date(Date.now()+(draft.remember?30:1)*86400000);const client=await this.pool.connect();
-    try{await client.query('BEGIN');await client.query('SELECT pg_advisory_xact_lock(hashtext($1))',[`search-owner:${owner}`]);await client.query('UPDATE agent_runtime.search_connections SET active=false WHERE owner=$1',[owner]);const result=await client.query('INSERT INTO agent_runtime.search_connections(id,owner,provider,base_url,encrypted_key,expires_at,remember) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *',[id,owner,draft.provider,draft.baseUrl,this.cipher.encrypt(draft.apiKey),expiresAt,draft.remember]);await client.query('COMMIT');return this.profile(result.rows[0]);}
+    try{await client.query('BEGIN');await client.query("UPDATE agent_runtime_search_connections SET active=false WHERE owner=$1",[owner]);const result=await client.query("INSERT INTO agent_runtime_search_connections(id,owner,provider,base_url,encrypted_key,expires_at,remember) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *",[id,owner,draft.provider,draft.baseUrl,this.cipher.encrypt(draft.apiKey),expiresAt,draft.remember]);await client.query('COMMIT');return this.profile(result.rows[0]);}
     catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}
   }
-  async clear(owner:string){await this.pool.query('DELETE FROM agent_runtime.search_connections WHERE owner=$1',[owner]);return{cleared:true};}
-  async purge(){await this.pool.query('DELETE FROM agent_runtime.search_connections WHERE expires_at<now()');}
+  async clear(owner:string){await this.pool.query("DELETE FROM agent_runtime_search_connections WHERE owner=$1",[owner]);return{cleared:true};}
+  async purge(){await this.pool.query("DELETE FROM agent_runtime_search_connections WHERE expires_at<(strftime('%Y-%m-%dT%H:%M:%f000Z','now'))");}
   async search(owner:string,id:string,query:string,signal:AbortSignal){const row=await this.row(owner,id);let apiKey:string;try{apiKey=this.cipher.decrypt(row.encrypted_key);}catch{throw new ModelAccessError('SEARCH_KEY_UNAVAILABLE',409,'搜索密钥无法恢复，请重新启用连接。');}const sources=await searchProvider({provider:row.provider,baseUrl:row.base_url,apiKey,remember:row.remember},query,this.config,signal);return searchSnapshotSchema.parse({connectionId:id,query,fetchedAt:new Date().toISOString(),sources});}
 }
 export async function searchProvider(draft:SearchDraft,query:string,config:AgentConfig,signal:AbortSignal=AbortSignal.timeout(10000)){

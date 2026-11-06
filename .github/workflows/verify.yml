@@ -44,12 +44,11 @@ jobs:
           node node_modules/esbuild/install.js
           pnpm exec playwright install --with-deps chrome
 
-      - name: Prepare disposable fixture services
+      - name: Prepare local SQLite files
         run: |
           mkdir -p .ci-output
           cp .env.example .env
-          docker compose -p interview-agents-ci -f infra/compose.yaml up -d --wait
-          docker compose -p interview-agents-ci-tests -f infra/compose.test.yaml up -d --wait
+          pnpm db:migrate
 
       - name: Build and validate the factory skill
         run: pnpm build
@@ -88,8 +87,7 @@ jobs:
             docs/evidence/screenshots/
           include-hidden-files: true
 
-      - name: Remove disposable databases
+      - name: Remove disposable SQLite files
         if: ${{ always() }}
         run: |
-          docker compose -p interview-agents-ci-tests -f infra/compose.test.yaml down --volumes
-          docker compose -p interview-agents-ci -f infra/compose.yaml down --volumes
+          rm -rf .local

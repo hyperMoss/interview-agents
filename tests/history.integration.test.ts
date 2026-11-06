@@ -16,15 +16,15 @@ describe('history query boundary', () => {
 });
 
 const suite = process.env.RUN_INTEGRATION === '1' ? describe : describe.skip;
-suite('owned lightweight interview history with real PostgreSQL', () => {
+suite('owned lightweight interview history with real SQLite', () => {
   let api: InterviewService;
   const owner = crypto.randomUUID();
   const other = crypto.randomUUID();
   beforeAll(() => {
-    api = new InterviewService({ ...apiConfig(), DATABASE_URL: 'postgresql://app:local-app-password@127.0.0.1:55440/interview_test' });
+    api = new InterviewService({ ...apiConfig(), DATABASE_URL: (process.env.SQLITE_TEST_APP_URL ?? "file:/tmp/interview-tests-app.sqlite") });
   });
   afterEach(async () => {
-    await api.database.pool.query('DELETE FROM app.interviews WHERE owner=$1 OR owner=$2', [owner, other]);
+    await api.database.pool.query("DELETE FROM app_interviews WHERE owner=$1 OR owner=$2", [owner, other]);
   });
   afterAll(async () => { await api.onModuleDestroy(); });
 
@@ -41,7 +41,7 @@ suite('owned lightweight interview history with real PostgreSQL', () => {
       return { ...base, status };
     });
     await api.database.pool.query(
-      'INSERT INTO app.interviews(id,owner,state,created_at) SELECT fixture.id::uuid,$1,fixture.state,$3::timestamptz FROM jsonb_to_recordset($2::jsonb) AS fixture(id text,state jsonb)',
+      "INSERT INTO app_interviews(id,owner,state,created_at) SELECT value->>'id',$1,value->'state',$3 FROM json_each($2)",
       [identity, JSON.stringify(sessions.map(state => ({ id: state.id, state }))), createdAt],
     );
     return sessions;

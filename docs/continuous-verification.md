@@ -6,7 +6,7 @@
 
 1. 设置 Node.js 22 和 package.json 指定的 pnpm。
 2. 按 pnpm-lock.yaml 安装依赖，跳过通用安装脚本，只显式准备已有 Bun、esbuild 和 Chrome。
-3. 从公开的 `.env.example` 创建临时配置，启动两个独立 Compose 项目。应用数据库使用 55439，隔离测试数据库使用 55440。
+3. 从公开的 `.env.example` 创建临时配置，运行 `pnpm db:migrate` 初始化本地 SQLite。测试使用独立的临时目录与数据库文件。
 4. 构建并核对 spec 与 skill，执行启用数据库集成的全部测试。
 5. 启动应用，最多等待 120 秒，运行只读 doctor，再驱动 Chrome 桌面和手机流程。
 6. 无论成功或失败，保存指定的验证产物并移除临时数据库。
@@ -17,7 +17,7 @@
 
 权限为 `contents: read`，checkout 不保存 Git 凭据。工作流使用 `pull_request` 事件，不使用 `pull_request_target`。产物只包括 `.ci-output` 下列出的 JSON 和日志、`test-results` 及测试截图，保留 7 天。环境配置和完整工作目录不上传。
 
-每次运行在独立的 GitHub 托管 runner 中执行。Compose 的 `down --volumes` 只用于该 runner 的临时项目，不在开发者本机自动执行。需要本机复现时，按 [README 验证步骤](../README.md#验证) 执行，保留自己的环境文件和开发数据库。
+每次运行在独立的 GitHub 托管 runner 中执行，结束时清理该 runner 的临时 SQLite 文件。需要本机复现时，按 [README 验证步骤](../README.md#开发与验证) 执行，保留自己的环境文件和开发数据库。
 
 ## 结果与失败排查
 

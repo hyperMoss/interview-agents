@@ -1,3 +1,4 @@
+import { navigateModule } from './ui-helpers';
 import { settingsTab, nextStep, confirmDelete } from './ui-helpers';
 import { test,expect,type Page } from '@playwright/test';
 import { answer } from '../fixtures';
@@ -29,7 +30,7 @@ test('resume preview, owned bank CRUD/import, coding gates and replan preserve t
   await page.getByRole('button',{name:'使用到简历'}).click();await expect(page.getByLabel('简历与项目经历')).toHaveValue(ownResume);
   await page.getByLabel('上传自己的简历').setInputFiles('tests/files/resume.pdf');await expect(page.getByLabel('提取文本预览')).toHaveValue(/Built APIs/);
   await page.getByRole('button',{name:'放弃提取结果'}).click();await expect(page.getByLabel('简历与项目经历')).toHaveValue(ownResume);
-  await page.getByRole('tab',{name:'题库',exact:true}).click();const panel=page.locator('section[aria-labelledby="bank-title"]');
+  await navigateModule(page, '题库');const panel=page.locator('section[aria-labelledby="bank-title"]');
   await panel.getByRole('tab',{name:'自建题目',exact:true}).click();
   await panel.getByLabel('题目标题',{exact:true}).fill('私有重试题');await panel.getByLabel('题面',{exact:true}).fill('请结合自己的实际项目，解释如何识别请求竞争并拒绝旧响应。');await choose(page,'题目难度','基础');await choose(page,'适用岗位','前端');await panel.getByLabel('标签，以逗号分隔').fill('异步,前端');
   await panel.getByRole('button',{name:'创建题目',exact:true}).click();await expect(panel.getByRole('status')).toContainText('题目已创建');
@@ -55,7 +56,7 @@ test('resume preview, owned bank CRUD/import, coding gates and replan preserve t
   await expect(page.locator('.feedback')).toHaveCount(4);await expect(page.locator('.feedback')).toContainText(['自我介绍','私有竞争题','数组合并练习','你的反问']);
   await page.locator('.feedback').nth(2).locator('summary').click();await expect(page.locator('.feedback').nth(2).getByLabel('三维评估')).toBeVisible();
   await page.setViewportSize({width:390,height:844});await page.evaluate(()=>window.scrollTo(0,0));expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:'docs/evidence/screenshots/extension-mobile.png',fullPage:true});
-  await page.getByRole('button',{name:'删除此练习及简历资料'}).click();await confirmDelete(page);await page.getByRole('tab',{name:'题库',exact:true}).click();await panel.getByRole('tab',{name:'已保存题目',exact:true}).click();await panel.locator('.bank-card').filter({hasText:'私有竞争题'}).getByRole('button',{name:'删除 私有竞争题',exact:true}).click();await expect(panel.getByRole('status')).toContainText('已删除');
+  await page.getByRole('button',{name:'删除此练习及简历资料'}).click();await confirmDelete(page);await navigateModule(page, '题库');await panel.getByRole('tab',{name:'已保存题目',exact:true}).click();await panel.locator('.bank-card').filter({hasText:'私有竞争题'}).getByRole('button',{name:'删除 私有竞争题',exact:true}).click();await expect(panel.getByRole('status')).toContainText('已删除');
 });
 test('confirmed search query and sources survive clearing a connection; failed search supports explicit off retry',async({page})=>{
   const calls:Array<{query:string;authorization:string|null}>=[];let failure=false;
@@ -75,7 +76,7 @@ test('confirmed search query and sources survive clearing a connection; failed s
 });
 test('public LeetCode URL imports through the application and repeated import is idempotent',async({page})=>{
   test.skip(process.env.RUN_PUBLIC_IMPORT!=='1','Explicit opt-in makes one public internet request.');
-  await page.goto('/#/interviews/new');await page.getByRole('tab',{name:'题库',exact:true}).click();const panel=page.locator('section[aria-labelledby="bank-title"]');
+  await page.goto('/#/interviews/new');await navigateModule(page, '题库');const panel=page.locator('section[aria-labelledby="bank-title"]');
   await panel.getByRole('tab',{name:'导入题目',exact:true}).click();
   await panel.getByLabel('LeetCode 公开题目链接').fill('https://leetcode.cn/problems/two-sum/');
   for(let n=0;n<2;n++){await panel.getByRole('button',{name:'导入公开题目',exact:true}).click();await expect(panel.getByRole('status')).toContainText(n?'导入 0 题，跳过 1':'导入 1 题，跳过 0',{timeout:20000});}

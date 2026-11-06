@@ -11,11 +11,11 @@ export const specSchema = z.strictObject({
     out_of_scope: z.array(z.string()).default([]) }),
   capabilities: z.partialRecord(capabilitySchema, z.union([z.boolean(),z.literal('auto')])).default({}),
   providers: z.partialRecord(capabilitySchema, z.string()).default({}),
-  options: z.strictObject({ rag_mode: z.enum(['lexical','semantic','hybrid']).default('lexical'),
+  options: z.strictObject({ database: z.literal('sqlite').default('sqlite'), rag_mode: z.enum(['lexical','semantic','hybrid']).default('lexical'),
     rag_sources: z.array(z.enum(['text','uploaded_documents','web_pages'])).min(1).default(['text']),
     asr_mode: z.enum(['file','realtime']).default('realtime'), persist_audio: z.boolean().default(false),
     search_mode:z.enum(['deployment','byok']).default('deployment'),
-    require_email_verification: z.boolean().default(false) }).default({ rag_mode: 'lexical', rag_sources: ['text'], asr_mode: 'realtime', persist_audio: false, require_email_verification: false,search_mode:'deployment' }),
+    require_email_verification: z.boolean().default(false) }).default({ database:'sqlite', rag_mode: 'lexical', rag_sources: ['text'], asr_mode: 'realtime', persist_audio: false, require_email_verification: false,search_mode:'deployment' }),
   policy: z.strictObject({ allow_cloud_processing: z.boolean().default(true), forbidden_capabilities: z.array(capabilitySchema).default([]) }).default({allow_cloud_processing:true,forbidden_capabilities:[]}),
 });
 export type Spec = z.infer<typeof specSchema>;

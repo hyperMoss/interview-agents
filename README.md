@@ -1,227 +1,187 @@
 # 面试练习室
 
-围绕简历和目标岗位准备文本面试，也可以用 LeetCode Hot 100 练习 Python 算法。支持 JD 提前备题、按时长规划面试、逐题反馈、报告复盘，以及题面和核心代码跟打。
+一个本地运行的 AI 求职与面试练习工具，集成简历管理、JD 备题、模拟面试、算法练习和 BOSS 岗位搜索与审核。
 
-默认提供规则演示，无需模型密钥即可体验流程。真实 AI 面试和 JD 备题需要启用自己的模型连接，或由部署方配置默认模型。演示评分不代表专业能力评价。
+支持 OpenAI-compatible 模型连接；无需模型密钥也可以体验规则演示和算法练习。业务数据与 Agent 数据分别保存在本机 SQLite 文件中。
 
-## 功能入口
+[快速开始](#快速开始) · [功能特性](#功能特性) · [使用指南](docs/user-guide.md) · [JSON 简历制作](docs/resume-builder.md) · [开发与验证](#开发与验证)
 
-首页可继续上次练习。顶部导航进入面试准备、JD 备题、算法练习和题库；连接配置与备份集中在设置。
+## 功能特性
 
-| 入口 | 可以做什么 |
+| 功能 | 说明 |
 | --- | --- |
-| 面试准备 | 上传简历、填写 JD，按候选人级别、轮次与时长规划面试，作答后查看逐题 QA 和三维报告。 |
-| JD 备题 | 只提供岗位与 JD 即可预生成题单，核对原文依据、编辑要点，再保存到题库或带入练习。 |
-| 算法练习 → 套路跟打 | 按关键词识别候选套路，查看 Python 例题代码，照打或隐藏参考默写，逐行核对。 |
-| 算法练习 → Hot 100 题单 | 按专题、难度和练习状态选题，独立写 Python、记录思路、查看提示与复习。 |
-| 题库 | 自建、编辑、检索题目，导入公开 LeetCode 题目或 JSON，选择严格、混合或灵活改编模式。 |
-| 设置 → 模型设置 | 配置 OpenAI-compatible 服务，读取模型列表、测试连接并启用。 |
-| 设置 → 联网搜索 | 配置 Tavily 或 Firecrawl v2，按场次确认搜索关键词并保留来源。 |
-| 设置 → 本机数据 | 下载备份、预览恢复、处理多页面冲突，或按类别清理本机草稿。 |
+| 模拟面试 | 根据简历与 JD 规划文本面试，支持候选人级别、轮次、时长、逐题反馈和报告导出。 |
+| JD 备题 | 提前生成带原文依据的题单，编辑后保存到题库或带入面试。 |
+| 简历管理 | 导入 PDF、DOCX、TXT、Markdown；简历库支持原文件预览、文本校正和不可变版本。 |
+| JSON 简历制作 | 导入 cool-resume v2/v3 JSON，实时预览与切换七套主题，管理独立副本，导出 JSON、HTML、A4 PDF，并保存为投递附件。 |
+| 算法练习 | 内置 LeetCode Hot 100 题单快照、Python 编辑器、套路跟打、笔记和复习进度。 |
+| 题库管理 | 自建题目，导入公开 LeetCode 题目或 JSON，支持严格、混合和灵活改编模式。 |
+| BOSS 求职 | 按城市、预设或自定义方向搜索，保存岗位快照、筛选依据和人工复核结果；明确批准后由 Worker 程序化发起站内沟通。 |
+| 模型与搜索 | 支持自带模型连接、模型列表与连接测试，以及可选 Tavily / Firecrawl 联网搜索。 |
+| 本机保存 | 恢复浏览器草稿，导出与恢复本机备份，持久记录服务端任务及执行结果。 |
 
-<details>
-<summary>查看 Hot 100 练习界面</summary>
+### 界面预览
 
 ![Hot 100 题单与 Python 独立作答](docs/evidence/screenshots/hot100-desktop.png)
 
-</details>
+## 快速开始
 
-## 本地启动
+### 环境要求
 
-需要 Node.js 22.16 或更高版本、pnpm 12.11.2，以及可运行 Docker Compose 的环境。PostgreSQL 和 Redis 运行在容器中，Web、API、Agent 与 Worker 在本机运行。Python 3 用于内置算法模板的测试，网页本身不执行 Python。
+- Node.js **22.16+**。
+- pnpm **12.11.2**，与 `package.json` 中的 `packageManager` 保持一致。
+- 使用 BOSS 专用窗口或运行浏览器测试时，需要安装 Google Chrome。
+- 运行 Python 算法模板测试时，需要 Python 3。
 
-在仓库根目录安装依赖和项目自带的 Bun 运行时。
+项目仅使用 SQLite，无需数据库服务器。项目自带的 Bun 运行时用于 Agent 服务；Redis 通知为可选配置。
+
+### 安装与启动
+
+在仓库根目录执行：
 
 ```sh
 pnpm install --frozen-lockfile --ignore-scripts
 pnpm runtime:setup
+node node_modules/esbuild/install.js
 ```
 
-首次启动时，从示例创建环境文件。已有 `.env` 时跳过此步，保留原配置。
+首次使用时创建配置文件。已有 `.env` 请保留，不要覆盖。
 
 ```sh
 cp .env.example .env
-```
-
-启动数据库和应用。
-
-```sh
-docker compose -f infra/compose.yaml up -d --wait
+pnpm db:migrate
 pnpm dev
 ```
 
-打开 [面试练习室](http://localhost:5173)。默认端口如下，启动前确认没有冲突。
+打开 **[http://localhost:5173](http://localhost:5173)**。
 
-| 服务 | 本机端口 |
+| 服务 | 默认地址 |
 | --- | --- |
-| Web | 5173 |
-| NestJS API | 3000 |
-| Agent | 4111 |
-| PostgreSQL | 55439 |
-| Redis | 56389 |
+| Web | http://localhost:5173 |
+| API | http://localhost:3000/api/v1 |
+| Agent | http://localhost:4111 |
 
-启动后可通过 `http://localhost:3000/api/v1/health` 检查 API 状态。运行 `pnpm run doctor` 可检查运行时、端口、API、Agent、PostgreSQL 与 Redis。请保留 `run`，`pnpm doctor` 是 pnpm 自带的包管理器诊断命令。项目诊断不会启动服务、打印密钥或调用收费模型。
-
-首次创建开发数据库卷时，Compose 自动运行 [数据库迁移](infra/migrations) 和 [开发角色授权](infra/init-dev.sql)。已有数据卷不会重新执行初始化。升级旧库时，使用具备迁移权限的管理员连接运行迁移，再核对新增表的角色授权。
+检查服务状态：
 
 ```sh
-MIGRATION_DATABASE_URL='替换为管理员数据库连接地址' pnpm db:migrate
+pnpm run doctor
 ```
 
-业务表只授权给 app 角色，Agent 角色只访问 `agent_runtime`。不要通过扩大 Agent 权限解决业务表授权问题。
+API 健康检查地址为 `http://localhost:3000/api/v1/health`。请使用 `pnpm run doctor`，避免与 pnpm 自带的 `doctor` 命令混淆。
 
-## 准备与完成一次面试
+### 第一次使用
 
-1. 在 **设置 → 模型设置** 填写接口根地址、API Key 和模型名。可先读取模型列表或测试连接，再保存并启用。使用规则演示时可以跳过配置。
-2. 在 **面试准备** 上传简历，检查提取预览后确认使用。也可以直接粘贴简历与项目经历。
-3. 按“填写资料 → 面试安排 → 确认开始”完成准备。题库选择和联网资料在高级选项中。常用简历、JD 和参数可存成命名的岗位资料档案，支持切换、复制和删除。
-4. 逐题作答，查看反馈。生成失败时保留已接受的作答，可检查连接后显式重试，或取消练习。
-5. 完成后查看技术能力、沟通表达、综合素质和逐题 QA。导出 Markdown 或 JSON，也可用相同资料重新练习。
+1. 进入 **面试准备**，上传或粘贴简历，填写目标岗位与 JD。
+2. 选择候选人级别、面试轮次与时长，开始规则演示。
+3. 需要真实 AI 生成时，在 **设置 → 模型设置** 配置并启用自己的连接。
+4. 完成作答后查看逐题反馈和报告，或进入 **JD 备题**、**算法练习** 单独使用相关功能。
 
-模型连接默认保留 24 小时，可选择保留 30 天。完整的 `/chat/completions` 地址会规范化为根地址。本地模型地址指 Agent 所在机器。测试连接可能产生供应商费用，短探测不保证后续生成质量。
+规则演示不调用真实模型，演示评分不代表专业能力评价。详细操作见 [使用指南](docs/user-guide.md)。
 
-每场面试固定模型快照。切换连接只影响新面试；旧连接过期或被清除后，需要重新启用连接再显式重试。系统不会在失败时自动降级到其他供应商或规则演示。
+左侧菜单按 **简历管理、求职管理、面试中心、学习训练、系统设置** 分组；手机使用抽屉菜单。简历库支持导入文件、核对文本并转为 JSON 保存，之后可制作副本、导出附件或带入面试。操作步骤见 [简历制作指南](docs/resume-builder.md)。已有安装升级后先运行 `pnpm db:migrate`，再启动服务。
 
-### 简历与面试规划
+## BOSS 求职
 
-- 简历支持 PDF、DOCX、TXT 和 Markdown，文件最大 5 MB。PDF 提取前 20 页，扫描件需要先做 OCR，旧 DOC 需先转换。
-- 提取在本地服务的独立进程中完成。预览最多 64000 字，提交面试的简历最多 16000 字，确认前可校正文本。原始文件不长期保存。
-- 候选人分为实习、校招和社招。轮次包括一面、二面和 HR 面，问题难度与数量随参数调整。
-- 面试总时长为 5 至 120 分钟。HR 面最多 30 分钟，并禁用编程题。单场最多 30 题，计划包含开场、问答、可选编程和反问。
-- 编程题仅在求职者模式、技术岗且非 HR 面时启用，从匹配的题库中选择原题。服务端接收代码与思路供模型评价，不执行代码。
+搜索预览默认关闭 AI，不要求简历或模型连接。支持广州、深圳，预设方向和最多六个自定义方向；多个方向按“或”搜索，薪资、黑名单和雇佣关系在读取后逐条核对。
 
-提交作答后，服务端根据已完成环节与近期问答耗时动态重规划。等待作答时也可调整总时长和后续回答长度，当前题、已完成 QA 和草稿保持不变。时间预算到达后只评估已接受的当前回答，不再展示新题。
+```text
+人工登录与检查 → 程序搜索 → 保存快照与筛选 → 人工复核和批准 → Worker 执行沟通 → 核对结果
+```
 
-面试输入和未提交作答保存在本机浏览器的 IndexedDB，关闭重开后可恢复。已接受的作答与面试任务保存到服务端。侧栏按岗位和状态检索，每页 20 场，可加载更早的历史；摘要不携带简历和答案。报告会关联最多三道优先复习的 QA，支持回看原文依据并加入面试复习清单。
+- 浏览器由 **Patchright + 本机 Chrome** 驱动，使用独立持久会话，不导入日常浏览器凭据。
+- 明确外包、派遣或中介岗位会被排除；雇佣关系未知的岗位需要人工复核。
+- “仅立即沟通”使用 BOSS 已配置的自动招呼，不额外输入消息或发送附件。
+- 已批准、点击前失败的记录可通过统一入口逐条继续；结果未知的记录不会自动重发。
+- 当前继续控制器运行在页面中，关闭页面会停止后续提交，已排队动作仍由 Worker 执行并记录。
+- 登录验证、站点限制或页面异常会阻止后续动作。Patchright 不保证避免平台风控，也不会绕过验证码或访问限制。
 
-### 按 JD 提前备题
+默认配置 `BOSS_AUTOMATION=paused`，不会打开或检查 BOSS。按实际使用范围显式选择模式后，需要重启 API 和 Worker：
 
-在 **JD 备题** 中填写岗位名与 JD，生成 3 至 12 道题，无需先填简历。选择实习、校招或社招，以及面试轮次和岗位方向。技术面生成技术问答，HR 面与非技术岗生成行为问答；面试中的编程题仍从题库安排。
-
-每题保留 JD 原文依据、回答要点和追问，区分必备项与加分项。编辑、校正分类并勾选题目后，可批量入库、导出 Markdown，或选择 **保存并带入练习**。带入使用严格模式并保留已有简历草稿，实际题量仍受面试计划限制。
-
-从面试资料中的 **根据 JD 提前备题** 进入时，会携带当前岗位、JD 与规划参数。直接打开 JD 备题标签页时，恢复独立备题草稿。生成失败保留已有题单，生成中刷新需要重新发起。资料和已有题单保存在本机，配置模型后会返回原任务。备题只向当前模型发送该页岗位、JD 与参数，不自动触发联网搜索。
-
-### 管理题库与联网资料
-
-题库支持自建、编辑、删除、检索，以及公开 LeetCode 链接和 JSON 批量导入。JSON 格式示例可在导入页查看，每次最多 100 题、5 MB。LeetCode 导入按地区与 slug 去重，不使用账户 Cookie，也不导入付费题。上游不可用时可改用 JSON。
-
-每个浏览器身份最多保存 500 题，包含内置题。批量操作超额时整批回滚。面试固定题库快照，编辑题库不改变旧面试。
-
-| 题库模式 | 使用方式 |
+| 模式 | 范围 |
 | --- | --- |
-| 严格 | 保持原题，题量受匹配库存限制。 |
-| 混合 | 交替使用原题和生成的问答题。 |
-| 灵活改编 | 按候选人难度调整题库材料，也可生成问答题。 |
+| `paused` | 暂停站点自动化。 |
+| `manual` | 仅手动登录和会话检查。 |
+| `search` | 允许搜索预览，禁止沟通和附件投递。 |
+| `contact` | 允许搜索及已批准的原生沟通，不追加消息或附件。 |
+| `enabled` | 开启完整投递路径的配置门禁；仍需通过审批、控件和附件身份等检查。 |
 
-开场、反问和编程始终使用原题。报告保留题目来源、原作答、原文依据和维度评分；HR、非技术岗、开场和反问的技术能力显示不适用。
+**站内沟通状态不等于消息送达，也不等于简历附件已发送。** 原始附件投递仍有独立验证门槛，不应把整个 BOSS 能力视为已完成真实站点验收。
 
-在 **联网搜索** 中保存 Tavily 或 Firecrawl v2 连接后，还需为每场面试启用搜索，并确认 2 至 200 字的关键词。只外发确认的查询，不自动发送简历、JD 或作答。首次取得的来源固定用于本场并进入报告。搜索失败时可重新配置连接，或明确关闭本场搜索后重试。
+## 配置说明
 
-## 练习 Python 算法
-
-### Hot 100 独立作答
-
-打开 **算法练习 → Hot 100 题单**。内置的是从 [LeetCode 官方 Hot 100](https://leetcode.cn/studyplan/top-100-liked/) 提取的 **2026-10-22 快照**，共 100 题、17 个专题。
-
-1. 按专题、难度、题号、标题或练习状态筛选题目。
-2. 查看本项目原创学习摘要，在原站核对完整题面、限制和示例。
-3. 独立编写 Python 与解题思路，需要时展开提示。
-4. 自评为待练习、练习中或已复习，再继续下一道待练习题。
-
-代码、思路与自评按题号保存在本机。支持收藏、手动待复习与专题进度；完成自评复习后按 1、3、7、14 天安排下一次，后续保持 14 天。“需要再练”安排次日复习。下一题遵守当前筛选，优先到期复习，再选择未练习或练习中的题目。可导出单题作答，也可将当前筛选的题单导出为 JSON，再到 **题库管理** 导入。重复导入按 slug 跳过。
-
-题单提供学习目标与提示，当前并非一百份完整标准题解。已有模式仅在相关题目显示跟打入口，其余题目明确显示尚无模板。完整题面和提交判题保留原站入口，**已复习** 是用户自评。
-
-### 套路跟打与默写
-
-打开 **算法练习 → 套路跟打**，粘贴题面或关键词，或从编程题库带入。页面显示命中词和多个候选模式，可手动选择。每个模式包含适用条件、步骤、易错点、复杂度和一份 Python 例题代码。
-
-现有 12 种模式为哈希表、相向双指针、滑动窗口、前缀和加哈希计数、二分查找、单调栈、BFS、回溯、0/1 背包、堆 Top K、并查集和拓扑排序。关键词仅辅助识别，模板解决标明的例题，套到自己的题目时仍需核对条件与输入输出。
-
-选择 **核心代码跟打** 或 **题面跟打**，照着参考输入，也可隐藏参考默写。核对时显示首次差异的行列与逐行结果。代码编辑器提供行号、Python 高亮、缩进、撤销、搜索和专注模式。Tab 缩进、Shift + Tab 减少缩进，先按 Esc 再按 Tab 移出编辑器。跟打关闭自动括号与自动缩进，保留手打对照。比较保留空格、缩进和末尾换行，统一换行格式，并按 Unicode 码点处理中文与 emoji。
-
-最近 20 个跟打对象的草稿分别保存。目标原文改变时不套用旧输入，编辑带入的题面不会写回题库。Hot 100 独立作答与跟打草稿分别保存，关闭重开可继续；从 Hot 100 进入套路后可返回原题。不跨设备同步。
-
-算法练习无需模型或搜索连接，不外发题面和输入代码。网页不执行用户代码，跟打一致与自评完成均不代表通过算法判题。
-
-## 保存与备份本机练习
-
-页面顶部显示保存状态。显示“已保存到本机”后可关闭页面；存储失败时保持页面打开并先导出备份。首次打开新版时，会逐项迁移旧标签页草稿，迁移成功后才清理旧值，损坏条目保留原数据并显示恢复提示。
-
-在 **设置 → 本机数据** 下载版本化 JSON。默认只包含算法代码、笔记、跟打、进度和页面偏好；勾选后才包含简历、JD、未提交答案、资料档案和面试复习清单。密钥与身份 Cookie 不进入备份。服务端完整面试与报告仍在历史详情中单独导出。
-
-恢复前会显示预览，相同记录默认保留本机版本，逐项勾选后才覆盖。多标签页编辑同一草稿出现冲突时，双方内容均保留，可先备份再选择版本。恢复、冲突选择或清理后按提示刷新加载。
-
-这些内容只属于当前浏览器和站点地址。清理浏览器数据、退出无痕模式或更换设备会影响可恢复性，请提前下载备份。`localhost` 与 `127.0.0.1` 是不同站点，日常使用固定一个地址。此功能不备份数据库，也不恢复服务器身份。
-
-## 使用项目 skill 与题单工具
-
-| 项目 skill | 用途 |
-| --- | --- |
-| [algorithm-practice](skills/algorithm-practice/SKILL.md) | 基于同一份 Hot 100 数据选题、分层提示、讲解 Python 核心代码和复盘解法。 |
-| [software-factory](skills/software-factory/SKILL.md) | 根据 spec 选择能力、生成设计上下文和配置索引，并依据可重放证据复盘项目。 |
-
-可让开发助手读取对应 `SKILL.md`，或在本项目中请求使用 `$algorithm-practice`。项目 skill 没有安装到全局，也不等于网页已经接入新的在线 AI 服务。
-
-题单工具与网页共用数据，安装依赖后可在仓库根目录运行，无需先启动 Web 或数据库。
-
-```sh
-pnpm algorithm list --group 哈希 --difficulty easy
-pnpm algorithm list --query 子串
-pnpm algorithm show 239 --hint
-pnpm --silent algorithm export-bank --group 回溯 > hot100-backtracking.json
-```
-
-`list` 和 `show` 输出来源、快照日期及官方元数据的 SHA-256。哈希只覆盖元数据，不覆盖原创提示或个人作答。`export-bank` 只输出符合现有导入契约的 `questions`。
-
-官方元数据位于 [hot100.json](packages/interview/data/hot100.json)，原创学习卡位于 [hot100-lessons.ts](packages/interview/src/hot100-lessons.ts)。需要刷新题单时，先保存官方学习计划 HTML，再运行提取和对应测试。
-
-```sh
-pnpm algorithm:update --html path/to/studyplan.html
-pnpm exec vitest run tests/hot100.test.ts
-```
-
-解析失败保留旧快照，题号变化需要同步原创学习卡。页面和工具的共同实现位于 [hot100.ts](packages/interview/src/hot100.ts)。
-
-## 配置与数据归属
-
-配置项与校验规则见 [配置模块](packages/config/src/index.ts)，示例见 [.env.example](.env.example)。真实环境文件、密钥和个人简历不进入版本库、公开验收报告或经验库。
+完整示例见 [.env.example](.env.example)，校验规则见 [配置模块](packages/config/src/index.ts)。
 
 | 配置 | 用途 |
 | --- | --- |
-| `MODEL_MODE=demo` | 规则演示，仅用于开发体验，生产配置拒绝启用。 |
-| `MODEL_MODE=live` | 使用部署方默认模型，Agent 需同时配置 `LLM_MODEL=provider/model` 与 `LLM_API_KEY`，兼容接口可设置 `LLM_BASE_URL`。 |
-| `MODEL_MODE=disabled` | 仅使用用户自带连接，未启用连接前禁止开始面试或生成备题。 |
-| `CUSTOM_MODELS`、`MODEL_ALLOWED_HOSTS`、`ALLOW_LOCAL_MODELS` | 控制自带模型连接与允许访问的主机。 |
-| `SEARCH_ACCESS`、`SEARCH_ALLOWED_HOSTS`、`ALLOW_LOCAL_SEARCH` | 控制搜索连接与允许访问的主机。 |
+| `DATABASE_URL` | 业务 SQLite，默认 `file:.local/app.sqlite`。 |
+| `AGENT_DATABASE_URL` | 独立 Agent SQLite，默认 `file:.local/agent.sqlite`。 |
+| `REDIS_URL` | 可选 BullMQ 通知；留空时使用持久任务轮询。 |
+| `WEB_ORIGIN` | 固定 Web 来源，默认 `http://localhost:5173`。 |
+| `MODEL_MODE` | `demo` 为规则演示，`live` 为部署方默认模型，`disabled` 为仅允许用户自带连接。 |
+| `LLM_MODEL` / `LLM_API_KEY` / `LLM_BASE_URL` | 部署方默认模型的名称、密钥及可选接口地址。 |
+| `CUSTOM_MODELS` / `MODEL_ALLOWED_HOSTS` / `ALLOW_LOCAL_MODELS` | 控制自带模型连接及允许访问的主机。 |
+| `SEARCH_ACCESS` / `SEARCH_ALLOWED_HOSTS` / `ALLOW_LOCAL_SEARCH` | 控制联网搜索连接。 |
+| `BOSS_AUTOMATION` | BOSS 自动化范围，默认暂停。 |
+| `COOKIE_SECRET` / `INTERNAL_SERVICE_TOKEN` | 身份签名与内部服务凭据，公开部署前必须更换示例值。 |
 
-模型和搜索连接在开发环境默认开放，生产环境默认关闭。生产自带连接需显式启用、配置主机允许列表并使用 HTTPS，默认拒绝私网出站。本地模型访问仅在受控部署中开放。
+模型和搜索调用可能产生供应商费用。启用 AI 时，相关简历、JD 或作答会按功能发送到所选模型；算法跟打与本地笔记不需要模型连接。
 
-模型与搜索密钥经 API 授权转交 Agent，保存在 Agent 数据库的 AES-GCM 加密字段中。业务数据库角色不能读取密钥，报告、导出和浏览器持久存储也不包含密钥。清除连接会使旧面试对应连接失效，但不删除已经取得的搜索来源。更换内部服务 token 后，已有加密连接需要重新保存。
+## 数据与隐私
 
-应用使用签名浏览器身份，尚无正式账号、组织管理或跨设备同步。清除 Cookie 会失去原身份的访问能力。共享设备使用后，应删除练习并清除连接与本地草稿。删除练习会通过持久任务清理派生生成结果，并清理当前浏览器中这场面试的未提交答案和复习笔记；独立保存的岗位档案保留。
+- 当前是本机单用户工具，使用签名浏览器身份，尚无正式账号或跨设备同步。
+- 草稿与算法进度保存在当前浏览器；业务与 Agent 数据保存在独立 SQLite 文件中。浏览器备份不包含数据库。
+- 面试的一次性简历导入不长期保留原文件；简历库会私有保存用于版本管理的原文件。
+- 固定使用 `localhost` 入口。`localhost` 与 `127.0.0.1` 属于不同站点，Cookie 和浏览器存储不共享。
+- 真实 `.env`、模型密钥、个人简历和浏览器会话资料不得提交到仓库或公开验收报告。
 
-每个身份最近 24 小时最多保留 20 场新建会话，删除会话会降低计数。该限制不是公开服务的全局成本控制。取消会话也不保证第三方停止计费。
+SQLite 文件、WAL 与私有附件的保存和备份方式见 [本地存储说明](docs/design/sqlite-local.md)。
 
-## 开发结构
+## 技术栈与项目结构
 
-前端使用 React 19、Vite、TypeScript、Ant Design 与 TanStack Query。API 和 Worker 使用 NestJS，业务库使用 PostgreSQL 与 Drizzle，任务使用 BullMQ 与 Redis。Agent 独立运行于 Bun，使用 Hono 与 Mastra。依赖版本由 `pnpm-lock.yaml` 锁定。
+React 19 · TypeScript · Vite · Ant Design · TanStack Query · NestJS · Bun · Hono · Mastra · SQLite · Patchright
 
-| 目录 | 职责 |
-| --- | --- |
-| `apps/web` | 面试、备题、题库、模型设置和算法练习界面。 |
-| `apps/api` | 身份与请求授权，业务记录读写，题库和材料管理。 |
-| `apps/agent` | 模型调用、评估、连接和搜索，仅写入 `agent_runtime`。 |
-| `apps/worker` | 持久任务执行、重试、取消竞争与删除清理。 |
-| `packages/contracts` | 跨服务共享的 Zod 契约。 |
-| `packages/interview` | 面试规划、报告、算法模式与 Hot 100 题单。 |
-| `packages/database`、`packages/jobs` | 业务数据库与任务基础能力。 |
-| `packages/factory` | spec 解析、能力选择和设计上下文生成。 |
-| `infra` | 开发环境、测试数据库和迁移。 |
-| `skills` | 算法练习与软件工厂项目 skill。 |
+```text
+apps/
+  web/                网页界面与浏览器草稿
+  api/                身份授权、业务 API 与数据管理
+  agent/              模型调用、搜索和生成运行时
+  worker/             持久任务、浏览器操作与清理
+packages/
+  contracts/          共享 Zod 契约
+  career/             求职筛选、状态与存储
+  interview/          面试规划、报告和算法数据
+  database/           SQLite 连接与迁移
+  resume/             JSON 简历渲染、主题与示例
+  jobs/               任务基础能力
+  factory/            spec 解析与设计上下文生成
+infra/                数据迁移与环境配置
+skills/               项目技能与题单工具
+docs/                 使用指南、设计与验收记录
+```
 
-新增能力先修改 `app.spec.yaml`，再解析计划和生成上下文。
+API 和 Worker 负责业务数据写入；Agent 使用独立的数据边界。Redis / BullMQ 是可选组件。
+
+## 开发与验证
+
+```sh
+pnpm typecheck        # TypeScript 检查
+pnpm build            # 构建与工厂、项目 skill 校验
+pnpm test             # 默认测试；部分集成用例需要显式启用
+pnpm verify:sqlite    # SQLite 专项检查
+pnpm test:offline     # 本地隔离回归，可包含 localhost 浏览器 fixture
+```
+
+运行浏览器验收时，在另一个终端保持 `pnpm dev` 运行，并安装 Google Chrome：
+
+```sh
+pnpm test:e2e
+```
+
+本地合成测试不能证明真实 BOSS 登录、消息送达或附件投递成功。公网题目导入测试需显式设置 `RUN_PUBLIC_IMPORT=1`。
+
+[Verify 工作流](.github/workflows/verify.yml) 执行构建、隔离 SQLite 测试及 Chrome 验收，使用本地模型和搜索 fixture。实时结果以仓库 Actions 页面为准。
+
+新增能力先修改 `app.spec.yaml`，再生成并核对上下文：
 
 ```sh
 pnpm factory plan --spec app.spec.yaml
@@ -229,58 +189,20 @@ pnpm factory:docs
 pnpm factory:check
 ```
 
-工厂维护能力与设计上下文，配置登记不代表业务实现。当前项目不把单项目验收自动晋升为跨项目规则。
+提交改动时，请附上相关验证结果，保持共享契约、实现和文档一致，不将计划能力写成已实现能力。
 
-## 验证
+## 文档导航
 
-默认检查需要已安装依赖，Python 模板测试还需要本机可执行的 `python3`。
+- [文档索引](docs/README.md)：使用、设计、验证与历史资料分类。
+- [详细使用指南](docs/user-guide.md)：面试、备题、题库、算法与备份。
+- [项目能力矩阵](docs/generated/03-CAPABILITY-MATRIX.md)：能力选择与成熟度。
+- [算法练习 skill](skills/algorithm-practice/SKILL.md)：选题、Python 提示与复盘。
+- [软件工厂 skill](skills/software-factory/SKILL.md)：spec 与设计上下文维护。
+- [验收记录](docs/evidence/usability-acceptance.md)：历史验收范围与限制。
 
-```sh
-pnpm typecheck
-pnpm build
-pnpm test
-```
+## 当前限制
 
-集成测试使用独立临时数据库，端口为 55440。以下清理命令只针对测试环境。
-
-```sh
-docker compose -f infra/compose.test.yaml up -d --wait
-RUN_INTEGRATION=1 pnpm test
-docker compose -f infra/compose.test.yaml down --volumes
-```
-
-浏览器测试需要另一个终端中的 `pnpm dev` 保持运行，并安装 Google Chrome。测试使用独立身份与本地模型协议 fixture，不调用真实付费账号。
-
-```sh
-pnpm test:e2e
-```
-
-公网 LeetCode 导入测试默认跳过，需显式设置 `RUN_PUBLIC_IMPORT=1` 才会访问上游。2026-10-23 的完整本机回归为 186 项单元与数据库集成通过，Chrome 24 项通过、1 项公网导入跳过。完整范围和验证边界见 [个人练习体验验收](docs/evidence/usability-acceptance.md)。
-
-[Verify 工作流](.github/workflows/verify.yml) 在推送 main、codex 分支或向 main 提交合并请求时运行，也可在 [GitHub Actions](https://github.com/hyperMoss/interview-agents/actions/workflows/verify.yml) 手动触发。它在 Ubuntu 上安装锁定依赖，使用一次性的 PostgreSQL 与 Redis，执行构建、全部数据库测试、启动诊断及 Chrome 桌面和手机流程。公网题目导入保持关闭，模型和搜索只连接本地 fixture。
-
-每次运行保存测试 JSON、应用日志、截图及失败 trace，保留 7 天。产物按文件路径明确列出，不上传环境文件。工作流只申请仓库读取权限，第三方 Action 固定到提交哈希。当前每次运行的状态以 GitHub Actions 页面为准，主分支保护规则需在仓库设置中单独启用。
-
-| 验收记录 | 覆盖范围 |
-| --- | --- |
-| [个人练习体验](docs/evidence/usability-acceptance.md) | 本机持久化、备份、资料档案、导航、编辑器、复习和历史分页。 |
-| [Hot 100](docs/evidence/hot100-acceptance.md) | 官方数据快照、独立作答、恢复、题库导入及 skill 前向试用。 |
-| [算法跟打](docs/evidence/algorithm-acceptance.md) | Python 模板边界用例、文本比较、草稿和桌面与手机交互。 |
-| [JD 备题](docs/evidence/jd-acceptance.md) | 原文依据、编辑与恢复、批量入库和严格模式带入。 |
-| [面试能力扩展](docs/evidence/extension-acceptance.md) | 简历、搜索、规划、题库、报告与权限隔离。 |
-
-## 当前范围与相关文档
-
-当前交付覆盖文本面试和本地算法练习。RAG、实时语音、用户代码执行和在线判题尚未接通。Hot 100 学习进度由用户自评，模型评分质量及真实供应商计费仍需在实际连接中核验。
-
-生产前端产物位于 `dist/web`。公开部署还需要 HTTPS 反向代理、按服务注入凭据、数据备份和全局成本控制，完整生产镜像组合尚未验收。
-
-- [项目需求与能力矩阵](docs/generated/03-CAPABILITY-MATRIX.md)
-- [持久任务设计](docs/adr/0001-persistent-interview-execution.md)
-- [模型接入设计](docs/adr/0002-model-connections.md)
-- [软件工厂使用记录](docs/software-factory.md)
-- [JD 备题调研](docs/research/jd-preparation.md)
-- [算法模式调研](docs/research/algorithm-practice.md)
-- [GitHub 参考与许可](docs/research/github-interview-agents.md)
-
-项目独立实现。参考项目的许可与借鉴范围见上述调研记录。
+- 仅支持文本面试；RAG、实时语音和在线判题尚未接通。
+- 网页不执行用户代码，跟打一致与自评完成不代表算法判题通过。
+- BOSS 功能仍在开发与真实站点兼容性验证中，不提供持续代聊或定时无人值守投递。
+- HTTPS 反向代理、按服务隔离凭据、数据库备份和全局成本控制需要部署方另行配置；完整生产部署尚未验收。

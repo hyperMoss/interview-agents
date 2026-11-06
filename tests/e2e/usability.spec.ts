@@ -1,3 +1,4 @@
+import { navigateModule } from './ui-helpers';
 import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { workspaceBackupSchema } from '../../packages/contracts/src/workspace';
@@ -98,7 +99,7 @@ test('two pages preserve conflicting draft versions while page preferences remai
   await expect(second.getByLabel('待处理的多页面冲突')).toContainText('另一页的新岗位');
   await expect(second.getByLabel('待处理的多页面冲突')).toContainText('当前页保留的岗位');
   await second.getByRole('button', { name: '采用本机版本', exact: true }).click();
-  await second.reload(); await second.getByRole('tab', { name: '面试准备', exact: true }).click();
+  await second.reload(); await navigateModule(second, '面试准备');
   await expect(second.getByLabel('目标岗位')).toHaveValue('另一页的新岗位');
 });
 

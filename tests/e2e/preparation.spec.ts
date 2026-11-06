@@ -1,3 +1,4 @@
+import { navigateModule } from './ui-helpers';
 import { nextStep, confirmDelete } from './ui-helpers';
 import { test, expect, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
@@ -9,7 +10,7 @@ const jd='熟悉 React 与 TypeScript，负责复杂页面状态与性能优化�
 test.setTimeout(90000);
 test.use({actionTimeout:10000});
 async function openPreparation(page:Page){
-  await page.getByRole('tab',{name:'JD 备题',exact:true}).click();
+  await navigateModule(page, 'JD 备题');
   await page.getByLabel('备题岗位',{exact:true}).fill('前端工程师');
   await page.getByRole('textbox',{name:'备题 JD',exact:true}).fill(jd);
   await page.getByLabel('预生成题量',{exact:true}).fill('3');
@@ -33,7 +34,7 @@ test('JD-only preview, edits, selected idempotent save, refresh, export and stri
   }
   const bank=await (await page.request.get('/api/v1/question-bank')).json();
   const saved=bank.filter((question:{content:string})=>question.content===edited);expect(saved).toHaveLength(1);
-  await page.reload();await page.getByRole('tab',{name:'JD 备题',exact:true}).click();
+  await page.reload();await navigateModule(page, 'JD 备题');
   await expect(page.getByRole('textbox',{name:'题目 1 题面',exact:true})).toHaveValue(edited);
   await expect(page.getByRole('textbox',{name:'题目 1 题面',exact:true})).toHaveAttribute('readonly','');
   await expect(page.getByRole('checkbox',{name:'选择备题 2',exact:true})).not.toBeChecked();

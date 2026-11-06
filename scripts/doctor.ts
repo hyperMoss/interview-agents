@@ -2,7 +2,8 @@ import { execFile } from 'node:child_process';
 import { connect } from 'node:net';
 import { connect as connectTls } from 'node:tls';
 import { pathToFileURL } from 'node:url';
-import { Pool } from 'pg';
+import { DatabaseSync } from 'node:sqlite';
+import { sqlitePath } from '../packages/database/src/sqlite';
 import { z } from 'zod';
 
 export type DoctorCheck = {
@@ -20,14 +21,14 @@ const configSchema = z.object({
   AGENT_PORT: portSchema.default(4111),
   WEB_ORIGIN: z.url().default('http://localhost:5173'),
   AGENT_URL: z.url().default('http://127.0.0.1:4111'),
-  DATABASE_URL: z.url().default('postgresql://app:local-app-password@127.0.0.1:55439/interview'),
-  REDIS_URL: z.url().default('redis://127.0.0.1:56389'),
+  DATABASE_URL: z.string().startsWith('file:').default('file:.local/app.sqlite'),
+  REDIS_URL: z.union([z.literal(''),z.url()]).default(''),
 }).superRefine((config, context) => {
   for (const [key, protocols] of [
     ['WEB_ORIGIN', ['http:', 'https:']], ['AGENT_URL', ['http:', 'https:']],
-    ['DATABASE_URL', ['postgres:', 'postgresql:']], ['REDIS_URL', ['redis:', 'rediss:']],
+    ['REDIS_URL', ['redis:', 'rediss:']],
   ] satisfies [keyof Pick<typeof config, 'WEB_ORIGIN' | 'AGENT_URL' | 'DATABASE_URL' | 'REDIS_URL'>, string[]][]) {
-    if (URL.canParse(config[key]) && !protocols.includes(new URL(config[key]).protocol)) context.addIssue({ code: 'custom', path: [key], message: 'Invalid protocol' });
+    if (config[key] && URL.canParse(config[key]) && !protocols.includes(new URL(config[key]).protocol)) context.addIssue({ code: 'custom', path: [key], message: 'Invalid protocol' });
   }
 });
 
@@ -65,15 +66,14 @@ async function httpCheck(name: string, url: URL, fix: string): Promise<DoctorChe
   return { name, status: 'error', detail: '健康检查失败，服务可能未启动或依赖尚未就绪。', fix };
 }
 
-async function postgresCheck(connectionString: string): Promise<DoctorCheck> {
-  const pool = new Pool({ connectionString, max: 1, connectionTimeoutMillis: timeoutMs, query_timeout: timeoutMs });
-  pool.on('error', () => {});
+async function sqliteCheck(url:string):Promise<DoctorCheck> {
+  let database:DatabaseSync|undefined;
   try {
-    await pool.query('SELECT 1');
-    return { name: 'PostgreSQL', status: 'ok', detail: '连接、身份认证与只读查询通过。' };
-  } catch {
-    return { name: 'PostgreSQL', status: 'error', detail: '连接或身份认证失败。', fix: '检查 DATABASE_URL；本机依赖可运行 docker compose -f infra/compose.yaml up -d --wait。' };
-  } finally { await pool.end(); }
+    database=new DatabaseSync(sqlitePath(url),{readOnly:true});
+    database.prepare('SELECT 1 FROM app_interviews LIMIT 1').all();
+    return{name:'SQLite',status:'ok',detail:'本地文件与业务表只读查询通过。'};
+  }catch{return{name:'SQLite',status:'error',detail:'本地数据库不可读或尚未迁移。',fix:'检查 DATABASE_URL 并运行 pnpm db:migrate。'};}
+  finally{database?.close();}
 }
 
 function redisCommand(parts: string[]) {
@@ -105,7 +105,7 @@ async function redisCheck(url: URL): Promise<DoctorCheck> {
     });
   } catch { }
   return available ? { name: 'Redis', status: 'ok', detail: 'PING 响应通过。' }
-    : { name: 'Redis', status: 'error', detail: '连接、身份认证或 PING 响应失败。', fix: '检查 REDIS_URL；本机依赖可运行 docker compose -f infra/compose.yaml up -d --wait。' };
+    : { name: 'Redis', status: 'error', detail: '连接、身份认证或 PING 响应失败。', fix: '检查可选 REDIS_URL；不使用 Redis 时留空，Worker 会通过 SQLite 轮询。' };
 }
 
 export async function runDoctor(env: NodeJS.ProcessEnv = process.env): Promise<DoctorCheck[]> {
@@ -131,10 +131,10 @@ export async function runDoctor(env: NodeJS.ProcessEnv = process.env): Promise<D
     tcpCheck('前端端口', hostname(web), Number(web.port || (web.protocol === 'https:' ? 443 : 80)), '运行 pnpm dev:web。'),
     tcpCheck('API 端口', '127.0.0.1', config.API_PORT, '运行 pnpm dev:api。'),
     tcpCheck('Agent 端口', hostname(agent), Number(agent.port || (agent.protocol === 'https:' ? 443 : 80)), '运行 pnpm dev:agent，并核对 AGENT_URL。'),
-    httpCheck('API', new URL('/api/v1/health', api), '查看 pnpm dev:api 的错误，并确认 PostgreSQL 已就绪。'),
+    httpCheck('API', new URL('/api/v1/health', api), '查看 pnpm dev:api 的错误，并确认 SQLite 已迁移。'),
     httpCheck('Agent', new URL('/health', agent), '查看 pnpm dev:agent 的错误，并确认 Agent 数据库权限与迁移已就绪。'),
-    postgresCheck(config.DATABASE_URL),
-    redisCheck(new URL(config.REDIS_URL)),
+    sqliteCheck(config.DATABASE_URL),
+    config.REDIS_URL?redisCheck(new URL(config.REDIS_URL)):Promise.resolve<DoctorCheck>({name:'Redis',status:'ok',detail:'未启用；持久任务使用数据库轮询。'}),
   ]));
   return checks;
 }

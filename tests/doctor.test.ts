@@ -47,13 +47,13 @@ describe('safe startup doctor', () => {
     const checks = await runDoctor({
       API_PORT: String(address.port), AGENT_URL: `http://127.0.0.1:${address.port}`, WEB_ORIGIN: `http://127.0.0.1:${address.port}`,
       REDIS_URL: `redis://fixture-user:private-redis-password@127.0.0.1:${redisAddress.port}`,
-      DATABASE_URL: 'postgresql://fixture:private-db-password@127.0.0.1:1/unavailable',
+      DATABASE_URL: (process.env.SQLITE_TEST_APP_URL ?? "file:/tmp/interview-tests-app.sqlite"),
     });
     expect(paths.sort()).toEqual(['/api/v1/health', '/health']);
     for (const name of ['前端端口', 'API 端口', 'Agent 端口', 'API', 'Agent', 'Redis']) {
       expect(checks.find(check => check.name === name)?.status).toBe('ok');
     }
-    expect(checks.find(check => check.name === 'PostgreSQL')?.status).toBe('error');
+    expect(checks.find(check => check.name === 'SQLite')?.status).toBe('ok');
     expect(commands).toBe('*3\r\n$4\r\nAUTH\r\n$12\r\nfixture-user\r\n$22\r\nprivate-redis-password\r\n*1\r\n$4\r\nPING\r\n');
     expect(formatDoctor(checks)).not.toMatch(/private-redis-password|private-db-password/);
   });
@@ -64,7 +64,7 @@ describe('safe startup doctor', () => {
     cleanup.push(() => new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())));
     const address = server.address();
     if (!address || typeof address === 'string') throw new Error('Missing HTTP fixture address');
-    const checks = await runDoctor({ API_PORT: String(address.port), AGENT_URL: `http://127.0.0.1:${address.port}`, WEB_ORIGIN: `http://127.0.0.1:${address.port}`, DATABASE_URL: 'postgresql://fixture:fixture@127.0.0.1:1/unavailable', REDIS_URL: 'redis://127.0.0.1:1' });
+    const checks = await runDoctor({ API_PORT: String(address.port), AGENT_URL: `http://127.0.0.1:${address.port}`, WEB_ORIGIN: `http://127.0.0.1:${address.port}`, DATABASE_URL: (process.env.SQLITE_TEST_APP_URL ?? "file:/tmp/interview-tests-app.sqlite"), REDIS_URL: 'redis://127.0.0.1:1' });
     expect(checks.find(check => check.name === 'API 端口')?.status).toBe('ok');
     expect(checks.find(check => check.name === 'API')?.status).toBe('error');
     expect(checks.find(check => check.name === 'Agent')?.status).toBe('error');

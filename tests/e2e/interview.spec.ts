@@ -25,7 +25,7 @@ test('browser: intake → interview → report → reload/history → deletion, 
   await expect(page.getByLabel('练习报告')).toBeVisible();
   await page.reload();await expect(page.getByRole('heading',{name:'练习完成，可以开始复盘了。'})).toBeVisible();
   const download=page.waitForEvent('download');await page.getByRole('button',{name:'导出本次记录'}).click();expect((await download).suggestedFilename()).toMatch(/^interview-/);
-  await page.setViewportSize({width:390,height:844});await page.evaluate(()=>window.scrollTo(0,0));await expect(page.locator('.sidebar')).toHaveCSS('position','static');await page.screenshot({path:'docs/evidence/screenshots/report-mobile.png',fullPage:true});
+  await page.setViewportSize({width:390,height:844});await page.evaluate(()=>window.scrollTo(0,0));await expect(page.locator('.sidebar')).not.toBeVisible();await page.screenshot({path:'docs/evidence/screenshots/report-mobile.png',fullPage:true});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await page.getByRole('button',{name:'删除此练习及简历资料'}).click();await confirmDelete(page);
   await expect(page.getByRole('heading',{name:'准备练习资料'})).toBeVisible();

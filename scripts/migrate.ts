@@ -1,5 +1,7 @@
-import { readFile,readdir } from 'node:fs/promises';
-import { Pool } from 'pg';
-const pool = new Pool({ connectionString: process.env.MIGRATION_DATABASE_URL ?? process.env.DATABASE_URL });
-try {const directory=new URL('../infra/migrations/',import.meta.url);for(const file of (await readdir(directory)).filter(name=>name.endsWith('.sql')).sort())await pool.query(await readFile(new URL(file,directory),'utf8'));}
-finally { await pool.end(); }
+import { readApiConfig,readAgentConfig } from '../packages/config/src/index';
+import { migrateSqlite } from '../packages/database/src/migrate';
+const api=readApiConfig(),agent=readAgentConfig();
+if(api.DATABASE_URL===agent.AGENT_DATABASE_URL)throw new Error('SQLITE_DATABASES_MUST_BE_SEPARATE');
+await migrateSqlite(api.DATABASE_URL,'app');
+await migrateSqlite(agent.AGENT_DATABASE_URL,'agent_runtime');
+process.stdout.write('SQLite business and runtime migrations complete.\n');

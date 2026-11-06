@@ -1,7 +1,7 @@
 import { createCipheriv,createDecipheriv,createHash,createHmac,randomBytes } from 'node:crypto';
 import { lookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
-import type { Pool } from 'pg';
+import type { Pool } from "../../../packages/database/src/sqlite";
 import { z } from 'zod';
 import { modelDraftSchema,modelAccessSchema,modelProfileSchema,saveModelSchema,type ModelDraft } from '../../../packages/contracts/src/models';
 import type { AgentConfig } from '../../../packages/config/src/index';
@@ -47,23 +47,23 @@ export class ModelConnections {
   constructor(readonly pool:Pool,readonly config:AgentConfig){this.key=createHash('sha256').update('interview-model-key-v1\0'+config.INTERNAL_SERVICE_TOKEN).digest();}
   private encrypt(value:string){const iv=randomBytes(12);const cipher=createCipheriv('aes-256-gcm',this.key,iv);const ciphertext=Buffer.concat([cipher.update(value,'utf8'),cipher.final()]);return JSON.stringify({iv:iv.toString('base64'),tag:cipher.getAuthTag().toString('base64'),value:ciphertext.toString('base64')});}
   private decrypt(raw:string){try{const data=z.object({iv:z.string(),tag:z.string(),value:z.string()}).parse(JSON.parse(raw));const decipher=createDecipheriv('aes-256-gcm',this.key,Buffer.from(data.iv,'base64'));decipher.setAuthTag(Buffer.from(data.tag,'base64'));return Buffer.concat([decipher.update(Buffer.from(data.value,'base64')),decipher.final()]).toString('utf8');}catch{throw new ModelAccessError('MODEL_KEY_UNAVAILABLE',409,'模型密钥无法恢复，请重新启用连接后重试。');}}
-  async active(owner:string){const result=await this.pool.query('SELECT * FROM agent_runtime.model_connections WHERE owner=$1 AND active=true AND expires_at>now()',[owner]);return result.rows[0]?this.profile(storedSchema.parse(result.rows[0])):null;}
+  async active(owner:string){const result=await this.pool.query("SELECT * FROM agent_runtime_model_connections WHERE owner=$1 AND active=true AND expires_at>(strftime('%Y-%m-%dT%H:%M:%f000Z','now'))",[owner]);return result.rows[0]?this.profile(storedSchema.parse(result.rows[0])):null;}
   private profile(row:z.infer<typeof storedSchema>){return modelProfileSchema.parse({id:row.id,baseUrl:row.base_url,model:row.model,hasKey:row.has_key,expiresAt:row.expires_at.toISOString(),remember:row.remember});}
   async save(owner:string,raw:unknown){
     const draft=saveModelSchema.parse(raw);await validateModelUrl(draft.baseUrl,this.config);
     const id=crypto.randomUUID();const expiresAt=new Date(Date.now()+(draft.remember?30:1)*86400000);
     const client=await this.pool.connect();
-    try{await client.query('BEGIN');await client.query('SELECT pg_advisory_xact_lock(hashtext($1))',[`model-owner:${owner}`]);
-      await client.query('UPDATE agent_runtime.model_connections SET active=false WHERE owner=$1',[owner]);
-      await client.query('INSERT INTO agent_runtime.model_connections(id,owner,base_url,model,encrypted_key,timeout_ms,remember,expires_at,active,has_key) VALUES($1,$2,$3,$4,$5,$6,$7,$8,true,$9)',[id,owner,draft.baseUrl,draft.model,this.encrypt(draft.apiKey),draft.timeoutMs,draft.remember,expiresAt,draft.apiKey.length>0]);
+    try{await client.query('BEGIN');
+      await client.query("UPDATE agent_runtime_model_connections SET active=false WHERE owner=$1",[owner]);
+      await client.query("INSERT INTO agent_runtime_model_connections(id,owner,base_url,model,encrypted_key,timeout_ms,remember,expires_at,active,has_key) VALUES($1,$2,$3,$4,$5,$6,$7,$8,true,$9)",[id,owner,draft.baseUrl,draft.model,this.encrypt(draft.apiKey),draft.timeoutMs,draft.remember,expiresAt,draft.apiKey.length>0]);
       await client.query('COMMIT');return modelProfileSchema.parse({id,baseUrl:draft.baseUrl,model:draft.model,hasKey:draft.apiKey.length>0,expiresAt:expiresAt.toISOString(),remember:draft.remember});
     }catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}
   }
   async describe(owner:string,id:string){if(!modelPolicy(this.config).enabled)throw new ModelAccessError('CUSTOM_MODELS_DISABLED',403,'部署方已关闭自定义模型接入。');const row=await this.row(owner,id);return this.profile(row);}
-  private async row(owner:string,id:string){const result=await this.pool.query('SELECT * FROM agent_runtime.model_connections WHERE id=$1 AND owner=$2 AND expires_at>now()',[id,owner]);if(!result.rows[0])throw new ModelAccessError('MODEL_CONNECTION_EXPIRED',409,'模型连接已清除或过期，请重新启用后重试。');return storedSchema.parse(result.rows[0]);}
+  private async row(owner:string,id:string){const result=await this.pool.query("SELECT * FROM agent_runtime_model_connections WHERE id=$1 AND owner=$2 AND expires_at>(strftime('%Y-%m-%dT%H:%M:%f000Z','now'))",[id,owner]);if(!result.rows[0])throw new ModelAccessError('MODEL_CONNECTION_EXPIRED',409,'模型连接已清除或过期，请重新启用后重试。');return storedSchema.parse(result.rows[0]);}
   async resolve(owner:string,id:string):Promise<ModelDraft>{if(!modelPolicy(this.config).enabled)throw new ModelAccessError('CUSTOM_MODELS_DISABLED',403,'自定义模型接入已关闭。');const row=await this.row(owner,id);await validateModelUrl(row.base_url,this.config);return{baseUrl:row.base_url,model:row.model,apiKey:this.decrypt(row.encrypted_key),timeoutMs:row.timeout_ms};}
-  async clear(owner:string){await this.pool.query('DELETE FROM agent_runtime.model_connections WHERE owner=$1',[owner]);return{cleared:true};}
-  async purge(){await this.pool.query('DELETE FROM agent_runtime.model_connections WHERE expires_at<now()');}
+  async clear(owner:string){await this.pool.query("DELETE FROM agent_runtime_model_connections WHERE owner=$1",[owner]);return{cleared:true};}
+  async purge(){await this.pool.query("DELETE FROM agent_runtime_model_connections WHERE expires_at<(strftime('%Y-%m-%dT%H:%M:%f000Z','now'))");}
 }
 function providerFailure(status:number){if(status===401||status===403)return new ModelAccessError('MODEL_AUTH_FAILED',502,'模型服务拒绝认证，请检查密钥与模型权限。');if(status===429)return new ModelAccessError('MODEL_RATE_LIMITED',503,'模型服务限流，请稍后重试。');return new ModelAccessError('MODEL_UPSTREAM_FAILED',502,`模型服务返回 HTTP ${status}，请检查接口协议或稍后重试。`);}
 async function modelRequest(path:string,draft:z.infer<typeof modelAccessSchema>,config:AgentConfig,body?:unknown){

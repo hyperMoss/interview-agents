@@ -1,3 +1,5 @@
+> 历史资料：本文保留当时的设计与测试结果，不作为当前部署说明。当前项目仅使用 SQLite，运行与备份见 [项目首页](../../README.md)。旧数据库服务、迁移与导入命令已移除。
+
 # 模型连接与面试恢复
 
 状态：已实现；真实 PostgreSQL、OpenAI-compatible 本地 fixture 与 Chrome / Bun 全链路验证。

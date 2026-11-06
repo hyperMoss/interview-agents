@@ -22,17 +22,15 @@ export class GenerationWorker {
     if (this.busy) return;
     this.busy = true;
     try {
-      const result = await this.database.pool.query(`UPDATE app.jobs SET status='processing', attempts=attempts+1, lease_until=now()+interval '90 seconds'
-        WHERE id=(SELECT id FROM app.jobs WHERE status='pending' OR (status='processing' AND lease_until<now())
-        ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT 1) RETURNING *`);
+      const result = await this.database.pool.query("UPDATE app_jobs SET status='processing', attempts=attempts+1, lease_until=strftime('%Y-%m-%dT%H:%M:%f000Z','now','+90 seconds')\n        WHERE id=(SELECT id FROM app_jobs WHERE status='pending' OR (status='processing' AND lease_until<(strftime('%Y-%m-%dT%H:%M:%f000Z','now')))\n        ORDER BY created_at LIMIT 1) RETURNING *");
       if (!result.rows.length) return;
       const job = claimedSchema.parse(result.rows[0]);
       try {
         if (job.attempts > 2) throw new Error('ATTEMPTS_EXHAUSTED');
         const response = runtimeResponseSchema.parse(await this.generate(job.payload));
         await this.database.db.transaction(async tx => {
-          const [row] = await tx.select().from(interviews).where(eq(interviews.id, job.session_id)).for('update');
-          const [storedJob] = await tx.select().from(jobs).where(eq(jobs.id, job.id)).for('update');
+          const [row] = await tx.select().from(interviews).where(eq(interviews.id, job.session_id));
+          const [storedJob] = await tx.select().from(jobs).where(eq(jobs.id, job.id));
           if (!storedJob || storedJob.status !== 'processing' || storedJob.attempts !== job.attempts) return;
           if (row) {
             const session = sessionSchema.parse(row.state);
@@ -45,8 +43,8 @@ export class GenerationWorker {
         });
       } catch(error) {
         await this.database.db.transaction(async tx => {
-          const [row] = await tx.select().from(interviews).where(eq(interviews.id, job.session_id)).for('update');
-          const [storedJob] = await tx.select().from(jobs).where(eq(jobs.id, job.id)).for('update');
+          const [row] = await tx.select().from(interviews).where(eq(interviews.id, job.session_id));
+          const [storedJob] = await tx.select().from(jobs).where(eq(jobs.id, job.id));
           if (!storedJob || storedJob.status !== 'processing' || storedJob.attempts !== job.attempts) return;
           if (job.attempts < 2) { await tx.update(jobs).set({ status: 'pending', leaseUntil: null }).where(eq(jobs.id, job.id)); return; }
           if (row) {
@@ -63,11 +61,11 @@ export class GenerationWorker {
   }
   async close() { await this.database.pool.end(); }
   async purge() {
-    const result=await this.database.pool.query('SELECT job_id FROM app.deletions ORDER BY created_at LIMIT 20');
+    const result=await this.database.pool.query("SELECT job_id FROM app_deletions ORDER BY created_at LIMIT 20");
     for(const row of result.rows){
       const id=z.object({job_id:z.uuid()}).parse(row).job_id;
       const response=await fetch(`${this.config.AGENT_URL}/internal/v1/receipts/${id}`,{method:'DELETE',headers:{authorization:`Bearer ${this.config.INTERNAL_SERVICE_TOKEN}`},signal:AbortSignal.timeout(10000)});
-      if(response.ok)await this.database.pool.query('DELETE FROM app.deletions WHERE job_id=$1',[id]);
+      if(response.ok)await this.database.pool.query("DELETE FROM app_deletions WHERE job_id=$1",[id]);
     }
   }
 }

@@ -16,6 +16,8 @@ import type { AlgorithmSeed } from './algorithm-panel';
 import { Intake } from './intake';
 import { Interview } from './interview';
 import { HomePanel, ReviewPanel } from './home-panel';
+import { CareerPanel, type CareerPracticeSeed } from './career-panel';
+import { ResumeLibrary } from './resume-library';
 import { DataPanel, WorkspaceSaveStatus } from './data-panel';
 import { initializeWorkspace } from './workspace-store';
 import { readSession, writeSession, tryClearInterviewDrafts } from './storage';
@@ -23,10 +25,14 @@ import { defaultPlanning } from './planning-panel';
 import { parseRoute, useWorkspaceRoute, statusLabels, type Route } from './navigation';
 import './style.css';
 import './usability.css';
-import { PrimaryNavigation } from './primary-navigation';
+import { ModuleNavigation, MobileNavigation, moduleTitle } from './module-navigation';
+import './module-layout.css';
+import { resumeText } from '../../../packages/resume/src/import';
+import type { ResumeDocument } from '../../../packages/contracts/src/resume-document';
 import { removeInterviewReviews } from './personal-data';
 
 const client = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: true }, mutations: { retry: 0, gcTime: 0 } } });
+const ResumeStudio = React.lazy(() => import('./resume-studio').then(module => ({ default: module.ResumeStudio })));
 const AlgorithmPanel = React.lazy(() => import('./algorithm-panel').then(module => ({ default: module.AlgorithmPanel })));
 
 function App() {
@@ -61,10 +67,29 @@ function App() {
     refetchInterval: query => query.state.data && ['preparing', 'evaluating'].includes(query.state.data.status) ? 1000 : false });
   function invalidateHistory() { void cache.invalidateQueries({ queryKey: ['history'] }); void cache.invalidateQueries({ queryKey: ['recent-history'] }); }
   function newPractice() { create.reset(); setNotice(''); navigate({ page: 'practice' }); }
-  function openUtility(page: 'model' | 'search' | 'bank' | 'data') {
+  function openUtility(page: 'model' | 'search' | 'bank' | 'data' | 'resumeLibrary') {
     if (!['model', 'search', 'data'].includes(route.page)) setReturnTo(route);
     if (route.page === 'preparation') setPreparationRequest(null);
     navigate({ page });
+  }
+  function useResumeForPractice(document: ResumeDocument) {
+    const resume = resumeText(document);
+    writeSession('interview-intake', JSON.stringify({ role: document.title, resume, jobDescription: '', level: 'mid', questionCount: 6, focus: '', planning: defaultPlanning, step: 0 }));
+    setIntakeVersion(value => value + 1); newPractice();
+    setNotice('已从简历库带入已保存的简历。填写目标岗位与 JD 后，确认面试安排。');
+  }
+  function navigateMenu(next: Route) {
+    if (next.page === 'preparation') setPreparationRequest(null);
+    if (next.page === 'algorithm') setAlgorithmRequest(null);
+    if (next.page === 'model' || next.page === 'search' || next.page === 'data' || next.page === 'resumeLibrary' || next.page === 'bank') openUtility(next.page);
+    else navigate(next);
+  }
+  // BOSS career questions reach strict practice through the existing bank + intake path.
+  function useCareerPractice({ role, resume, jobDescription, roleFamily, bankIds }: CareerPracticeSeed) {
+    const planning = { ...defaultPlanning, candidateLevel: 'experienced', round: 'first', roleType: 'technical', roleFamily, bankMode: 'strict', bankIds };
+    writeSession('interview-intake', JSON.stringify({ role, resume, jobDescription, level: 'senior', questionCount: 10, focus: '', planning, step: 0 }));
+    setIntakeVersion(value => value + 1); newPractice();
+    setNotice(`已带入 ${bankIds.length} 道 BOSS 备题，并固定使用该岗位 JD 与所选简历文本。确认后开始严格练习。`);
   }
   const create = useMutation({ mutationFn: ({ input, search }: { input: InterviewInput; search: ReturnType<typeof searchChoiceSchema.parse> }) => api.create(input, settings.data?.active?.id ?? null, search), onSuccess: data => {
     writeSession('interview-intake', null); cache.setQueryData(['session', data.id], data); navigate({ page: 'practice', sessionId: data.id }); invalidateHistory();
@@ -84,29 +109,21 @@ function App() {
   const modelLabel = selected && session.data ? session.data.modelSource.model ?? (session.data.modelMode === 'demo' ? '规则演示模式' : '部署方 AI 模型') : settings.data?.active?.model ?? (settings.data?.mode === 'demo' ? '规则演示模式' : settings.data?.mode === 'disabled' ? '请配置模型' : '部署方 AI 模型');
   const ready = Boolean(settings.data && (settings.data.active || settings.data.mode !== 'disabled'));
   return <div className="shell">
-    <aside className="sidebar">
-      <a className="brand" href="#/home"><span className="brand-mark">面</span><span>面试练习室<small>把经历说清楚</small></span></a>
-      <Button type="primary" className="new-session" onClick={newPractice}>＋ 新建练习</Button>
-      <div className="history-title">面试历史</div><Input className="history-search" aria-label="查找练习" maxLength={120} placeholder="查找岗位" value={historySearch} onChange={event => setHistorySearch(event.target.value)} allowClear />
+    <aside className="sidebar"><a className="brand" href="#/home"><span className="brand-mark">面</span><span>求职与面试<small>简历 · 求职 · 练习</small></span></a><ModuleNavigation page={route.page} navigate={navigateMenu} /><div className="sidebar-footer">本机工作空间 · SQLite</div></aside>
+    <main className="workspace">
+      <header className="workspace-header"><MobileNavigation page={route.page} navigate={navigateMenu} /><span className="module-breadcrumb">{moduleTitle(route.page)}</span><WorkspaceSaveStatus onOpenData={() => openUtility('data')} /><Button className="mode-indicator" onClick={() => openUtility('model')}>{modelLabel}</Button></header>
+      <div id="workspace-panel">
+      {!online ? <Alert type="warning" showIcon message="网络已断开。本机草稿仍可编辑，恢复连接后再重试面试或生成请求。" /> : null}
+      {identity.error && !['algorithm', 'data'].includes(route.page) ? <Alert type="error" showIcon message="暂时无法连接本机 API。资料会保留，也可以继续算法练习。" action={<Button onClick={() => void identity.refetch()}>重试连接</Button>} /> : null}
+      {route.page === 'history' ? <section className="module-history"><div className="panel-heading"><div><h1>面试历史</h1><p>按岗位与状态查找，继续作答或查看报告。</p></div><Button type="primary" onClick={newPractice}>新建面试</Button></div>      <div className="history-tools"><Input className="history-search" aria-label="查找练习" maxLength={120} placeholder="查找岗位" value={historySearch} onChange={event => setHistorySearch(event.target.value)} allowClear />
       <Select className="history-filter" aria-label="筛选练习状态" value={historyStatus} options={[{ value: 'all', label: '全部状态' }, ...Object.entries(statusLabels).map(([value, label]) => ({ value, label }))]} onChange={setHistoryStatus} />
-      <nav aria-label="练习历史" className="history">
+</div><nav aria-label="练习历史" className="history">
         {items.map(item => <Button key={item.id} className={`history-item ${selected === item.id ? 'selected' : ''}`} onClick={() => navigate({ page: 'practice', sessionId: item.id })}><strong>{item.role}</strong><span>{new Date(item.createdAt).toLocaleDateString('zh-CN')} <i>{statusLabels[item.status]}</i></span></Button>)}
         {history.isSuccess && !items.length ? <p className="quiet">{historySearch || historyStatus !== 'all' ? '没有匹配的练习，请调整筛选。' : '新建第一场练习后，这里可以继续和复盘。'}</p> : null}
         {history.isError ? <Button onClick={() => void history.refetch()}>历史加载失败，重试</Button> : null}
         {history.hasNextPage ? <Button loading={history.isFetchingNextPage} onClick={() => void history.fetchNextPage()}>加载更早的练习</Button> : null}
       </nav>
-      <Button type="text" onClick={() => navigate({ page: 'review' })}>面试复习清单</Button>
-      <div className="privacy-note">草稿与算法进度保存在本机。已提交面试属于当前浏览器身份。<Button type="link" onClick={() => openUtility('data')}>备份与数据管理</Button></div>
-    </aside>
-    <main className="workspace">
-      <header className="workspace-header"><WorkspaceSaveStatus onOpenData={() => openUtility('data')} /><Button className="mode-indicator" onClick={() => openUtility('model')}>{modelLabel}</Button></header>
-      <PrimaryNavigation active={['model', 'search', 'data'].includes(route.page) ? 'settings' : route.page === 'review' ? 'home' : route.page} disabled={remove.isPending} onChange={page => {
-        if (page === 'settings') openUtility('model');
-        else if (page === 'home' || page === 'practice' || page === 'preparation' || page === 'algorithm' || page === 'bank') { setPreparationRequest(null); setAlgorithmRequest(null); navigate(page === 'algorithm' ? { page, view: readSession('algorithm-view') === 'patterns' ? 'patterns' : 'hot100' } : { page }); }
-      }} />
-      <div id="workspace-panel" role="tabpanel" aria-labelledby={`primary-${['model', 'search', 'data'].includes(route.page) ? 'settings' : route.page === 'review' ? 'home' : route.page}`}>
-      {!online ? <Alert type="warning" showIcon message="网络已断开。本机草稿仍可编辑，恢复连接后再重试面试或生成请求。" /> : null}
-      {identity.error && !['algorithm', 'data'].includes(route.page) ? <Alert type="error" showIcon message="暂时无法连接本机 API。资料会保留，也可以继续算法练习。" action={<Button onClick={() => void identity.refetch()}>重试连接</Button>} /> : null}
+</section> : null}
       {route.page === 'home' ? <HomePanel history={recent.data?.items ?? []} navigate={navigate} openUtility={openUtility} modelReady={Boolean(settings.data?.active) || settings.data?.mode === 'live'} /> : null}
       {route.page === 'practice' ? <>
         {(session.data?.modelMode === 'demo' || (!selected && settings.data?.mode === 'demo' && !settings.data.active)) ? <div className="demo-banner" role="note"><strong>当前是规则演示。</strong> 启用自己的模型后开始真实 AI 面试。演示评分不代表专业能力评价。</div> : null}
@@ -122,8 +139,11 @@ function App() {
       {route.page === 'preparation' ? <PreparationPanel key={preparationRequest?.id ?? 'stored'} seed={preparationRequest?.seed} onUse={usePreparation} onModelSettings={() => openUtility('model')} /> : null}
       {route.page === 'algorithm' ? <React.Suspense fallback={<p role="status">正在打开算法练习…</p>}><AlgorithmPanel key={algorithmRequest?.id ?? 'stored'} seed={algorithmRequest?.seed} initialView={route.view ?? 'hot100'} questionId={route.questionId} patternId={route.patternId} onNavigate={next => navigate({ page: 'algorithm', ...next })} /></React.Suspense> : null}
       {route.page === 'bank' ? <div className="utility-panel"><BankPanel onClose={() => navigate(returnTo)} onAlgorithmPractice={seed => { setAlgorithmRequest({ id: crypto.randomUUID(), seed }); navigate({ page: 'algorithm', view: 'patterns' }); }} /></div> : null}
-      {['model', 'search', 'data'].includes(route.page) ? <div className="utility-panel"><Tabs activeKey={route.page} onChange={page => { if (page === 'model' || page === 'search' || page === 'data') navigate({ page }); }} items={[{ key: 'model', label: '模型设置' }, { key: 'search', label: '联网搜索' }, { key: 'data', label: '本机数据' }]} />{route.page === 'model' ? <ModelPanel onClose={() => navigate(returnTo)} /> : route.page === 'search' ? <SearchPanel onClose={() => navigate(returnTo)} /> : <DataPanel />}</div> : null}
+      {['model', 'search', 'data'].includes(route.page) ? <div className="utility-panel"><Tabs activeKey={route.page === 'resumeLibrary' ? 'resumes' : route.page} onChange={page => { if (page === 'model' || page === 'search' || page === 'data' || page === 'resumes') navigate({ page: page === 'resumes' ? 'resumeLibrary' : page }); }} items={[{ key: 'model', label: '模型设置' }, { key: 'search', label: '联网搜索' }, { key: 'data', label: '本机数据' }]} />{route.page === 'model' ? <ModelPanel onClose={() => navigate(returnTo)} /> : route.page === 'search' ? <SearchPanel onClose={() => navigate(returnTo)} /> : route.page === 'resumeLibrary' ? <ResumeLibrary /> : <DataPanel />}</div> : null}
+      {route.page === 'resumeLibrary' ? <div className="utility-panel"><ResumeLibrary /></div> : null}
+      {route.page === 'resumeStudio' ? <React.Suspense fallback={<p role="status">正在打开简历制作…</p>}><ResumeStudio route={route} navigate={navigate} onPractice={useResumeForPractice} /></React.Suspense> : null}
       {route.page === 'review' ? <ReviewPanel navigate={navigate} /> : null}
+      {route.page === 'career' ? <CareerPanel route={route} navigate={navigate} openModelSettings={() => openUtility('model')} openResumeLibrary={() => openUtility('resumeLibrary')} onStrictPractice={useCareerPractice} /> : null}
       </div>
     </main>
   </div>;

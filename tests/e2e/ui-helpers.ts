@@ -1,8 +1,12 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
 export async function settingsTab(page: Page, name: '模型设置' | '联网搜索' | '本机数据') {
-  await page.getByRole('tab', { name: '设置', exact: true }).click();
-  await page.getByRole('tab', { name, exact: true }).click();
+  await navigateModule(page, name === '本机数据' ? '本机数据与备份' : name);
+}
+export async function navigateModule(page: Page, name: string) {
+  const mobile = page.getByRole('button', { name: '打开模块菜单', exact: true });
+  if (await mobile.isVisible()) await mobile.click();
+  await page.getByRole('menuitem', { name, exact: true }).click();
 }
 export async function nextStep(page: Page) {
   await page.getByRole('button', { name: '下一步', exact: true }).click();

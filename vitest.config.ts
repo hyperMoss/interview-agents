@@ -1,5 +1,10 @@
 import { defineConfig } from 'vitest/config';
-import { existsSync } from 'node:fs';
+import { existsSync,mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+const sqliteTests=mkdtempSync(join(tmpdir(),'interview-sqlite-tests-'));
+process.env.SQLITE_TEST_APP_URL=`file:${sqliteTests}/app.sqlite`;
+process.env.SQLITE_TEST_AGENT_URL=`file:${sqliteTests}/agent.sqlite`;
 if(existsSync('.env'))process.loadEnvFile('.env');
-Object.assign(process.env,{NODE_ENV:'test',DATABASE_URL:process.env.DATABASE_URL??'postgresql://app:local-app-password@localhost:55439/interview',AGENT_DATABASE_URL:process.env.AGENT_DATABASE_URL??'postgresql://agent:local-agent-password@localhost:55439/interview',REDIS_URL:process.env.REDIS_URL??'redis://localhost:56389',AGENT_URL:process.env.AGENT_URL??'http://127.0.0.1:4111',INTERNAL_SERVICE_TOKEN:'local-only-change-before-deploy-123456',COOKIE_SECRET:'local-only-cookie-secret-change-123456',MODEL_MODE:'demo'});
-export default defineConfig({test:{include:['tests/**/*.test.ts'],testTimeout:15000,hookTimeout:15000,fileParallelism:false}});
+Object.assign(process.env,{BOSS_AUTOMATION:'enabled',NODE_ENV:'test',DATABASE_URL:process.env.SQLITE_TEST_APP_URL,AGENT_DATABASE_URL:process.env.SQLITE_TEST_AGENT_URL,REDIS_URL:'',AGENT_URL:process.env.AGENT_URL??'http://127.0.0.1:4111',INTERNAL_SERVICE_TOKEN:'local-only-change-before-deploy-123456',COOKIE_SECRET:'local-only-cookie-secret-change-123456',MODEL_MODE:'demo'});
+export default defineConfig({test:{setupFiles:['tests/sqlite-setup.ts'],include:['tests/**/*.test.ts'],testTimeout:15000,hookTimeout:15000,fileParallelism:false}});

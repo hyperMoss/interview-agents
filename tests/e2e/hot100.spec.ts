@@ -1,3 +1,4 @@
+import { navigateModule } from './ui-helpers';
 import { expectEditorValue } from './ui-helpers';
 import { test, expect, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
@@ -8,7 +9,7 @@ test.use({ actionTimeout: 12000 });
 const headers = { Origin: 'http://localhost:5173' };
 async function openHot100(page: Page) {
   await page.goto('/#/interviews/new');
-  await page.getByRole('tab', { name: '算法练习', exact: true }).click();
+  await navigateModule(page, '算法练习');
   await page.getByText('Hot 100 题单', { exact: true }).click();
   await expect(page.getByRole('heading', { name: '一题一练，把套路用起来。' })).toBeVisible();
 }
@@ -41,7 +42,7 @@ test('Hot 100 filters, independent Python drafts, self review and routine handof
   await page.getByRole('button', { name: '练习 49 字母异位词分组', exact: true }).click();
   await expectEditorValue(code, 'def group_anagrams(words):\n    ');
   await expect(page.getByRole('radio', { name: '已复习', exact: true })).toBeChecked();
-  await page.reload(); await page.getByRole('tab', { name: '算法练习', exact: true }).click();
+  await page.reload(); await navigateModule(page, '算法练习');
   await expectEditorValue(code, 'def group_anagrams(words):\n    ');
   await expect(page.getByRole('radio', { name: '已复习', exact: true })).toBeChecked();
   await page.getByRole('button', { name: '练 哈希表', exact: true }).click();
@@ -76,7 +77,7 @@ test('exported one hundred cards import through the real bank boundary and repea
   if (!path) throw new Error('Missing Hot 100 export');
   const exported = leetcodeBatchSchema.parse(JSON.parse(await readFile(path, 'utf8')));
   expect(exported.questions).toHaveLength(100);
-  await page.getByRole('tab', { name: '题库', exact: true }).click();
+  await navigateModule(page, '题库');
   const panel = page.locator('section[aria-labelledby="bank-title"]');
   try {
     await panel.getByRole('tab', { name: '导入题目', exact: true }).click();
@@ -108,7 +109,7 @@ test('Hot 100 mobile layout and unavailable storage keep Python practice usable'
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: 'docs/evidence/screenshots/hot100-mobile.png', fullPage: true });
   await page.addInitScript(() => { Object.defineProperty(window, 'indexedDB', { value: undefined }); });
-  await page.reload(); await page.getByRole('tab', { name: '算法练习', exact: true }).click();
+  await page.reload(); await navigateModule(page, '算法练习');
   await expect(page.locator('.workspace-save-status')).toContainText('本机保存失败');
   await page.getByRole('textbox', { name: 'Python 独立作答', exact: true }).fill('still editable');
   await expectEditorValue(page.getByRole('textbox', { name: 'Python 独立作答', exact: true }), 'still editable');

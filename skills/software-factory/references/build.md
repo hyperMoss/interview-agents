@@ -1,8 +1,8 @@
 # 建设边界
 
-固定参考栈：React 19/Vite/TypeScript/TanStack Query；NestJS/Node；PostgreSQL/Drizzle/pg；独立 Hono/Mastra/Bun。服务端状态通过 Query 管理，界面状态局部保存；只有存在跨组件状态需求时才增加 Zustand。
+固定参考栈：React 19/Vite/TypeScript/TanStack Query；NestJS/Node；SQLite/Drizzle/node:sqlite；独立 Hono/Mastra/Bun。服务端状态通过 Query 管理，界面状态局部保存；只有存在跨组件状态需求时才增加 Zustand。
 
-Agent 能力拉入持久任务、Nest Worker/BullMQ/Redis。PostgreSQL 是任务真相；Redis 是通知。事务接受命令与任务，租约到期可恢复，提交用 revision 与递增租约代数 fencing。模型输出验证、超时和最多尝试次数都有界。业务表由 API/Worker 的同一业务执行模块持有；Agent 只写运行时表。副作用工具需要独立的权限、幂等与审计设计。
+Agent 能力拉入持久任务、Nest Worker；BullMQ/Redis 是可选通知。SQLite 是任务真相；Redis 是通知。事务接受命令与任务，租约到期可恢复，提交用 revision 与递增租约代数 fencing。模型输出验证、超时和最多尝试次数都有界。业务表由 API/Worker 的同一业务执行模块持有；Agent 只写运行时表。副作用工具需要独立的权限、幂等与审计设计。
 
 当前参考产品 `interview-agents` 的源码与契约用于学习实现，路径以项目实际位置为准。工厂 `generate` 只生成文档、上下文与配置索引，不复制空目录或声称生成了完整业务系统。
 

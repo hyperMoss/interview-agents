@@ -16,6 +16,11 @@
       "docs/generated/05-API-CONTRACT.md",
       "docs/generated/08-TEST-PLAN.md"
     ],
+    "implement-career.boss": [
+      "docs/generated/modules/career.boss.md",
+      "docs/generated/05-API-CONTRACT.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
     "implement-core.platform": [
       "docs/generated/modules/core.platform.md",
       "docs/generated/05-API-CONTRACT.md",

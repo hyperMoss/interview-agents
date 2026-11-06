@@ -19,7 +19,8 @@ export function HomePanel({ history, navigate, openUtility, modelReady }: { hist
   const profiles = readProfiles();
   const hasIntake = Boolean(readSession('interview-intake'));
   return <section className="home-panel" aria-labelledby="home-title">
-    <div className="intro"><h1 id="home-title">今天，继续练好一道题。</h1><p>从上次停下的地方继续，或为新的目标岗位准备一场面试。</p></div>
+    <div className="intro"><h1 id="home-title">工作台</h1><p>先整理简历，再匹配目标岗位，最后准备与复盘面试。</p></div>
+    <div className="workflow-steps"><article><small>01 / 简历管理</small><h2>把经历整理好</h2><p>导入文件或 JSON，管理不同岗位的简历副本。</p><Button type="primary" onClick={() => navigate({ page: 'resumeStudio' })}>进入简历库</Button></article><article><small>02 / 求职管理</small><h2>找到目标岗位</h2><p>搜索岗位、核对筛选依据，再批准站内沟通。</p><Button onClick={() => navigate({ page: 'career' })}>进入求职工作台</Button></article><article><small>03 / 面试中心</small><h2>有针对性地准备</h2><p>选择简历与 JD，备题、模拟面试并查看报告。</p><Button onClick={() => navigate({ page: 'practice' })}>准备面试</Button><Button type="link" onClick={() => navigate({ page: 'history' })}>面试历史</Button></article></div>
     <div className="home-actions">
       <article><Tag color="blue">面试准备</Tag><h2>{active ? active.role : hasIntake ? '继续准备中的资料' : '准备下一场面试'}</h2><p>{active ? statusLabels[active.status] : '上传简历与 JD，先备题，再按计划作答。'}</p><Button type="primary" onClick={() => navigate({ page: 'practice', ...(active ? { sessionId: active.id } : {}) })}>{active ? '继续这场面试' : hasIntake ? '继续准备' : '新建面试'}</Button><Button type="link" onClick={() => navigate({ page: 'preparation' })}>只用 JD 先备题</Button></article>
       <article><Tag color="purple">算法练习</Tag><h2>{lastQuestion ? `${lastQuestion.id}. ${lastQuestion.title}` : '从 Hot 100 开始'}</h2><p>{dueCount ? `${dueCount} 道题已到复习时间。` : 'Python 独立作答、提示与套路跟打。'}代码自动保存在本机。</p><Button type="primary" onClick={() => navigate({ page: 'algorithm', view: 'hot100', questionId: algorithm.selectedId })}>继续算法练习</Button></article>
