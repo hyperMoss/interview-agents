@@ -8,7 +8,7 @@ import { SearchGateway } from './search';
 import { PreparationGateway } from './preparation';
 import { QuestionBank } from './bank';
 import { newSession, cancelSession,sessionBase } from '../../../packages/interview/src/domain';
-import { interviews, jobs, deletions,interviewMaterials,interviewCommands } from '../../../packages/database/src/schema';
+import { interviews, jobs,interviewMaterials,interviewCommands } from '../../../packages/database/src/schema';
 import { openDatabase } from '../../../packages/database/src/client';
 import { createQueue } from '../../../packages/jobs/src/queue';
 import type { ApiConfig } from '../../../packages/config/src/index';
@@ -20,9 +20,10 @@ import { eligibleQa,eligibleCoding,questionDirective } from '../../../packages/i
 import { acceptedProgress,pinCurrentQuestion } from '../../../packages/interview/src/progress';
 import { z } from 'zod';
 import { interviewHistoryPageSchema, type InterviewHistoryQuery, type InterviewHistoryPage } from '../../../packages/contracts/src/history';
+import { deleteInterviewSessions } from './interview-deletion';
 
 const historyCursorSchema = z.strictObject({
-  version: z.literal(1), createdAt: z.iso.datetime({ precision: 6 }), id: z.uuid(),
+  version: z.literal(1), createdAt: z.iso.datetime(), id: z.uuid(),
 });
 function historyCursor(value: string) {
   try {
@@ -59,18 +60,18 @@ export class InterviewService {
   async history(owner: string, query: InterviewHistoryQuery): Promise<InterviewHistoryPage> {
     const cursor = query.cursor ? historyCursor(query.cursor) : null;
     const filters = [eq(interviews.owner, owner)];
-    if (query.role) filters.push(sql`position(lower(${query.role}) in lower(${interviews.state}->>'role')) > 0`);
+    if (query.role) filters.push(sql`instr(lower(${interviews.state}->>'role'),lower(${query.role})) > 0`);
     if (query.status) filters.push(sql`${interviews.state}->>'status' = ${query.status}`);
-    if (cursor) filters.push(sql`(${interviews.createdAt}, ${interviews.id}) < (${cursor.createdAt}::timestamptz, ${cursor.id}::uuid)`);
+    if (cursor) filters.push(sql`(${interviews.createdAt}, ${interviews.id}) < (${cursor.createdAt}, ${cursor.id})`);
     const rows = await this.database.db.select({
       id: interviews.id,
       role: sql<string>`${interviews.state}->>'role'`,
       status: sql<string>`${interviews.state}->>'status'`,
-      createdAt: sql<string>`to_char(${interviews.createdAt} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`,
-      turnCount: sql<number>`jsonb_array_length(${interviews.state}->'turns')`,
-      questionCount: sql<number>`(${interviews.state}->'input'->>'questionCount')::int`,
+      createdAt: sql<string>`${interviews.createdAt}`,
+      turnCount: sql<number>`json_array_length(${interviews.state}->'turns')`,
+      questionCount: sql<number>`(${interviews.state}->'input'->>'questionCount')`,
       modelMode: sql<string>`${interviews.state}->>'modelMode'`,
-      overallScore: sql<number | null>`(${interviews.state}->'report'->>'overallScore')::float8`,
+      overallScore: sql<number | null>`(${interviews.state}->'report'->>'overallScore')`,
     }).from(interviews).where(and(...filters))
       .orderBy(desc(interviews.createdAt), desc(interviews.id)).limit(query.limit + 1);
     const items = rows.slice(0, query.limit);
@@ -100,8 +101,7 @@ export class InterviewService {
     const jobId = crypto.randomUUID();
     const payload=this.buildPayload(owner,session,jobId,null,pool,plan);
     await this.database.db.transaction(async tx => {
-      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${owner}))`);
-      const usage = await tx.select({ count: sql<number>`count(*)::int` }).from(interviews).where(and(eq(interviews.owner,owner),sql`${interviews.createdAt} > now()-interval '1 day'`));
+      const usage = await tx.select({ count: sql<number>`count(*)` }).from(interviews).where(and(eq(interviews.owner,owner),sql`${interviews.createdAt} > strftime('%Y-%m-%dT%H:%M:%f000Z','now','-1 day')`));
       if ((usage[0]?.count ?? 0)>=20) throw new ConflictException('DAILY_INTERVIEW_LIMIT');
       await tx.insert(interviews).values({ id: session.id, owner, state: session });
       if(plan)await tx.insert(interviewMaterials).values({sessionId:session.id,questions:pool});
@@ -114,7 +114,7 @@ export class InterviewService {
   async answer(owner: string, id: string, body: ReturnType<typeof answerSchema.parse>) {
     const requestHash = hash({ sessionId: id, answer: body.answer, revision: body.revision });
     const session = await this.database.db.transaction(async tx => {
-      const [row] = await tx.select().from(interviews).where(and(eq(interviews.id, id), eq(interviews.owner, owner))).for('update');
+      const [row] = await tx.select().from(interviews).where(and(eq(interviews.id, id), eq(interviews.owner, owner)));
       if (!row) throw new NotFoundException('Interview not found');
       const state = sessionSchema.parse(row.state);
       const [existing] = await tx.select().from(jobs).where(eq(jobs.id, body.requestId));
@@ -140,7 +140,7 @@ export class InterviewService {
   }
   async cancel(owner: string, id: string) {
     return this.database.db.transaction(async tx => {
-      const [row] = await tx.select().from(interviews).where(and(eq(interviews.id, id), eq(interviews.owner, owner))).for('update');
+      const [row] = await tx.select().from(interviews).where(and(eq(interviews.id, id), eq(interviews.owner, owner)));
       if (!row) throw new NotFoundException('Interview not found');
       const next = cancelSession(sessionSchema.parse(row.state));
       await tx.update(interviews).set({ state: next }).where(eq(interviews.id, id));
@@ -161,7 +161,7 @@ export class InterviewService {
     const replacement=body.modelConnectionId===undefined?undefined:await this.modelSource(owner,body.modelConnectionId);
     const signature=hash({sessionId:id,revision:body.revision,modelConnectionId:body.modelConnectionId===undefined?'previous':body.modelConnectionId,searchConnectionId:body.searchConnectionId===undefined?'previous':body.searchConnectionId});
     const state=await this.database.db.transaction(async tx=>{
-      const [row]=await tx.select().from(interviews).where(and(eq(interviews.id,id),eq(interviews.owner,owner))).for('update');if(!row)throw new NotFoundException('Interview not found');
+      const [row]=await tx.select().from(interviews).where(and(eq(interviews.id,id),eq(interviews.owner,owner)));if(!row)throw new NotFoundException('Interview not found');
       const session=sessionSchema.parse(row.state);const [existing]=await tx.select().from(jobs).where(eq(jobs.id,body.requestId));
       if(existing){if(existing.owner!==owner||existing.requestHash!==signature)throw new ConflictException('IDEMPOTENCY_CONFLICT');return session;}
       if(session.status!=='failed'||session.revision!==body.revision)throw new ConflictException('INTERVIEW_CHANGED');
@@ -183,7 +183,7 @@ export class InterviewService {
   async replan(owner:string,id:string,body:z.infer<typeof replanSchema>){
     const signature=hash({id,revision:body.revision,durationMinutes:body.durationMinutes,answerLength:body.answerLength});
     return this.database.db.transaction(async tx=>{
-      const [row]=await tx.select().from(interviews).where(and(eq(interviews.id,id),eq(interviews.owner,owner))).for('update');if(!row)throw new NotFoundException('Interview not found');const state=sessionSchema.parse(row.state);
+      const [row]=await tx.select().from(interviews).where(and(eq(interviews.id,id),eq(interviews.owner,owner)));if(!row)throw new NotFoundException('Interview not found');const state=sessionSchema.parse(row.state);
       const [receipt]=await tx.select().from(interviewCommands).where(eq(interviewCommands.requestId,body.requestId));if(receipt){if(receipt.owner!==owner||receipt.requestHash!==signature)throw new ConflictException('IDEMPOTENCY_CONFLICT');return state;}
       if(state.status!=='awaiting_answer'||state.revision!==body.revision||!state.plan)throw new ConflictException('当前状态不能重规划，请等待当前生成完成或重新读取。');
       const [material]=await tx.select().from(interviewMaterials).where(eq(interviewMaterials.sessionId,id));const pool=material?z.array(bankQuestionSchema).parse(material.questions):[];
@@ -192,13 +192,7 @@ export class InterviewService {
     });
   }
   async remove(owner: string, id: string) {
-    await this.database.db.transaction(async tx => {
-      const [row] = await tx.select().from(interviews).where(and(eq(interviews.id,id),eq(interviews.owner,owner))).for('update');
-      if (!row) throw new NotFoundException('Interview not found');
-      const related = await tx.select({jobId:jobs.id}).from(jobs).where(eq(jobs.sessionId,id));
-      if (related.length) await tx.insert(deletions).values(related).onConflictDoNothing();
-      await tx.delete(interviews).where(eq(interviews.id,id));
-    });
+    if (!(await deleteInterviewSessions(this.database.pool, owner, [id]))) throw new NotFoundException('Interview not found');
     return { deleted: true };
   }
   private async wakeWorkerBestEffort(id: string) {

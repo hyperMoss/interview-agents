@@ -19,6 +19,9 @@ import { searchDraftSchema,searchProbeSchema } from '../../../packages/contracts
 import { previewPlanSchema,replanSchema } from '../../../packages/contracts/src/planning';
 import { preparationRequestSchema, savePreparationSchema } from '../../../packages/contracts/src/preparation';
 import { interviewHistoryQuerySchema } from '../../../packages/contracts/src/history';
+import { CareerController, CareerService, CAREER } from './career';
+import { ResumeVersionsController, ResumeVersionService, RESUME_VERSIONS } from './resume-versions';
+import { ResumeDraftsController, ResumeDraftService, RESUME_DRAFTS } from './resume-drafts';
 await checkReferenceRuntime();
 const config = readApiConfig();
 function owner(req: Request) { return z.string().parse(req.headers['x-owner-id']); }
@@ -69,12 +72,24 @@ class InterviewController {
   @Post('question-bank/import/json') importBankJson(@Req() req:Request,@Body() body:unknown){return this.service.bank.importBatch(owner(req),parse(leetcodeBatchSchema,body));}
   @Delete('interviews/:id') remove(@Req() req: Request, @Param('id') id: string) { return this.service.remove(owner(req), uuid(id)); }
 }
-@Module({ controllers: [InterviewController], providers: [{ provide: 'INTERVIEWS', useFactory: () => new InterviewService(config) }] })
+@Module({
+  controllers: [InterviewController, CareerController, ResumeVersionsController, ResumeDraftsController],
+  providers: [
+    { provide: 'INTERVIEWS', useFactory: () => new InterviewService(config) },
+    { provide: CAREER, useFactory: () => new CareerService(config) },
+    { provide: RESUME_VERSIONS, useFactory: () => new ResumeVersionService(config) },
+    { provide: RESUME_DRAFTS, useFactory: () => new ResumeDraftService(config) },
+  ],
+})
 class ApiModule {}
 const app = await NestFactory.create(ApiModule, { bodyParser: false });
 app.use(signedIdentity(config));
 app.use('/api/v1/question-bank/import/json',json({limit:'8mb'}));
 app.use('/api/v1/question-bank/import/preparation',json({limit:'2mb'}));
+app.use('/api/v1/career/tasks',json({limit:'2mb'}));
+app.use('/api/v1/career/batches',json({limit:'2mb'}));
+app.use('/api/v1/career/preparations',json({limit:'2mb'}));
+app.use('/api/v1/resume-drafts',json({limit:'1mb'}));
 app.use(json({ limit: '128kb' }));
 app.enableShutdownHooks();
 await app.listen(config.API_PORT, '0.0.0.0');

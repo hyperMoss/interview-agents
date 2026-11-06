@@ -4,7 +4,7 @@
 
 支持 OpenAI-compatible 模型连接；无需模型密钥也可以体验规则演示和算法练习。业务数据与 Agent 数据分别保存在本机 SQLite 文件中。
 
-[快速开始](#快速开始) · [功能特性](#功能特性) · [使用指南](docs/user-guide.md) · [开发与验证](#开发与验证)
+[快速开始](#快速开始) · [功能特性](#功能特性) · [使用指南](docs/user-guide.md) · [JSON 简历制作](docs/resume-builder.md) · [开发与验证](#开发与验证)
 
 ## 功能特性
 
@@ -13,6 +13,7 @@
 | 模拟面试 | 根据简历与 JD 规划文本面试，支持候选人级别、轮次、时长、逐题反馈和报告导出。 |
 | JD 备题 | 提前生成带原文依据的题单，编辑后保存到题库或带入面试。 |
 | 简历管理 | 导入 PDF、DOCX、TXT、Markdown；简历库支持原文件预览、文本校正和不可变版本。 |
+| JSON 简历制作 | 导入 cool-resume v2/v3 JSON，实时预览与切换七套主题，管理独立副本，导出 JSON、HTML、A4 PDF，并保存为投递附件。 |
 | 算法练习 | 内置 LeetCode Hot 100 题单快照、Python 编辑器、套路跟打、笔记和复习进度。 |
 | 题库管理 | 自建题目，导入公开 LeetCode 题目或 JSON，支持严格、混合和灵活改编模式。 |
 | BOSS 求职 | 按城市、预设或自定义方向搜索，保存岗位快照、筛选依据和人工复核结果；明确批准后由 Worker 程序化发起站内沟通。 |
@@ -32,7 +33,7 @@
 - 使用 BOSS 专用窗口或运行浏览器测试时，需要安装 Google Chrome。
 - 运行 Python 算法模板测试时，需要 Python 3。
 
-默认使用 SQLite，无需启动 Docker、PostgreSQL 或 Redis。项目自带的 Bun 运行时用于 Agent 服务。
+项目仅使用 SQLite，无需数据库服务器。项目自带的 Bun 运行时用于 Agent 服务；Redis 通知为可选配置。
 
 ### 安装与启动
 
@@ -76,6 +77,8 @@ API 健康检查地址为 `http://localhost:3000/api/v1/health`。请使用 `pnp
 4. 完成作答后查看逐题反馈和报告，或进入 **JD 备题**、**算法练习** 单独使用相关功能。
 
 规则演示不调用真实模型，演示评分不代表专业能力评价。详细操作见 [使用指南](docs/user-guide.md)。
+
+左侧菜单按 **简历管理、求职管理、面试中心、学习训练、系统设置** 分组；手机使用抽屉菜单。简历库支持导入文件、核对文本并转为 JSON 保存，之后可制作副本、导出附件或带入面试。操作步骤见 [简历制作指南](docs/resume-builder.md)。已有安装升级后先运行 `pnpm db:migrate`，再启动服务。
 
 ## BOSS 求职
 
@@ -131,7 +134,7 @@ API 健康检查地址为 `http://localhost:3000/api/v1/health`。请使用 `pnp
 - 固定使用 `localhost` 入口。`localhost` 与 `127.0.0.1` 属于不同站点，Cookie 和浏览器存储不共享。
 - 真实 `.env`、模型密钥、个人简历和浏览器会话资料不得提交到仓库或公开验收报告。
 
-旧 PostgreSQL 数据会保留；如需迁移，必须通过显式导入命令执行，不会自动清空或覆盖旧数据。
+SQLite 文件、WAL 与私有附件的保存和备份方式见 [本地存储说明](docs/design/sqlite-local.md)。
 
 ## 技术栈与项目结构
 
@@ -148,6 +151,7 @@ packages/
   career/             求职筛选、状态与存储
   interview/          面试规划、报告和算法数据
   database/           SQLite 连接与迁移
+  resume/             JSON 简历渲染、主题与示例
   jobs/               任务基础能力
   factory/            spec 解析与设计上下文生成
 infra/                数据迁移与环境配置
@@ -189,6 +193,7 @@ pnpm factory:check
 
 ## 文档导航
 
+- [文档索引](docs/README.md)：使用、设计、验证与历史资料分类。
 - [详细使用指南](docs/user-guide.md)：面试、备题、题库、算法与备份。
 - [项目能力矩阵](docs/generated/03-CAPABILITY-MATRIX.md)：能力选择与成熟度。
 - [算法练习 skill](skills/algorithm-practice/SKILL.md)：选题、Python 提示与复盘。

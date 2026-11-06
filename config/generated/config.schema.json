@@ -64,13 +64,6 @@
         "worker"
       ]
     },
-    "REDIS_URL": {
-      "type": "string",
-      "service": [
-        "api",
-        "worker"
-      ]
-    },
     "WEB_ORIGIN": {
       "type": "string",
       "service": [
@@ -93,7 +86,6 @@
     "SEARCH_ALLOWED_HOSTS",
     "COOKIE_SECRET",
     "DATABASE_URL",
-    "REDIS_URL",
     "WEB_ORIGIN",
     "AGENT_URL"
   ]

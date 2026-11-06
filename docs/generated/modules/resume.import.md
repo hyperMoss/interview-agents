@@ -2,7 +2,7 @@
 
 本地 PDF/DOCX/文本简历提取与可编辑预览
 
-当前成熟度：supported；选择原因：REQ-008, explicit。
+当前成熟度：supported；选择原因：REQ-008, REQ-044, REQ-045, REQ-048, REQ-049, career.boss, explicit。
 
 依赖：core.platform。
 

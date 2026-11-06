@@ -1,10 +1,11 @@
 export const catalog = {
-  'core.platform': { dependencies: [], services: ['web','api','postgres'], env: { api: ['DATABASE_URL','COOKIE_SECRET','WEB_ORIGIN'] }, maturity: 'supported', description: '身份、资源归属、配置和健康检查' },
+  'core.platform': { dependencies: [], services: ['web','api'], env: { api: ['DATABASE_URL','COOKIE_SECRET','WEB_ORIGIN'] }, maturity: 'supported', description: '身份、资源归属、配置和健康检查' },
   'ai.text': { dependencies: ['core.platform'], services: [], env: { agent: ['MODEL_MODE','LLM_MODEL','LLM_API_KEY'] }, maturity: 'supported', description: '文本模型和严格输出验证' },
-  'jobs.async': { dependencies: ['core.platform'], services: ['worker','redis'], env: { api: ['REDIS_URL'], worker: ['DATABASE_URL','REDIS_URL','AGENT_URL','INTERNAL_SERVICE_TOKEN'] }, maturity: 'supported', description: 'PostgreSQL 任务真相与 BullMQ 通知、租约和对账' },
+  'jobs.async': { dependencies: ['core.platform'], services: ['worker'], env: { worker: ['DATABASE_URL','AGENT_URL','INTERNAL_SERVICE_TOKEN'] }, maturity: 'supported', description: 'SQLite 持久任务、租约和轮询对账；可选 BullMQ 通知' },
   'agent.runtime': { dependencies: ['ai.text','jobs.async'], services: ['agent'], env: { agent: ['AGENT_DATABASE_URL','INTERNAL_SERVICE_TOKEN'] }, maturity: 'supported', description: '独立 Hono/Mastra 有界生成与结果持久化' },
   'interview.practice': { dependencies: ['agent.runtime'], services: [], env: {}, maturity: 'supported', description: '简历/JD、轮次问答、逐题反馈与报告' },
   'resume.import': { dependencies: ['core.platform'], services: [], env: {}, maturity: 'supported', description: '本地 PDF/DOCX/文本简历提取与可编辑预览' },
+  'career.boss': { dependencies: ['interview.practice','resume.import'], services: [], env: {}, maturity: 'planned', description: 'Local candidate BOSS search, frozen approval, original resume delivery and grounded preparation; implementation contract: docs/design/boss-career-workflow.md. Runtime is not implemented.' },
   'files.object-storage': { dependencies: ['core.platform'], services: ['rustfs'], env: { api: ['RUSTFS_ENDPOINT','RUSTFS_ACCESS_KEY','RUSTFS_SECRET_KEY'] }, maturity: 'planned', description: 'S3 对象存储；运行适配器待实现' },
   'files.manage': { dependencies: ['files.object-storage'], services: [], env: {}, maturity: 'planned', description: '文件权限与生命周期；待实现' },
   'documents.manage': { dependencies: ['jobs.async'], services: [], env: {}, maturity: 'planned', description: '文档版本与任务状态；待实现' },
@@ -12,7 +13,7 @@ export const catalog = {
   'documents.chunk': { dependencies: ['documents.manage'], services: [], env: {}, maturity: 'planned', description: '结构分块；待实现' },
   'ai.embedding': { dependencies: ['core.platform'], services: [], env: { worker: ['EMBEDDING_MODEL','EMBEDDING_DIMENSION','EMBEDDING_API_KEY'] }, maturity: 'planned', description: 'Embedding；待实现' },
   'retrieval.lexical': { dependencies: ['core.platform'], services: [], env: {}, maturity: 'planned', description: '关键词检索；待实现' },
-  'retrieval.vector': { dependencies: ['ai.embedding'], services: [], env: {}, maturity: 'planned', description: 'pgvector 向量检索；待实现' },
+  'retrieval.vector': { dependencies: ['ai.embedding'], services: [], env: {}, maturity: 'planned', description: '向量检索；待实现' },
   'retrieval.rerank': { dependencies: ['rag.knowledge'], services: [], env: { worker: ['RERANK_API_KEY','RERANK_MODEL'] }, maturity: 'planned', description: '结果重排；待实现' },
   'rag.knowledge': { dependencies: ['documents.manage','documents.chunk'], services: [], env: {}, maturity: 'planned', description: '知识库、检索与引用；待实现' },
   'rag.answer': { dependencies: ['rag.knowledge','ai.text'], services: [], env: {}, maturity: 'planned', description: '基于证据回答；待实现' },
@@ -31,7 +32,7 @@ export const blueprints = {
 } satisfies Record<string, CapabilityId[]>;
 export const providerOptions: Partial<Record<CapabilityId, string[]>> = {
   'ai.text': ['openai-compatible'], 'files.object-storage': ['rustfs'], 'documents.parse': ['mineru-local','mineru-cloud'],
-  'retrieval.vector': ['pgvector','elasticsearch'], 'retrieval.lexical': ['postgres','elasticsearch'],
+  'retrieval.vector': ['elasticsearch'], 'retrieval.lexical': ['sqlite','elasticsearch'],
   'web.search': ['tavily','firecrawl'], 'web.extract': ['tavily','firecrawl'],
   'ai.embedding': ['openai-compatible'], 'speech.asr': ['volcengine'], 'speech.tts': ['volcengine'],
 };

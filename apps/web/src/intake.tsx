@@ -8,6 +8,7 @@ import { searchChoiceSchema } from '../../../packages/contracts/src/search';
 import { api } from './api';
 import { readSession, writeSession } from './storage';
 import { readProfiles, saveProfiles } from './personal-data';
+import { resumeText } from '../../../packages/resume/src/import';
 import { ResumeUpload } from './resume-upload';
 import { defaultPlanning, PlanningFields, PlanSummary } from './planning-panel';
 import { categoryLabels, difficultyLabels } from './labels';
@@ -31,6 +32,8 @@ export function Intake({ pending, ready, error, onCreate, onSearchSettings, onBa
   const step = form.step ?? 0;
   const planning = form.planning ?? defaultPlanning;
   const identity = useQuery({ queryKey: ['identity'], queryFn: api.identity });
+  const resumes = useQuery({ queryKey: ['resume-drafts'], queryFn: api.resumeDrafts, enabled: identity.isSuccess });
+  const [resumeLoading, setResumeLoading] = useState(false);
   const bank = useQuery({ queryKey: ['question-bank'], queryFn: api.bankList, enabled: identity.isSuccess });
   const search = useQuery({ queryKey: ['search-settings'], queryFn: api.searchSettings, enabled: identity.isSuccess });
   const preview = useQuery({ queryKey: ['plan-preview', planning], queryFn: () => api.previewPlan(planning), enabled: identity.isSuccess });
@@ -86,6 +89,7 @@ export function Intake({ pending, ready, error, onCreate, onSearchSettings, onBa
       }}><Button danger disabled={!profileId}>删除档案</Button></Popconfirm></div>
     </details>
     {notice ? <p role="status">{notice}</p> : null}
+    <div className="resume-library-choice"><label htmlFor="interview-library-resume">从简历库选择</label><Select id="interview-library-resume" aria-label="从简历库选择" placeholder="选择已保存的 JSON 简历" loading={resumes.isPending || resumeLoading} disabled={pending || resumeLoading} options={resumes.data?.map(item => ({ value: item.id, label: item.label }))} onChange={async id => { setResumeLoading(true); try { const draft = await api.resumeDraft(id); const text = resumeText(draft.document); if (text.length < 20 || text.length > 16000) { setNotice('这份简历文本需 20–16000 字，请先到简历库整理；当前输入已保留。'); return; } edit({ resume: text, role: form.role || draft.document.title }); setNotice('已带入简历快照，修改不会影响简历库。'); } catch (error) { setNotice(error instanceof Error ? error.message : '简历读取失败，请重试。'); } finally { setResumeLoading(false); } }} /><p>在简历模块管理副本，这里选择一份简历并填写本次面试的岗位与 JD。</p>{resumes.error ? <Button onClick={() => void resumes.refetch()}>重试读取简历库</Button> : null}</div>
     <Steps className="intake-steps" current={step} size="small" items={[{ title: '填写资料' }, { title: '面试安排' }, { title: '确认开始' }]} />
     <form onSubmit={submit} noValidate>
       {step === 0 ? <>

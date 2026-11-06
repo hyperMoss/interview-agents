@@ -1,5 +1,5 @@
 # 运行与恢复
 
-本参考产品启动：pnpm install --frozen-lockfile；复制 .env.example；docker compose -f infra/compose.yaml up -d --wait；pnpm dev。PostgreSQL 和 Redis 使用本项目独立端口。
+复制 .env.example，pnpm db:migrate，再 pnpm dev。默认无需数据库服务或 Redis。备份需保留业务 SQLite、Agent SQLite、Mastra SQLite 与私有附件及浏览器文件；使用 SQLite backup API 或先停止服务，不在写入时只复制主文件。
 
-重启 Worker 后扫描未完成任务；过期租约重新执行，成功结果按 jobId 缓存。进程在模型响应与缓存写入之间崩溃可能重复计费，不承诺外部调用 exactly-once。取消阻止提交，不保证已发生的第三方费用被撤销。生产需要独立部署与备份恢复演练。
+Worker 轮询恢复未完成任务，租约与修订号拒绝重复提交和迟到结果；外部结果未知时需核对，不能盲目重发。

@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { MastraServer, type HonoBindings, type HonoVariables } from '@mastra/hono';
 import { createHash, timingSafeEqual } from 'node:crypto';
-import { Pool } from 'pg';
+import { Pool } from "../../../packages/database/src/sqlite";
 import { z } from 'zod';
 import { runtimeRequestSchema, runtimeResponseSchema,type RuntimeRequest } from '../../../packages/contracts/src/index';
 import { createEvaluator } from './evaluator';
@@ -10,8 +10,10 @@ import { ModelConnections,modelPolicy,listModels,probeModel,ModelAccessError,def
 import type { AgentConfig } from '../../../packages/config/src/index';
 import { SearchConnections,searchProvider } from './search';
 import { searchProbeSchema } from '../../../packages/contracts/src/search';
-import { preparationRuntimeSchema } from '../../../packages/contracts/src/preparation';
+import { preparationRuntimeSchema, personalizedPreparationRuntimeSchema } from '../../../packages/contracts/src/preparation';
+import { careerMatchRuntimeSchema, careerGenerationRuntimeSchema } from '../../../packages/contracts/src/career';
 import { generatePreparation } from './preparation';
+import { generateCareerMatch, generateCareerPreparation } from './career';
 
 export async function createAgentServer(config: AgentConfig) {
   const pool = new Pool({ connectionString: config.AGENT_DATABASE_URL, max: 5, connectionTimeoutMillis: 5000 });
@@ -57,6 +59,80 @@ export async function createAgentServer(config: AgentConfig) {
       return c.json({ error: 'PREPARATION_FAILED', message: '备题生成失败或输出不符合岗位要求。输入和已有题单保留，可检查模型后重新生成。' }, 503);
     }
   });
+  // Career generation receipts are keyed by career work id and can be purged by the Worker.
+  const careerReceipt = async (workId: string, digest: string, produce: () => Promise<unknown>) => {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const deleted = await client.query("SELECT 1 FROM agent_runtime_deleted_career_work WHERE work_id=$1", [workId]);
+      if (deleted.rows.length) { await client.query('ROLLBACK'); return { status: 410 as const, body: { error: 'DELETED' } }; }
+      const prior = await client.query("SELECT input_hash,response FROM agent_runtime_career_receipts WHERE work_id=$1", [workId]);
+      const existing = prior.rows[0];
+      if (existing) {
+        if (existing.input_hash !== digest) { await client.query('ROLLBACK'); return { status: 409 as const, body: { error: 'IDEMPOTENCY_CONFLICT' } }; }
+        await client.query('COMMIT');
+        return { status: 200 as const, body: existing.response };
+      }
+      const response = await produce();
+      await client.query("INSERT INTO agent_runtime_career_receipts(work_id,input_hash,response) VALUES($1,$2,$3)", [workId, digest, JSON.stringify(response)]);
+      await client.query('COMMIT');
+      return { status: 200 as const, body: response };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  };
+  app.post('/internal/v1/career/match', async c => {
+    const request = careerMatchRuntimeSchema.parse(await c.req.json());
+    const digest = createHash('sha256').update(JSON.stringify(request)).digest('hex');
+    const connection = await connections.resolve(request.ownerId, request.modelConnectionId);
+    try {
+      const signal = AbortSignal.any([c.req.raw.signal, AbortSignal.timeout(Math.min(55000, connection.timeoutMs))]);
+      const result = await careerReceipt(request.workId, digest, () => generateCareerMatch(config, request.sources, request.policy, signal, connection, request.modelConnectionId));
+      if (result.status !== 200) return c.json(result.body, result.status);
+      return c.json(result.body);
+    } catch (error) {
+      if (error instanceof ModelAccessError) throw error;
+      const provider = modelFailure(error);
+      if (provider) return c.json(provider, 503);
+      return c.json({ error: 'INVALID_CAREER_MATCH', message: '匹配生成失败：模型引用的 JD 或简历原文无法核对。已保留输入，可重试生成。' }, 502);
+    }
+  });
+  app.post('/internal/v1/career/preparations/generate', async c => {
+    const request = personalizedPreparationRuntimeSchema.parse(await c.req.json());
+    const identity = careerGenerationRuntimeSchema.parse({ ownerId: request.ownerId, workId: request.workId, generation: request.generation, modelConnectionId: request.modelConnectionId });
+    const digest = createHash('sha256').update(JSON.stringify(request)).digest('hex');
+    const connection = await connections.resolve(request.ownerId, request.modelConnectionId);
+    try {
+      const signal = AbortSignal.any([c.req.raw.signal, AbortSignal.timeout(Math.min(55000, connection.timeoutMs))]);
+      const sources = { postingSnapshotHash: request.input.jd.snapshotHash, jdText: request.input.jd.text, resumeVersionId: request.input.resume.versionId, resumeTextHash: request.input.resume.textHash, resumeText: request.input.resume.text };
+      const result = await careerReceipt(identity.workId, digest, () => generateCareerPreparation(config, request.input, sources, signal, connection, request.generation, request.modelConnectionId));
+      if (result.status !== 200) return c.json(result.body, result.status);
+      return c.json(result.body);
+    } catch (error) {
+      if (error instanceof ModelAccessError) throw error;
+      const provider = modelFailure(error);
+      if (provider) return c.json(provider, 503);
+      return c.json({ error: 'INVALID_CAREER_PREPARATION', message: '个性化备题生成失败：题量、类型或 JD/简历原文依据无效。已保留输入，可单独重试备题。' }, 502);
+    }
+  });
+  app.delete('/internal/v1/career/receipts/:id', async c => {
+    const parsed = z.uuid().safeParse(c.req.param('id'));
+    if (!parsed.success) return c.json({ error: 'INVALID_ID' }, 400);
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query("INSERT INTO agent_runtime_deleted_career_work(work_id) VALUES($1) ON CONFLICT DO NOTHING", [parsed.data]);
+      await client.query("DELETE FROM agent_runtime_career_receipts WHERE work_id=$1", [parsed.data]);
+      await client.query('COMMIT');
+      return c.json({ deleted: true });
+    } catch {
+      await client.query('ROLLBACK');
+      return c.json({ error: 'DELETE_FAILED' }, 503);
+    } finally { client.release(); }
+  });
   app.post('/internal/v1/generate', async c => {
     const parsed = runtimeRequestSchema.safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) return c.json({ error: 'INVALID_REQUEST' }, 400);
@@ -66,11 +142,9 @@ export async function createAgentServer(config: AgentConfig) {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
-      await client.query("SET LOCAL statement_timeout='65s'");
-      await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [request.jobId]);
-      const deleted=await client.query('SELECT 1 FROM agent_runtime.deleted_jobs WHERE job_id=$1',[request.jobId]);
+      const deleted=await client.query("SELECT 1 FROM agent_runtime_deleted_jobs WHERE job_id=$1",[request.jobId]);
       if(deleted.rows.length){await client.query('ROLLBACK');return c.json({error:'DELETED'},410);}
-      const prior = await client.query('SELECT input_hash,response FROM agent_runtime.receipts WHERE job_id=$1', [request.jobId]);
+      const prior = await client.query("SELECT input_hash,response FROM agent_runtime_receipts WHERE job_id=$1", [request.jobId]);
       const existing = prior.rows[0];
       if (existing) {
         if (existing.input_hash !== digest) { await client.query('ROLLBACK'); return c.json({ error: 'IDEMPOTENCY_CONFLICT' }, 409); }
@@ -92,7 +166,7 @@ export async function createAgentServer(config: AgentConfig) {
         }else response=await evaluator.generate(context,signal);
         if(research)response={...response,research};
       }finally{if(custom)await custom.close();}
-      await client.query('INSERT INTO agent_runtime.receipts (job_id,input_hash,response) VALUES ($1,$2,$3)', [request.jobId, digest, JSON.stringify(response)]);
+      await client.query("INSERT INTO agent_runtime_receipts (job_id,input_hash,response) VALUES ($1,$2,$3)", [request.jobId, digest, JSON.stringify(response)]);
       await client.query('COMMIT');
       return c.json(response);
     } catch(error) {
@@ -105,9 +179,9 @@ export async function createAgentServer(config: AgentConfig) {
   app.delete('/internal/v1/receipts/:id',async c=>{
     const parsed=z.uuid().safeParse(c.req.param('id'));if(!parsed.success)return c.json({error:'INVALID_ID'},400);
     const client=await pool.connect();
-    try{await client.query('BEGIN');await client.query('SELECT pg_advisory_xact_lock(hashtext($1))',[parsed.data]);
-      await client.query('INSERT INTO agent_runtime.deleted_jobs(job_id) VALUES($1) ON CONFLICT DO NOTHING',[parsed.data]);
-      await client.query('DELETE FROM agent_runtime.receipts WHERE job_id=$1',[parsed.data]);await client.query('COMMIT');return c.json({deleted:true});
+    try{await client.query('BEGIN');
+      await client.query("INSERT INTO agent_runtime_deleted_jobs(job_id) VALUES($1) ON CONFLICT DO NOTHING",[parsed.data]);
+      await client.query("DELETE FROM agent_runtime_receipts WHERE job_id=$1",[parsed.data]);await client.query('COMMIT');return c.json({deleted:true});
     }catch{await client.query('ROLLBACK');return c.json({error:'DELETE_FAILED'},503);}finally{client.release();}
   });
   const server = new MastraServer({ app, mastra: evaluator.mastra, prefix: '/mastra' });

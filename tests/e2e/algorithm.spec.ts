@@ -1,3 +1,4 @@
+import { navigateModule } from './ui-helpers';
 import { expectEditorValue } from './ui-helpers';
 import { test, expect, type Page } from '@playwright/test';
 import { getAlgorithmPattern } from '../../packages/interview/src/algorithm-patterns';
@@ -39,11 +40,11 @@ test('Python code and statement typing retain separate drafts, locate difference
   await page.getByText('题面跟打', { exact: true }).click();
   const statement = page.getByRole('textbox', { name: '你的题面', exact: true });
   await statement.fill('题面草稿😀');
-  await page.getByRole('tab', { name: '题库', exact: true }).click();
-  await page.getByRole('tab', { name: '算法练习', exact: true }).click();
+  await navigateModule(page, '题库');
+  await navigateModule(page, '算法练习');
   await expectEditorValue(statement, '题面草稿😀');
   await page.reload();
-  await page.getByRole('tab', { name: '算法练习', exact: true }).click();
+  await navigateModule(page, '算法练习');
   await expectEditorValue(statement, '题面草稿😀');
   await page.getByRole('button', { name: '重置本次跟打', exact: true }).click();await page.getByRole('button',{name:'确认清空',exact:true}).click();
   await expectEditorValue(statement, '');
@@ -85,7 +86,7 @@ test('keywords provide evidence and limits; pasted Unicode statements match with
 
 test('coding bank cards transfer an original snapshot, and changed text cannot inherit an old draft', async ({ page }) => {
   await page.goto('/#/interviews/new');
-  await expect(page.getByRole('tab', { name: '题库', exact: true })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: '题库', exact: true })).toBeVisible();
   await page.request.get('/api/v1/identity');
   const title = '跟打测试 · 无重复字符子串';
   const content = '给定字符串，返回无重复字符的最长连续子串长度。请说明窗口左右边界如何移动。';
@@ -93,15 +94,15 @@ test('coding bank cards transfer an original snapshot, and changed text cannot i
   expect(response.ok()).toBe(true);
   const saved = bankQuestionSchema.parse(await response.json());
   try {
-    await page.getByRole('tab', { name: '题库', exact: true }).click();
+    await navigateModule(page, '题库');
     await page.getByRole('button', { name: `算法跟打 · ${title}`, exact: true }).click();
     await expect(page.getByRole('textbox', { name: '题面或关键词', exact: true })).toHaveValue(content);
     await expect(page.locator('.algorithm-recipe h3')).toContainText('滑动窗口');
     await expect(page.locator('.algorithm-example')).toContainText('无重复字符的最长子串');
     await page.getByText('题面跟打', { exact: true }).click();
     await page.getByRole('textbox', { name: '你的题面', exact: true }).fill('独立题面草稿');
-    await page.getByRole('tab', { name: '题库', exact: true }).click();
-    await page.getByRole('tab', { name: '算法练习', exact: true }).click();
+    await navigateModule(page, '题库');
+    await navigateModule(page, '算法练习');
     await expectEditorValue(page.getByRole('textbox', { name: '你的题面', exact: true }), '独立题面草稿');
     const edited = content + '补充条件：允许空串。';
     await page.getByRole('textbox', { name: '题面或关键词', exact: true }).fill(edited);

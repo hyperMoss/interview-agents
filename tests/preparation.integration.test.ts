@@ -15,15 +15,15 @@ suite('JD preparation across model protocol, owned bank and strict interviews',(
   const owner=crypto.randomUUID(),other=crypto.randomUUID();
   beforeAll(async()=>{
     provider=await startProviderFixture();
-    runtime=await createAgentServer({...agentConfig(),AGENT_DATABASE_URL:'postgresql://agent:local-agent-password@127.0.0.1:55440/interview_test'});
+    runtime=await createAgentServer({...agentConfig(),AGENT_DATABASE_URL:(process.env.SQLITE_TEST_AGENT_URL ?? "file:/tmp/interview-tests-agent.sqlite")});
     bridge=await serveFixture(request=>runtime.app.fetch(request));
-    api=new InterviewService({...apiConfig(),DATABASE_URL:'postgresql://app:local-app-password@127.0.0.1:55440/interview_test',AGENT_URL:bridge.origin});
+    api=new InterviewService({...apiConfig(),DATABASE_URL:(process.env.SQLITE_TEST_APP_URL ?? "file:/tmp/interview-tests-app.sqlite"),AGENT_URL:bridge.origin});
     runner=new GenerationWorker({...workerConfig(),DATABASE_URL:api.config.DATABASE_URL,AGENT_URL:bridge.origin});
   });
   afterEach(async()=>{
     provider.state.failure=false;provider.state.badPreparationEvidence=false;provider.state.rateLimited=false;
-    await api.database.pool.query('DELETE FROM app.interviews WHERE owner=$1 OR owner=$2',[owner,other]);
-    await api.database.pool.query('DELETE FROM app.bank_questions WHERE owner=$1 OR owner=$2',[owner,other]);
+    await api.database.pool.query("DELETE FROM app_interviews WHERE owner=$1 OR owner=$2",[owner,other]);
+    await api.database.pool.query("DELETE FROM app_bank_questions WHERE owner=$1 OR owner=$2",[owner,other]);
     await api.models.clear(owner);
   });
   afterAll(async()=>{await Promise.all([api.onModuleDestroy(),runner.close(),runtime.close()]);await bridge.close();await provider.close();});
@@ -66,7 +66,7 @@ suite('JD preparation across model protocol, owned bank and strict interviews',(
   });
   it('rolls back the whole batch when the owner reaches capacity',async()=>{
     const initial=await api.bank.list(owner);const command=batch();const sample=command.questions[0];if(!sample)throw new Error('Missing draft');
-    await api.database.pool.query("INSERT INTO app.bank_questions(id,owner,source,payload) SELECT gen_random_uuid(),$1,'custom',$2::jsonb FROM generate_series(1,$3)",[owner,JSON.stringify(sample.draft),499-initial.length]);
+    await api.database.pool.query("WITH RECURSIVE sequence(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM sequence WHERE n<$3) INSERT INTO app_bank_questions(id,owner,source,payload) SELECT lower(hex(randomblob(4)))||'-'||lower(hex(randomblob(2)))||'-4'||substr(lower(hex(randomblob(2))),2)||'-8'||substr(lower(hex(randomblob(2))),2)||'-'||lower(hex(randomblob(6))),$1,'custom',$2 FROM sequence WHERE n<=$3",[owner,JSON.stringify(sample.draft),499-initial.length]);
     await expect(api.bank.createBatch(owner,command)).rejects.toThrow('最多 500');
     expect(await api.bank.list(owner)).toHaveLength(499);
     expect((await api.bank.list(owner)).some(question=>command.questions.some(item=>item.requestId===question.id))).toBe(false);

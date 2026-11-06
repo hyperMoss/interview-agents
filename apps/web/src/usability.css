@@ -3,6 +3,5 @@
 
 .workspace-save-status .ant-tag-green{color:#256416}.algorithm-eyebrow{color:#526489}.algorithm-caption,.hot100-heading p,.hot100-question small{color:#53617a}.hot100-question .difficulty-easy{color:#196652}
 
-.primary-tabs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;border-bottom:1px solid var(--border);padding-bottom:8px}.primary-tabs button{font:inherit;font-size:14px;border:0;background:transparent;color:#53617a;border-radius:7px;padding:10px 8px;cursor:pointer}.primary-tabs button.selected{background:#edf1ff;color:var(--accent);font-weight:600}.primary-tabs button:disabled{opacity:.5;cursor:wait}@media(max-width:760px){.primary-tabs{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.primary-tabs button{font-size:13px;padding:10px 6px}}
 
 .review-card h2{overflow-wrap:anywhere}

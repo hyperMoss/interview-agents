@@ -14,17 +14,24 @@ const selected=(spec:unknown)=>resolveSpec(spec).capabilities.map(c=>c.id);
 describe('deterministic capability assembly',()=>{
   it('reference application runtime registry matches its real spec',async()=>{await expect(checkReferenceRuntime()).resolves.toBeUndefined();});
   it('business base needs no AI, Redis, storage or model key',()=>{
-    const plan=resolveSpec(baseSpec);expect(selected(baseSpec)).toEqual(['core.platform']);expect(plan.services).toEqual(['api','postgres','web']);
+    const plan=resolveSpec(baseSpec);expect(selected(baseSpec)).toEqual(['core.platform']);expect(plan.services).toEqual(['api','web']);
     expect(JSON.stringify(plan.env)).not.toContain('LLM');
   });
+  it('only accepts SQLite and never generates a database server',()=>{
+    const plan=resolveSpec(baseSpec);
+    expect(plan.spec.options.database).toBe('sqlite');
+    expect(()=>resolveSpec({...baseSpec,options:{database:'postgres'}})).toThrow();
+    const artifacts=compile(plan).outputs;
+    expect(JSON.stringify(artifacts)).not.toMatch(/postgres|pgvector|infra\/compose/i);
+  });
   it('interview pulls in agent, durable jobs and model, without optional SDK services',()=>{
-    const plan=resolveSpec({...baseSpec,blueprint:'interview-practice'});expect(plan.services).toEqual(['agent','api','postgres','redis','web','worker']);expect(plan.services).not.toContain('rustfs');
+    const plan=resolveSpec({...baseSpec,blueprint:'interview-practice'});expect(plan.services).toEqual(['agent','api','web','worker']);expect(plan.services).not.toContain('rustfs');
   });
   it('semantic RAG conflicts with explicitly disabled embedding',()=>{
     expect(()=>resolveSpec({...baseSpec,capabilities:{'rag.knowledge':true,'ai.embedding':false},options:{rag_mode:'semantic'}})).toThrow('ai.embedding');
   });
   it('lexical RAG needs no embedding or MinerU',()=>{const ids=selected({...baseSpec,capabilities:{'rag.knowledge':true}});expect(ids).toContain('retrieval.lexical');expect(ids).not.toContain('ai.embedding');expect(ids).not.toContain('documents.parse');});
-  it('pgvector only never adds Elasticsearch',()=>{expect(resolveSpec({...baseSpec,capabilities:{'rag.knowledge':true},options:{rag_mode:'semantic'}}).services).not.toContain('elasticsearch');});
+  it('semantic retrieval selects its planned external provider',()=>{expect(resolveSpec({...baseSpec,capabilities:{'rag.knowledge':true},options:{rag_mode:'semantic'}}).services).toContain('elasticsearch');});
   it('TTS only neither adds ASR nor storage',()=>{const ids=selected({...baseSpec,capabilities:{'speech.tts':true}});expect(ids).not.toContain('speech.asr');expect(ids).not.toContain('files.object-storage');});
   it('realtime ASR has no file dependency and file ASR requires storage and jobs',()=>{
     expect(selected({...baseSpec,capabilities:{'speech.asr':true}})).not.toContain('files.manage');

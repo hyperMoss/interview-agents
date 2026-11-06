@@ -1,6 +1,6 @@
 # 面试扩展的归属与流转
 
-当前 API 接受已授权资料和答案，事务保存会话与任务。Redis 只通知，Worker 对账 PostgreSQL。Agent 接收不可变任务快照，保留 jobId 的生成结果。Worker 以 revision 与 attempts 拒绝旧结果。模型连接 ID 属于浏览器 owner，密钥不进入任务。
+当前 API 接受已授权资料和答案，事务保存会话与任务。Redis 只通知，Worker 对账 SQLite。Agent 接收不可变任务快照，保留 jobId 的生成结果。Worker 以 revision 与 attempts 拒绝旧结果。模型连接 ID 属于浏览器 owner，密钥不进入任务。
 
 新增计划采用一个有版本的会话聚合。纯规划函数拥有 HR 上限、编程资格、阶段预留、题量、难度与剩余环节的规则。API 保存规划快照、题库材料快照和搜索连接 ID。当前题在手动重规划时保留，变化只作用于剩余环节。进行中的生成任务不可修改。
 
@@ -16,4 +16,4 @@
 
 严格模式的开场和反问也使用题库原文。用户选择问答题时，补入明确的内置流程题快照。问答或编程库存不足时停止并提示，不使用生成题填充严格题库。时间到达期限后，只评价已接受作答，不展示新题。
 
-实现已连接 API、Worker、Agent 和 Web。真实文件、PostgreSQL、HTTP 夹具及 Chrome 的最终结果见 docs/evidence/extension-acceptance.md。真实付费模型及搜索账号未核验，不能由本地协议结果推断供应商质量或计费行为。
+实现已连接 API、Worker、Agent 和 Web。真实文件、SQLite、HTTP 夹具及 Chrome 的最终结果见 docs/evidence/extension-acceptance.md。真实付费模型及搜索账号未核验，不能由本地协议结果推断供应商质量或计费行为。

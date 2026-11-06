@@ -1,0 +1,607 @@
+/* Adapted from cool-resume (MIT); see COOL-RESUME-LICENSE. */
+/* ===== MyResume2 主题变量 =====
+   通过 <html data-theme="..."> 切换。
+   默认主题为 minimal（当前简洁风格）。
+   注：间距相关变量已全部迁移到 style.css 的 --resume-* 变量，可在 dev 面板中调节。
+*/
+
+:root,
+[data-theme="minimal"] {
+  /* 页面 */
+  --theme-bg: #ffffff;
+  --theme-text: #1f2937;
+  --theme-text-soft: #6b7280;
+
+  /* 强调与分隔 */
+  --theme-accent: #2563eb;
+  --theme-border: #e5e7eb;
+
+  /* Header */
+  --theme-header-name-color: #111827;
+  --theme-header-title-color: #2563eb;
+
+  /* Section 标题 */
+  --theme-section-title-bg: transparent;
+  --theme-section-title-text: #111827;
+  --theme-section-title-border: #e5e7eb;
+  --theme-section-title-border-width: 1px;
+  --theme-section-title-padding: 0 0 3px 0;
+  --theme-section-title-border-radius: 0;
+  --theme-section-title-letter-spacing: 1px;
+  --theme-section-icon-color: #2563eb;
+  --theme-header-border: transparent;
+  --theme-header-border-width: 0;
+  --theme-header-padding-bottom: 0;
+
+  /* Entry */
+  --theme-entry-title-color: #111827;
+
+  /* 列表 marker */
+  --theme-marker-color: #2563eb;
+
+  /* 高亮 */
+  --theme-highlight-bg: rgba(250, 204, 21, 0.35);
+
+  /* 链接 */
+  --theme-link-color: #2563eb;
+  --theme-link-hover-border: #2563eb;
+}
+
+/* ===== Navy 主题：深蓝标题栏风格 ===== */
+[data-theme="navy"] {
+  /* 页面 */
+  --theme-bg: #ffffff;
+  --theme-text: #1f2937;
+  --theme-text-soft: #4b5563;
+
+  /* 强调与分隔 */
+  --theme-accent: #1e3a5f;
+  --theme-border: #d1d5db;
+
+  /* Header */
+  --theme-header-name-color: #111827;
+  --theme-header-title-color: #1e3a5f;
+
+  /* Section 标题：深蓝背景条 + 白字 */
+  --theme-section-title-bg: #1e3a5f;
+  --theme-section-title-text: #ffffff;
+  --theme-section-title-border: transparent;
+  --theme-section-title-border-width: 0;
+  --theme-section-title-padding: 3px 8px;
+  --theme-section-title-border-radius: 3px;
+  --theme-section-title-letter-spacing: 0.5px;
+  --theme-section-icon-color: #ffffff;
+  --theme-header-border: #d1d5db;
+  --theme-header-border-width: 0;
+  --theme-header-padding-bottom: 0;
+
+  /* Entry */
+  --theme-entry-title-color: #111827;
+
+  /* 列表 marker */
+  --theme-marker-color: #1e3a5f;
+
+  /* 高亮 */
+  --theme-highlight-bg: rgba(250, 204, 21, 0.35);
+
+  /* 链接保持蓝色，保证可识别 */
+  --theme-link-color: #2563eb;
+  --theme-link-hover-border: #2563eb;
+}
+
+/* ===== ATS 主题：黑白高可读，适合通用投递与 ATS 解析 ===== */
+[data-theme="ats"] {
+  --theme-bg: #ffffff;
+  --theme-text: #202124;
+  --theme-text-soft: #5f6368;
+  --theme-accent: #202124;
+  --theme-border: #c9cdd1;
+  --theme-header-name-color: #111111;
+  --theme-header-title-color: #3c4043;
+  --theme-section-title-bg: transparent;
+  --theme-section-title-text: #111111;
+  --theme-section-title-border: #202124;
+  --theme-section-title-border-width: 2px;
+  --theme-section-title-padding: 0 0 4px 0;
+  --theme-section-title-border-radius: 0;
+  --theme-section-title-letter-spacing: 0.8px;
+  --theme-section-icon-color: #5f6368;
+  --theme-entry-title-color: #202124;
+  --theme-marker-color: #202124;
+  --theme-highlight-bg: #f1f3f4;
+  --theme-link-color: #185abc;
+  --theme-link-hover-border: #185abc;
+  --theme-header-border: #202124;
+  --theme-header-border-width: 1px;
+  --theme-header-padding-bottom: 10px;
+}
+
+/* ===== Teal 主题：低饱和松石色，适合技术岗位的现代风格 ===== */
+[data-theme="teal"] {
+  --theme-bg: #ffffff;
+  --theme-text: #203234;
+  --theme-text-soft: #557174;
+  --theme-accent: #0f766e;
+  --theme-border: #cfe2df;
+  --theme-header-name-color: #123b3b;
+  --theme-header-title-color: #0f766e;
+  --theme-section-title-bg: #e8f5f2;
+  --theme-section-title-text: #115e59;
+  --theme-section-title-border: transparent;
+  --theme-section-title-border-width: 0;
+  --theme-section-title-padding: 4px 9px;
+  --theme-section-title-border-radius: 4px;
+  --theme-section-title-letter-spacing: 0.4px;
+  --theme-section-icon-color: #0f766e;
+  --theme-entry-title-color: #183f40;
+  --theme-marker-color: #0f766e;
+  --theme-highlight-bg: #d9f3ee;
+  --theme-link-color: #0f766e;
+  --theme-link-hover-border: #0f766e;
+  --theme-header-border: #9ac8c1;
+  --theme-header-border-width: 0;
+  --theme-header-padding-bottom: 0;
+}
+
+/* ===== Graphite 主题：深灰与橙色点缀，强调工程感与层次 ===== */
+[data-theme="graphite"] {
+  --theme-bg: #fcfcfb;
+  --theme-text: #292524;
+  --theme-text-soft: #78716c;
+  --theme-accent: #c2410c;
+  --theme-border: #dedbd7;
+  --theme-header-name-color: #1c1917;
+  --theme-header-title-color: #c2410c;
+  --theme-section-title-bg: transparent;
+  --theme-section-title-text: #292524;
+  --theme-section-title-border: #c2410c;
+  --theme-section-title-border-width: 2px;
+  --theme-section-title-padding: 0 0 4px 0;
+  --theme-section-title-border-radius: 0;
+  --theme-section-title-letter-spacing: 0.6px;
+  --theme-section-icon-color: #c2410c;
+  --theme-entry-title-color: #292524;
+  --theme-marker-color: #c2410c;
+  --theme-highlight-bg: #ffedd5;
+  --theme-link-color: #9a3412;
+  --theme-link-hover-border: #c2410c;
+  --theme-header-border: #dedbd7;
+  --theme-header-border-width: 0;
+  --theme-header-padding-bottom: 0;
+}
+
+/* ===== Editorial 主题：沉稳酒红，适合强调内容叙事的高级感 ===== */
+[data-theme="editorial"] {
+  --theme-bg: #fffdfb;
+  --theme-text: #332b2b;
+  --theme-text-soft: #756567;
+  --theme-accent: #8f2d45;
+  --theme-border: #eadcdf;
+  --theme-header-name-color: #4a1f2b;
+  --theme-header-title-color: #8f2d45;
+  --theme-section-title-bg: transparent;
+  --theme-section-title-text: #6e2438;
+  --theme-section-title-border: #d9b4bf;
+  --theme-section-title-border-width: 1px;
+  --theme-section-title-padding: 0 0 4px 0;
+  --theme-section-title-border-radius: 0;
+  --theme-section-title-letter-spacing: 1px;
+  --theme-section-icon-color: #8f2d45;
+  --theme-entry-title-color: #4a1f2b;
+  --theme-marker-color: #8f2d45;
+  --theme-highlight-bg: #f8e8ed;
+  --theme-link-color: #8f2d45;
+  --theme-link-hover-border: #8f2d45;
+  --theme-header-border: #d9b4bf;
+  --theme-header-border-width: 0;
+  --theme-header-padding-bottom: 0;
+}
+
+/* ===== Green 主题：参考 resume-preview.html 的留白、纸张与绿色强调 ===== */
+[data-theme="green"] {
+  --theme-bg: #ffffff;
+  --theme-text: #343a40;
+  --theme-text-soft: #868e96;
+  --theme-accent: #2f9e44;
+  --theme-border: #dee2e6;
+  --theme-header-name-color: #212529;
+  --theme-header-title-color: #868e96;
+  --theme-section-title-bg: transparent;
+  --theme-section-title-text: #212529;
+  --theme-section-title-border: #dee2e6;
+  --theme-section-title-border-width: 0;
+  --theme-section-title-padding: 0;
+  --theme-section-title-border-radius: 0;
+  --theme-section-title-letter-spacing: 0;
+  --theme-section-icon-color: #2f9e44;
+  --theme-entry-title-color: #212529;
+  --theme-marker-color: #2f9e44;
+  --theme-highlight-bg: #e9f7ec;
+  --theme-link-color: #2f9e44;
+  --theme-link-hover-border: #2f9e44;
+  --theme-header-border: #dee2e6;
+  --theme-header-border-width: 0;
+  --theme-header-padding-bottom: 16px;
+}
+
+:root {
+  --resume-canvas-width: 210mm;
+  --resume-canvas-padding-x: 14mm;
+  --text-font-size: 13px;
+
+  /* JSON 的 style.spacing 会在启动时覆盖这些安全默认值。 */
+  --resume-line-height: 1.2;
+  --resume-body-padding-y: 11px;
+  --resume-section-gap: 12px;
+  --resume-entry-gap: 16px;
+  --resume-list-gap: 3px;
+  --resume-header-gap: 16px;
+  --resume-header-bottom-gap: 6px;
+  --resume-section-title-gap: 8px;
+  --resume-entry-header-gap: 3px;
+  --resume-list-top-gap: 4px;
+  --resume-keyword-gap: 6px;
+  --resume-skill-gap: 6px;
+  --resume-footer-gap: 32px;
+  --resume-heading-size: 24px;
+  --resume-section-heading-size: 14px;
+
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", "Source Han Sans CN", "Noto Sans CJK SC",
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono:
+    "SF Mono", "JetBrains Mono", "Fira Code", Consolas, Monaco,
+    "Courier New", monospace;
+}
+
+* { box-sizing: border-box; }
+*:not(dialog) { margin: 0; }
+
+html {
+  font-size: var(--text-font-size);
+  /* 自然流模式也保留画布与简历纸张的背景层次。 */
+  background: #525659;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--theme-text);
+  background: var(--theme-bg);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-autospace: normal;
+  line-height: var(--resume-line-height);
+  max-width: var(--resume-canvas-width);
+  margin: 0 auto;
+  /* 连续预览和分页页使用同一组水平边距，保证切换后不改变换行。 */
+  padding: var(--resume-body-padding-y) var(--resume-canvas-padding-x);
+}
+
+
+/* ===== Header：姓名 + 岗位/年限 ===== */
+.resume-header {
+  margin-bottom: var(--resume-header-gap);
+  border-bottom: var(--theme-header-border-width) solid var(--theme-header-border);
+  padding-bottom: var(--theme-header-padding-bottom);
+}
+.resume-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: var(--resume-header-bottom-gap);
+}
+.resume-header-identity { min-width: 0; }
+.resume-header-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  min-width: 0;
+}
+.resume-name {
+  font-size: var(--resume-heading-size);
+  font-weight: 700;
+  color: var(--theme-header-name-color);
+  letter-spacing: -0.5px;
+}
+.resume-title-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--theme-header-title-color);
+}
+.resume-title-separator {
+  font-size: 12px;
+  opacity: 0.7;
+}
+.resume-contact-line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px 12px;
+  color: var(--theme-text-soft);
+  font-size: 12px;
+  line-height: 1.2;
+}
+.resume-contact-item { white-space: nowrap; }
+.resume-contact-label { margin-right: 4px; color: var(--theme-text-soft); }
+
+/* ===== Links ===== */
+a {
+  color: var(--theme-link-color);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-bottom-color 0.2s;
+}
+a:hover { border-bottom-color: var(--theme-link-hover-border); }
+
+/* ===== Section ===== */
+.resume-section { margin-top: var(--resume-section-gap); }
+.resume-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--resume-section-heading-size);
+  font-weight: 700;
+  letter-spacing: var(--theme-section-title-letter-spacing);
+  color: var(--theme-section-title-text);
+  background: var(--theme-section-title-bg);
+  margin-bottom: var(--resume-section-title-gap);
+  padding: var(--theme-section-title-padding);
+  border-bottom: var(--theme-section-title-border-width) solid var(--theme-section-title-border);
+  border-radius: var(--theme-section-title-border-radius);
+}
+.resume-section-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--theme-section-icon-color);
+}
+
+/* ===== Entry ===== */
+.resume-entry { margin-bottom: var(--resume-entry-gap); }
+.resume-entry:last-child { margin-bottom: 0; }
+.resume-entry-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: var(--resume-entry-header-gap);
+}
+.resume-entry-title {
+  font-size: 15.5px;
+  font-weight: 600;
+  color: var(--theme-entry-title-color);
+  margin-bottom: 2px;
+}
+.resume-entry-title-separator {
+  margin: 0 0.45em;
+  font-size: 0.75em;
+  opacity: 0.65;
+}
+.resume-entry-organization {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--theme-text-soft);
+}
+.resume-entry-date {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--theme-text-soft);
+  white-space: nowrap;
+}
+
+/* ===== Summary / Bullet lists ===== */
+.resume-summary-content ul {
+  margin-top: var(--resume-list-top-gap);
+  padding-left: 20px;
+  list-style-type: disc;
+}
+.resume-entry-summary {
+  margin-top: 4px;
+}
+.resume-entry-summary ul {
+  margin-top: var(--resume-list-top-gap);
+  padding-left: 20px;
+  list-style-type: disc;
+}
+.resume-summary-content li,
+.resume-entry-summary li {
+  margin-bottom: var(--resume-list-gap);
+  line-height: var(--resume-line-height);
+}
+.resume-summary-content li::marker,
+.resume-entry-summary li::marker { color: var(--theme-marker-color); }
+.resume-summary-content p,
+.resume-entry-summary p {
+  font-size: 14.5px;
+  margin-bottom: 0;
+}
+
+.resume-summary-content strong,
+.resume-entry-summary strong,
+.resume-project-meta-value strong {
+  font-weight: 700;
+  color: var(--theme-text);
+}
+
+.resume-summary-content em,
+.resume-entry-summary em,
+.resume-project-meta-value em {
+  font-style: italic;
+}
+
+.resume-summary-content mark,
+.resume-entry-summary mark,
+.resume-project-meta-value mark {
+  background: var(--theme-highlight-bg);
+  color: var(--theme-text);
+  padding: 0 2px;
+  border-radius: 2px;
+}
+
+/* ===== Keywords line（项目关键字等）===== */
+.resume-labeled-list {
+  margin-top: var(--resume-keyword-gap);
+  font-size: 13px;
+  color: var(--theme-text-soft);
+}
+
+/* ===== Project meta（项目背景 / 技术栈 / 职责）===== */
+.resume-project-meta-list {
+  margin-top: 4px;
+  margin-bottom: 2px;
+}
+.resume-project-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 14px;
+  line-height: var(--resume-line-height);
+}
+.resume-project-meta-label {
+  flex-shrink: 0;
+  font-weight: 600;
+  color: var(--theme-text-soft);
+  min-width: 4.5em;
+}
+.resume-project-meta-value {
+  color: var(--theme-text);
+}
+.resume-project-meta-value strong {
+  font-weight: 700;
+  color: var(--theme-text);
+}
+.resume-project-meta-value em {
+  font-style: italic;
+}
+.resume-project-meta-value mark {
+  background: var(--theme-highlight-bg);
+  color: var(--theme-text);
+  padding: 0 2px;
+  border-radius: 2px;
+}
+
+/* ===== Project divider ===== */
+.resume-project-divider {
+  border: none;
+  border-top: 1.5px solid var(--theme-border);
+  margin: 14px 0 10px 0;
+  opacity: 0.8;
+}
+
+/* ===== Project divider (inside a project) ===== */
+.resume-project-divider {
+  border: none;
+  height: 1px;
+  margin: 14px 0 10px 0;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--theme-border) 50%,
+    transparent
+  );
+  opacity: 0.45;
+}
+
+/* ===== Project entry separator (between projects) ===== */
+.resume-project-entry {
+  position: relative;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+}
+.resume-project-entry::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--theme-border);
+  opacity: 0.85;
+}
+.resume-project-entry:last-child {
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+.resume-project-entry:last-child::after {
+  display: none;
+}
+
+/* ===== Skills ===== */
+.resume-skill-item {
+  display: grid;
+  grid-template-columns: 7.5em minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: 8px;
+  margin-bottom: var(--resume-skill-gap);
+  line-height: 1.45;
+  font-size: 13.5px;
+}
+.resume-skill-item:last-child { margin-bottom: 0; }
+.resume-skill-level {
+  font-weight: 600;
+  color: var(--theme-text-soft);
+  white-space: nowrap;
+}
+.resume-skill-content { color: var(--theme-text); }
+.resume-skill-content strong { font-weight: 700; }
+.resume-skill-content em { font-style: italic; }
+.resume-skill-content mark {
+  background: var(--theme-highlight-bg);
+  color: var(--theme-text);
+  padding: 0 2px;
+  border-radius: 2px;
+}
+
+
+/* Green has its own layout in cool-resume, in addition to theme variables. */
+[data-theme="green"] body {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 46px;
+  background: #ffffff;
+  border-radius: 4px;
+  box-shadow: 0 8px 30px rgba(33, 37, 41, .12);
+  font-size: 16px;
+  line-height: 1.55;
+}
+[data-theme="green"] .resume-name { letter-spacing: 0; }
+[data-theme="green"] .resume-section { margin-top: 25px; }
+[data-theme="green"] .resume-section-title {
+  gap: 20px;
+  margin-bottom: 20px;
+  font-size: var(--resume-section-heading-size);
+  line-height: 1.2;
+  font-weight: 600;
+}
+[data-theme="green"] .resume-section-icon { width: 24px; height: 24px; }
+[data-theme="green"] .resume-section-title::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: var(--theme-border);
+}
+[data-theme="green"] .resume-entry-title { font-size: 18px; font-weight: 700; }
+[data-theme="green"] .resume-entry-date { font-family: var(--font-sans); font-size: 14px; }
+[data-theme="green"] .resume-entry-summary p,
+[data-theme="green"] .resume-summary-content p { font-size: 14px; color: #495057; }
+[data-theme="green"] .resume-entry-summary li,
+[data-theme="green"] .resume-summary-content li { font-size: 14px; color: #6c757d; }
+[data-theme="green"] .resume-project-divider { background: var(--theme-border); }
+@media (max-width: 650px) {
+  [data-theme="green"] body { width: 100%; min-height: 100vh; margin: 0; padding: 0 22px; border-radius: 0; box-shadow: none; }
+}
+.resume-section-title{break-after:avoid}.resume-entry,.resume-skill-item,li{break-inside:avoid}body{overflow-wrap:anywhere}.resume-entry-date{white-space:normal}.resume-example-notice{font-size:12px;padding:8px;background:#fff3cd;margin-bottom:12px}@page{size:A4;margin:14mm}@media print{html,body{background:white!important}body{padding:0;max-width:none;min-height:0;print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+/* Repeat green's print spacing on every page instead of only the first body fragment. */
+@page resume-green { size: A4; margin: 0 40px; }
+@media print {
+  [data-theme="green"] body { page: resume-green; max-width: none; margin: 0; padding: 0; border-radius: 0; box-shadow: none; }
+}

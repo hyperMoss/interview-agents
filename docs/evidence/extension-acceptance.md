@@ -1,3 +1,5 @@
+> 历史资料：本文保留当时的设计与测试结果，不作为当前部署说明。当前项目仅使用 SQLite，运行与备份见 [项目首页](../../README.md)。旧数据库服务、迁移与导入命令已移除。
+
 # 面试应用扩展验收
 
 2026-10-14。范围为当前面试应用，参考目录 `/Users/gooingyu/Projects/interview-agent` 只读。参考其候选人、轮次和时间规划系数，重新实现 React / NestJS / 独立 Agent 的持久状态链。[MIT 版权与许可](../reference/interview-agent-MIT-LICENSE.txt) 保留 zmy15 的 2025 年声明。未复制其题库数据或读取私有配置。
