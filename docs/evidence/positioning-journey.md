@@ -2,7 +2,7 @@
 
 Verdict: **PASS** after one correction round and one confirmation round. This delivery implements REQ-056, REQ-059, REQ-060, REQ-061 and REQ-062 for the navigation and journey group.
 
-- Repository: `positioning-journey`, branch `hyperMoss/positioning-journey`, baseline commit `df9884d`.
+- Repository: `positioning-journey`, branch `hyperMoss/positioning-journey`, baseline commit `df9884d`. Delivery commit: `5adc085` (this record is included in that commit; no push or merge).
 - Date: 2026-11-14. Node.js `v26.7.0`, pnpm `12.11.2`; dependencies installed with `pnpm install --frozen-lockfile` (`pnpm-lock.yaml` sha256 unchanged: `f5eaa310c92c3de21b70d209b3cc908611f0d1fc325e9df3650435bcb85fda43`).
 - No push, merge, deployment or worktree mutation was performed. No real `.env`, résumé, business database, BOSS site or paid model was read or called.
 
