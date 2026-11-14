@@ -28,7 +28,9 @@ it('updates idempotently, keeps previous visible windows and isolates owners/acc
 it('uses durable read-only session work and fences cancelled, stale and changed-session results',async()=>{
   await expect(service.sync(owner,crypto.randomUUID())).rejects.toThrow();
   await service.career.writeSession(owner,{state:'ready',humanWindow:'open',accountMarker:'synthetic-account'});
-  const id=crypto.randomUUID();const job=await service.sync(owner,id);expect(job.status).toBe('queued');expect((await service.sync(owner,id)).id).toBe(id);
+  const id=crypto.randomUUID();const job=await service.sync(owner,id,'first_ten');
+  await expect(service.sync(owner,id,'current')).rejects.toThrow('不能更改同步范围');
+  const payload=await service.database.pool.query('SELECT payload FROM app_career_work WHERE id=$1',[id]);expect(payload.rows[0]?.payload).toMatchObject({inboxMode:'first_ten'});expect(job.status).toBe('queued');expect((await service.sync(owner,id,'first_ten')).id).toBe(id);
   await expect(service.sync(owner,crypto.randomUUID())).rejects.toThrow('已有');
   await expect(service.job(stranger,id)).rejects.toThrow();
   const work=await service.career.claimWork(['session'],120,'manual');if(!work)throw Error('Missing work');

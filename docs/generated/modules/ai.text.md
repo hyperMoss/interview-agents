@@ -2,7 +2,7 @@
 
 文本模型和严格输出验证
 
-当前成熟度：supported；选择原因：agent.runtime。
+当前成熟度：supported；选择原因：REQ-055, agent.runtime。
 
 依赖：core.platform。
 

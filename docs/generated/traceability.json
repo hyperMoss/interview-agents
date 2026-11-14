@@ -599,5 +599,158 @@
     ],
     "acceptance": "TEST-REQ-050",
     "task": "TASK-REQ-050"
+  },
+  {
+    "requirement": "REQ-051",
+    "capabilities": [
+      "interview.practice"
+    ],
+    "docs": [
+      "docs/generated/00-PROJECT-BRIEF.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "acceptance": "TEST-REQ-051",
+    "task": "TASK-REQ-051"
+  },
+  {
+    "requirement": "REQ-052",
+    "capabilities": [
+      "core.platform"
+    ],
+    "docs": [
+      "docs/generated/00-PROJECT-BRIEF.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "acceptance": "TEST-REQ-052",
+    "task": "TASK-REQ-052"
+  },
+  {
+    "requirement": "REQ-053",
+    "capabilities": [
+      "career.boss",
+      "interview.practice"
+    ],
+    "docs": [
+      "docs/generated/00-PROJECT-BRIEF.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "acceptance": "TEST-REQ-053",
+    "task": "TASK-REQ-053"
+  },
+  {
+    "requirement": "REQ-054",
+    "capabilities": [
+      "interview.practice"
+    ],
+    "docs": [
+      "docs/generated/00-PROJECT-BRIEF.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "acceptance": "TEST-REQ-054",
+    "task": "TASK-REQ-054"
+  },
+  {
+    "requirement": "REQ-055",
+    "capabilities": [
+      "interview.practice",
+      "ai.text"
+    ],
+    "docs": [
+      "docs/generated/00-PROJECT-BRIEF.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "acceptance": "TEST-REQ-055",
+    "task": "TASK-REQ-055"
+  },
+  {
+    "requirement": "REQ-056",
+    "capabilities": [
+      "core.platform"
+    ],
+    "docs": [
+      "docs/generated/00-PROJECT-BRIEF.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "acceptance": "TEST-REQ-056",
+    "task": "TASK-REQ-056"
+  },
+  {
+    "requirement": "REQ-057",
+    "capabilities": [
+      "resume.import",
+      "interview.practice"
+    ],
+    "docs": [
+      "docs/generated/00-PROJECT-BRIEF.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "acceptance": "TEST-REQ-057",
+    "task": "TASK-REQ-057"
+  },
+  {
+    "requirement": "REQ-058",
+    "capabilities": [
+      "interview.practice"
+    ],
+    "docs": [
+      "docs/generated/00-PROJECT-BRIEF.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "acceptance": "TEST-REQ-058",
+    "task": "TASK-REQ-058"
+  },
+  {
+    "requirement": "REQ-059",
+    "capabilities": [
+      "core.platform",
+      "interview.practice",
+      "career.boss"
+    ],
+    "docs": [
+      "docs/generated/00-PROJECT-BRIEF.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "acceptance": "TEST-REQ-059",
+    "task": "TASK-REQ-059"
+  },
+  {
+    "requirement": "REQ-060",
+    "capabilities": [
+      "core.platform",
+      "interview.practice"
+    ],
+    "docs": [
+      "docs/generated/00-PROJECT-BRIEF.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "acceptance": "TEST-REQ-060",
+    "task": "TASK-REQ-060"
+  },
+  {
+    "requirement": "REQ-061",
+    "capabilities": [
+      "core.platform",
+      "interview.practice"
+    ],
+    "docs": [
+      "docs/generated/00-PROJECT-BRIEF.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "acceptance": "TEST-REQ-061",
+    "task": "TASK-REQ-061"
+  },
+  {
+    "requirement": "REQ-062",
+    "capabilities": [
+      "core.platform",
+      "interview.practice",
+      "career.boss"
+    ],
+    "docs": [
+      "docs/generated/00-PROJECT-BRIEF.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "acceptance": "TEST-REQ-062",
+    "task": "TASK-REQ-062"
   }
 ]

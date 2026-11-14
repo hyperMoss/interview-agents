@@ -7,6 +7,7 @@ import { planningOptionsSchema,planSchema,replanSchema } from '../../../packages
 import { bankListSchema,bankQuestionSchema,bankDraftSchema,bankImportResultSchema } from '../../../packages/contracts/src/bank';
 import { searchSettingsSchema,searchProfileSchema,searchDraftSchema,searchChoiceSchema,searchProbeResultSchema } from '../../../packages/contracts/src/search';
 import { preparationRequestSchema, preparationResultSchema, savePreparationSchema, savedPreparationSchema } from '../../../packages/contracts/src/preparation';
+import {preparationGenerateCommandSchema,preparationHistorySchema,preparationHistoryPageSchema,preparationHistoryRetrySchema} from '../../../packages/contracts/src/preparation-history';
 import { interviewHistoryPageSchema, type InterviewHistoryQuery } from '../../../packages/contracts/src/history';
 import {
   bossSessionViewSchema, careerApprovalSchema, careerItemReconcileSchema, careerItemResumeAttachmentSchema, careerItemRetrySchema,
@@ -56,7 +57,10 @@ const resumeDeleteResultSchema = z.strictObject({ deleted: z.literal(true), canc
 
 export const api = {
   identity:()=>request('/identity',z.object({ready:z.literal(true)})),
-  prepare:(body:z.infer<typeof preparationRequestSchema>)=>request('/preparations/generate',preparationResultSchema,{method:'POST',body:JSON.stringify(body)}),
+  prepare:(body:z.infer<typeof preparationGenerateCommandSchema>)=>request('/preparations/generate',preparationResultSchema,{method:'POST',body:JSON.stringify(body)}),
+  preparationHistory:(before?:string)=>request(`/preparations/history${before?`?before=${before}`:''}`,preparationHistoryPageSchema),
+  preparationRecord:(id:string)=>request(`/preparations/history/${id}`,preparationHistorySchema),
+  retryPreparation:(id:string,body:z.infer<typeof preparationHistoryRetrySchema>)=>request(`/preparations/history/${id}/retry`,preparationHistorySchema,{method:'POST',body:JSON.stringify(body)}),
   savePreparation:(body:z.infer<typeof savePreparationSchema>)=>request('/question-bank/import/preparation',savedPreparationSchema,{method:'POST',body:JSON.stringify(body)}),
   list: () => request('/interviews', sessionListSchema),
   history: (input: Partial<InterviewHistoryQuery> = {}) => {
@@ -91,7 +95,7 @@ export const api = {
   probeSearch:(draft:z.infer<typeof searchDraftSchema>,query:string)=>request('/search/probe',searchProbeResultSchema,{method:'POST',body:JSON.stringify({draft,query})}),
   bossConversations:()=>request('/boss-conversations',z.array(bossConversationSummarySchema)),
   bossConversation:(id:string)=>request(`/boss-conversations/${id}`,bossConversationViewSchema),
-  syncBossConversation:(requestId:string)=>request('/boss-conversations/sync',bossInboxJobSchema,{method:'POST',body:JSON.stringify({requestId})}),
+  syncBossConversation:(requestId:string,mode:'current'|'first_ten'='current')=>request('/boss-conversations/sync',bossInboxJobSchema,{method:'POST',body:JSON.stringify({requestId,mode})}),
   bossConversationJob:(id:string)=>request(`/boss-conversations/sync/${id}`,bossInboxJobSchema),
   cancelBossConversationJob:(id:string)=>request(`/boss-conversations/sync/${id}/cancel`,bossInboxJobSchema,{method:'POST',body:'{}'}),
   bossConversationSnapshots:(id:string)=>request(`/boss-conversations/${id}/snapshots`,z.array(bossInboxSnapshotSchema)),

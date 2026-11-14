@@ -11,7 +11,8 @@ import { workspaceIntakeSchema } from '../../../packages/contracts/src/workspace
 import { ModelPanel } from './model-panel';
 import { SearchPanel } from './search-panel';
 import { BankPanel } from './bank-panel';
-import { PreparationPanel, type PreparedPractice, type PreparationSeed } from './preparation-panel';
+import {PreparationHistoryPanel} from './preparation-history-panel';
+import { PreparationPanel, loadPreparationHistory, type PreparedPractice, type PreparationSeed } from './preparation-panel';
 import type { AlgorithmSeed } from './algorithm-panel';
 import { Intake } from './intake';
 import { Interview } from './interview';
@@ -145,7 +146,8 @@ function App() {
         {selected && session.data ? <><Interview key={`${session.data.id}:${session.data.revision}`} session={session.data} connectionId={settings.data?.active?.id} searchConnectionId={searchSettings.data?.active?.id} onModelSettings={() => openUtility('model')} onSearchSettings={() => openUtility('search')} onRepeat={() => { writeSession('interview-intake', JSON.stringify({ ...session.data.input, step: 0 })); setIntakeVersion(value => value + 1); newPractice(); }} onUpdate={data => { cache.setQueryData(['session', data.id], data); invalidateHistory(); }} />
           <div className="record-actions"><Popconfirm title="删除这场练习及简历资料？" description="同时删除服务端记录、派生数据、本机未提交答案及这场面试的复习笔记，无法撤回。独立保存的岗位档案保留。" okText="确认删除" cancelText="保留" onConfirm={() => remove.mutateAsync(selected)}><Button type="text" danger disabled={remove.isPending}>删除此练习及简历资料</Button></Popconfirm>{remove.error ? <p role="alert">删除失败：{remove.error.message}</p> : null}</div></> : null}
       </> : null}
-      {route.page === 'preparation' ? <PreparationPanel key={preparationRequest?.id ?? 'stored'} seed={preparationRequest?.seed} onUse={usePreparation} onModelSettings={() => openUtility('model')} /> : null}
+      {route.page === 'preparation' ? <PreparationPanel key={preparationRequest?.id ?? 'stored'} seed={preparationRequest?.seed} onUse={usePreparation} onHistory={()=>navigate({page:'preparationHistory'})} onModelSettings={() => openUtility('model')} /> : null}
+      {route.page==='preparationHistory'?<PreparationHistoryPanel route={route} navigate={navigate} onModelSettings={()=>openUtility('model')} onUse={record=>{if(loadPreparationHistory(record)){setPreparationRequest({id:crypto.randomUUID(),seed:record.input});navigate({page:'preparation'});}else setNotice('载入未成功，请先检查本机存储，历史记录仍保留。');}}/>:null}
       {route.page === 'algorithm' ? <React.Suspense fallback={<p role="status">正在打开算法练习…</p>}><AlgorithmPanel key={algorithmRequest?.id ?? 'stored'} seed={algorithmRequest?.seed} initialView={route.view ?? 'hot100'} questionId={route.questionId} patternId={route.patternId} onNavigate={next => navigate({ page: 'algorithm', ...next })} /></React.Suspense> : null}
       {route.page === 'bank' ? <div className="utility-panel"><BankPanel onClose={() => navigate(returnTo)} onAlgorithmPractice={seed => { setAlgorithmRequest({ id: crypto.randomUUID(), seed }); navigate({ page: 'algorithm', view: 'patterns' }); }} /></div> : null}
       {['model', 'search', 'data'].includes(route.page) ? <div className="utility-panel"><Tabs activeKey={route.page === 'resumeLibrary' ? 'resumes' : route.page} onChange={page => { if (page === 'model' || page === 'search' || page === 'data' || page === 'resumes') navigate({ page: page === 'resumes' ? 'resumeLibrary' : page }); }} items={[{ key: 'model', label: '模型设置' }, { key: 'search', label: '联网搜索' }, { key: 'data', label: '本机数据' }]} />{route.page === 'model' ? <ModelPanel onClose={() => navigate(returnTo)} /> : route.page === 'search' ? <SearchPanel onClose={() => navigate(returnTo)} /> : route.page === 'resumeLibrary' ? <ResumeLibrary /> : <DataPanel />}</div> : null}

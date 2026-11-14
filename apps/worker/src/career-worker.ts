@@ -721,10 +721,30 @@ export class CareerWorker {
       if(current.state!=='ready')throw new Error('请先人工完成登录/验证并检查会话，再同步消息。');
       const session=await this.persistSession(work.owner,null,current);
       if(session.profile_generation!==work.payload.sessionGeneration)throw new Error('浏览器会话已切换，未同步。');
-      const snapshot=await browser.captureConversation({stillAllowed:()=>this.store.workStillOwned(work.id,work.lease_generation)});
-      if(!(await this.admit(work,browser)))throw new Error('同步租约已失效。');
       const {BossInboxStore}=await import('../../../packages/career/src/inbox');
-      await new BossInboxStore(this.database.pool).save(work.owner,snapshot,{id:work.id,leaseGeneration:work.lease_generation,sessionGeneration:session.profile_generation});
+      const inbox=new BossInboxStore(this.database.pool);
+      const guard={stillAllowed:async()=>{
+        if(!await this.store.workStillOwned(work.id,work.lease_generation))return false;
+        const latest=await this.store.session(work.owner);
+        return latest?.profile_generation===session.profile_generation&&latest.state==='ready';
+      }};
+      const save=async(snapshot:Parameters<typeof inbox.save>[1])=>{
+        if(!(await this.admit(work,browser)))throw new Error('同步租约已失效。');
+        await inbox.save(work.owner,snapshot,{id:work.id,leaseGeneration:work.lease_generation,sessionGeneration:session.profile_generation});
+      };
+      if(work.payload.inboxMode==='first_ten'){
+        const {bossInboxBatchPlanSchema}=await import('./boss-inbox-list');
+        let plan=work.payload.inboxPlan?bossInboxBatchPlanSchema.parse(work.payload.inboxPlan):undefined;
+        const progress=async(next:NonNullable<typeof plan>)=>{
+          plan=next;
+          await this.database.pool.query("UPDATE app_career_work SET payload=json_set(payload,'$.inboxProgress',json($1),'$.inboxPlan',json($2)) WHERE id=$3 AND owner=$4 AND status='processing' AND lease_generation=$5",[JSON.stringify({total:next.targets.length,completed:next.completed}),JSON.stringify(next),work.id,work.owner,work.lease_generation]);
+        };
+        await browser.captureFirstConversations(guard,async(snapshot)=>{
+          await save(snapshot);
+          if(!plan)throw Error('同步计划缺失。');
+          await progress({...plan,completed:plan.completed+1,accountKey:snapshot.accountKey});
+        },progress,plan);
+      }else await save(await browser.captureConversation(guard));
       return;
     }
     const {action,captureControls,inspectResumeName,inspectCompanyPostingId}=z.object({inspectCompanyPostingId:z.uuid().optional(),inspectResumeName:z.string().trim().min(1).max(80).optional(),action:z.enum(['open','check','clear']),captureControls:z.boolean().default(false)}).parse(work.payload);

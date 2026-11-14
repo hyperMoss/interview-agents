@@ -19,13 +19,21 @@ export function validatePreparation(input: PreparationInput, raw: unknown): Prep
   return output;
 }
 
+export function preparationAnswerSteps(steps:string[]){
+  return steps.map(step=>step.trim().replace(/^(?:\d+[、)）]\s*|\d+\.(?!\d)\s*)/u,''));
+}
+
+export function preparationAnswerText(steps:string[]){
+  return preparationAnswerSteps(steps).map((step,index)=>`${index+1}. ${step}`).join('\n\n');
+}
+
 export function preparationBankDraft(input: PreparationInput, question: PreparationOutput['questions'][number], requirements: PreparationOutput['requirements']) {
   const requirement = requirements[question.requirementIndex];
   if (!requirement) throw new Error('PREPARATION_REQUIREMENT_MISMATCH');
   return preparedBankDraftSchema.parse({
     title: question.title, content: question.text, category: question.category, difficulty: question.difficulty,
     roleFamilies: [input.roleFamily], tags: ['JD备题'],
-    expectedAnswer: [...question.answerOutline.map(item => `- ${item}`), '', '追问', ...question.followUps.map(item => `- ${item}`)].join('\n'),
+    expectedAnswer: [preparationAnswerText(question.answerOutline), '', '追问', preparationAnswerText(question.followUps)].join('\n'),
     jdRequirement: requirement,
   });
 }
@@ -36,7 +44,7 @@ export function preparationMarkdown(input: PreparationInput, result: Preparation
     '', '## 岗位要求', ...result.requirements.map((requirement, index) => `\n${index + 1}. ${requirement.competency} · ${requirement.priority === 'required' ? '必备' : '加分'}\n\n> ${requirement.quote.replace(/\n/g, '\n> ')}`),
     '', '## 面试题', ...result.questions.map((question, index) => [
       '', `### ${index + 1}. ${drafts?.[index]?.title ?? question.title}`, '', drafts?.[index]?.content ?? question.text, '', `对应要求：${question.requirementIndex + 1} · ${question.difficulty}`, '',
-      ...(drafts?.[index] ? ['回答要点与追问', drafts[index].expectedAnswer] : ['回答要点', ...question.answerOutline.map(item => `- ${item}`), '', '追问', ...question.followUps.map(item => `- ${item}`)]),
-    ].join('\n')), '', '回答要点用于准备思路，不代表候选人已有经历。',
+      ...(drafts?.[index] ? ['参考回答与追问', drafts[index].expectedAnswer] : ['参考回答', preparationAnswerText(question.answerOutline), '', '追问', preparationAnswerText(question.followUps)]),
+    ].join('\n')), '', '参考回答用于学习与复述，假设示例不代表候选人已有经历。',
   ].join('\n');
 }

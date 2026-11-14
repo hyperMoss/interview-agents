@@ -7,19 +7,20 @@ export const statusLabels: Record<Session['status'], string> = {
   preparing: '正在准备', awaiting_answer: '进行中', evaluating: '正在评估',
   completed: '已完成', failed: '生成失败', cancelled: '已取消',
 };
-export type Page = 'home' | 'history' | 'practice' | 'preparation' | 'algorithm' | 'bank' | 'model' | 'search' | 'data' | 'review' | 'career' | 'bossInbox' | 'resumeLibrary' | 'resumeStudio';
+export type Page = 'home' | 'history' | 'practice' | 'preparation' | 'preparationHistory' | 'algorithm' | 'bank' | 'model' | 'search' | 'data' | 'review' | 'career' | 'bossInbox' | 'resumeLibrary' | 'resumeStudio';
 export type Route = {
   page: Page; sessionId?: string; view?: 'hot100' | 'patterns'; questionId?: number; patternId?: string;
   taskId?: string; batchId?: string; preparationId?: string; resumeId?: string; conversationId?:string;
 };
-const pages = z.enum(['home', 'history', 'practice', 'preparation', 'algorithm', 'bank', 'model', 'search', 'data', 'review', 'career', 'bossInbox', 'resumeLibrary', 'resumeStudio']);
+const pages = z.enum(['home', 'history', 'practice', 'preparation', 'preparationHistory', 'algorithm', 'bank', 'model', 'search', 'data', 'review', 'career', 'bossInbox', 'resumeLibrary', 'resumeStudio']);
 const paths: Record<Page, string> = {
-  home: 'home', history: 'interviews/history', practice: 'interviews', preparation: 'preparation', algorithm: 'algorithms',
+  home: 'home', history: 'interviews/history', practice: 'interviews', preparation: 'preparation', preparationHistory:'preparation/history', algorithm: 'algorithms',
   bank: 'bank', model: 'settings/models', search: 'settings/search', data: 'settings/data', review: 'review',
   career: 'career', bossInbox:'boss-conversations', resumeLibrary: 'settings/resumes', resumeStudio: 'resumes',
 };
 export function parseRoute(hash: string): Route | null {
   const parts = hash.replace(/^#\/?/, '').split('/');
+  if(parts[0]==='preparation'&&parts[1]==='history'){const id=z.uuid().safeParse(parts[2]);return {page:'preparationHistory',...(id.success?{preparationId:id.data}:{})};}
   if (parts[0] === 'algorithms') {
     const view = parts[1] === 'patterns' ? 'patterns' : 'hot100';
     const id = z.coerce.number().int().positive().safeParse(parts[2]);
@@ -49,6 +50,7 @@ export function parseRoute(hash: string): Route | null {
   return null;
 }
 export function routeHash(route: Route) {
+  if(route.page==='preparationHistory')return `#/preparation/history${route.preparationId?`/${route.preparationId}`:''}`;
   if(route.page==='bossInbox')return `#/boss-conversations${route.conversationId?`/${route.conversationId}`:''}`;
   if (route.page === 'resumeStudio') return `#/resumes${route.resumeId ? `/${route.resumeId}` : ''}`;
   if (route.page === 'career') return `#/career${route.taskId ? `/tasks/${route.taskId}` : route.batchId ? `/batches/${route.batchId}` : route.preparationId ? `/preparations/${route.preparationId}` : ''}`;
