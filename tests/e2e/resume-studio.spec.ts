@@ -195,7 +195,7 @@ test('mobile menu reaches every feature, keeps deep links and does not overflow'
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: 'test-results/resumes/mobile.png', fullPage: true });
   await page.getByRole('button', { name: '打开模块菜单' }).click();
-  await expect(page.getByRole('menuitem')).toHaveCount(13);
+  await expect(page.getByRole('menuitem')).toHaveCount(14);
   await page.getByRole('menuitem', { name: '简历库', exact: true }).scrollIntoViewIfNeeded();
   await page.screenshot({ path: 'test-results/resumes/module-menu-mobile.png', animations: 'disabled' });
   await page.getByRole('menuitem', { name: '投递附件库', exact: true }).click();

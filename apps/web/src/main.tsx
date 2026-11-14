@@ -30,6 +30,7 @@ import './module-layout.css';
 import { resumeText } from '../../../packages/resume/src/import';
 import type { ResumeDocument } from '../../../packages/contracts/src/resume-document';
 import { removeInterviewReviews } from './personal-data';
+import {BossInboxPanel,type BossInterviewSeed} from './boss-inbox-panel';
 
 const client = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: true }, mutations: { retry: 0, gcTime: 0 } } });
 const ResumeStudio = React.lazy(() => import('./resume-studio').then(module => ({ default: module.ResumeStudio })));
@@ -67,6 +68,14 @@ function App() {
     refetchInterval: query => query.state.data && ['preparing', 'evaluating'].includes(query.state.data.status) ? 1000 : false });
   function invalidateHistory() { void cache.invalidateQueries({ queryKey: ['history'] }); void cache.invalidateQueries({ queryKey: ['recent-history'] }); }
   function newPractice() { create.reset(); setNotice(''); navigate({ page: 'practice' }); }
+  function useBossConversation(seed:BossInterviewSeed,mode:'preparation'|'practice') {
+    writeSession('interview-intake',JSON.stringify({role:seed.role,resume:seed.resume,jobDescription:seed.jobDescription,focus:seed.focus,level:'mid',questionCount:6,planning:defaultPlanning,step:0}));
+    writeSession('boss-interview-origin',JSON.stringify({conversationId:seed.sourceId,snapshotHash:seed.sourceHash}));
+    if(mode==='preparation'){
+      setPreparationRequest({id:crypto.randomUUID(),seed:{role:seed.role,jobDescription:seed.jobDescription,focus:seed.focus,candidateLevel:defaultPlanning.candidateLevel,round:defaultPlanning.round,roleType:defaultPlanning.roleType,roleFamily:defaultPlanning.roleFamily,questionCount:6}});
+      navigate({page:'preparation'});
+    }else{setIntakeVersion(value=>value+1);newPractice();}
+  }
   function openUtility(page: 'model' | 'search' | 'bank' | 'data' | 'resumeLibrary') {
     if (!['model', 'search', 'data'].includes(route.page)) setReturnTo(route);
     if (route.page === 'preparation') setPreparationRequest(null);
@@ -144,6 +153,7 @@ function App() {
       {route.page === 'resumeStudio' ? <React.Suspense fallback={<p role="status">正在打开简历制作…</p>}><ResumeStudio route={route} navigate={navigate} onPractice={useResumeForPractice} /></React.Suspense> : null}
       {route.page === 'review' ? <ReviewPanel navigate={navigate} /> : null}
       {route.page === 'career' ? <CareerPanel route={route} navigate={navigate} openModelSettings={() => openUtility('model')} openResumeLibrary={() => openUtility('resumeLibrary')} onStrictPractice={useCareerPractice} /> : null}
+      {route.page === 'bossInbox' ? <BossInboxPanel route={route} navigate={navigate} onUse={useBossConversation}/> : null}
       </div>
     </main>
   </div>;

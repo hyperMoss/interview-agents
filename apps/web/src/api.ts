@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import {bossConversationSchema,bossConversationSummarySchema,bossConversationViewSchema,bossInboxJobSchema,bossInboxSnapshotSchema} from '../../../packages/contracts/src/boss-inbox';
 import { resumeDraftSchema, resumeDraftSummarySchema, type ResumeDocument } from '../../../packages/contracts/src/resume-document';
 import { errorSchema, sessionSchema, sessionListSchema, type InterviewInput } from '../../../packages/contracts/src/index';
 import { modelSettingsSchema,modelProfileSchema,modelListSchema,modelProbeSchema,type ModelDraft,saveModelSchema,modelAccessSchema,defaultModeSchema } from '../../../packages/contracts/src/models';
@@ -88,6 +89,15 @@ export const api = {
   saveSearch:(draft:z.infer<typeof searchDraftSchema>)=>request('/search/settings',searchProfileSchema,{method:'POST',body:JSON.stringify(draft)}),
   clearSearch:()=>request('/search/settings',z.object({cleared:z.literal(true)}),{method:'DELETE'}),
   probeSearch:(draft:z.infer<typeof searchDraftSchema>,query:string)=>request('/search/probe',searchProbeResultSchema,{method:'POST',body:JSON.stringify({draft,query})}),
+  bossConversations:()=>request('/boss-conversations',z.array(bossConversationSummarySchema)),
+  bossConversation:(id:string)=>request(`/boss-conversations/${id}`,bossConversationViewSchema),
+  syncBossConversation:(requestId:string)=>request('/boss-conversations/sync',bossInboxJobSchema,{method:'POST',body:JSON.stringify({requestId})}),
+  bossConversationJob:(id:string)=>request(`/boss-conversations/sync/${id}`,bossInboxJobSchema),
+  cancelBossConversationJob:(id:string)=>request(`/boss-conversations/sync/${id}/cancel`,bossInboxJobSchema,{method:'POST',body:'{}'}),
+  bossConversationSnapshots:(id:string)=>request(`/boss-conversations/${id}/snapshots`,z.array(bossInboxSnapshotSchema)),
+  bossConversationSnapshot:(id:string,hash:string)=>request(`/boss-conversations/${id}/snapshots/${hash}`,bossConversationSchema),
+  updateBossConversationJd:(id:string,revision:number,jd:string)=>request(`/boss-conversations/${id}/jd`,bossConversationViewSchema,{method:'PATCH',body:JSON.stringify({revision,jd})}),
+  deleteBossConversation:(id:string,revision:number)=>request(`/boss-conversations/${id}`,z.object({deleted:z.boolean()}),{method:'DELETE',body:JSON.stringify({revision})}),
   resumeDrafts: () => request('/resume-drafts', z.array(resumeDraftSummarySchema)),
   resumeDraft: (id: string) => request(`/resume-drafts/${id}`, resumeDraftSchema),
   createResumeDraft: (input: { id: string; label: string; document: ResumeDocument }) => request('/resume-drafts', resumeDraftSchema, { method: 'POST', body: JSON.stringify(input) }),

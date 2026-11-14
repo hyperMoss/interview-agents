@@ -587,5 +587,17 @@
     ],
     "acceptance": "TEST-REQ-049",
     "task": "TASK-REQ-049"
+  },
+  {
+    "requirement": "REQ-050",
+    "capabilities": [
+      "career.boss"
+    ],
+    "docs": [
+      "docs/generated/00-PROJECT-BRIEF.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "acceptance": "TEST-REQ-050",
+    "task": "TASK-REQ-050"
   }
 ]

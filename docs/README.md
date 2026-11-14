@@ -5,6 +5,7 @@
 - [项目首页](../README.md)：安装、功能入口和开发验证。
 - [使用指南](user-guide.md)：面试、备题、题库、算法与草稿备份。
 - [JSON 简历制作](resume-builder.md)：JSON 导入、独立副本、预览、导出与投递附件。
+- [会话同步与面试准备](boss-conversations.md)：保存已交换简历聊天的公司、JD 和沟通快照，继续备题和模拟面试。
 - [SQLite 存储](design/sqlite-local.md)：文件位置、初始化、隔离和备份恢复。
 - [持续验证](continuous-verification.md)：CI 流程和失败产物。
 

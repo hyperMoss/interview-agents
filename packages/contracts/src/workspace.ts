@@ -67,7 +67,7 @@ const preparationPageSchema = z.strictObject({
   draft: z.strictObject({ input: preparationInputSchema, result: preparationResultSchema, cards: z.array(preparationCardSchema).min(3).max(12) }).nullable(),
 });
 const answerKey = /^answer-[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}-.{1,150}$/i;
-const knownKeys = new Set(['interview-intake', 'interview-selected', 'jd-preparation-v1', 'algorithm-practice-v1', 'hot100-practice-v1', 'algorithm-view', 'job-profiles-v1', 'review-list-v1', 'workspace-route']);
+const knownKeys = new Set(['boss-inbox-job','boss-interview-origin','interview-intake', 'interview-selected', 'jd-preparation-v1', 'algorithm-practice-v1', 'hot100-practice-v1', 'algorithm-view', 'job-profiles-v1', 'review-list-v1', 'workspace-route']);
 export function isWorkspaceKey(key: string) { return knownKeys.has(key) || answerKey.test(key); }
 export function workspaceCategory(key: string): WorkspaceCategory {
   if (key === 'algorithm-practice-v1' || key === 'hot100-practice-v1' || key === 'algorithm-view') return 'algorithm';
@@ -83,9 +83,11 @@ export function normalizeWorkspaceValue(key: string, value: string, salvage = fa
   if (value.length > 2_000_000) throw new Error('单项本机数据超过 2 MB。');
   if (answerKey.test(key)) return z.string().max(30000).parse(value);
   if (key === 'interview-selected') return z.uuid().parse(value);
+  if (key === 'boss-inbox-job') return z.uuid().parse(value);
   if (key === 'algorithm-view') return z.enum(['patterns', 'hot100']).parse(value);
   if (key === 'workspace-route') return z.string().max(500).regex(/^#/).parse(value);
   const parsed: unknown = JSON.parse(value);
+  if(key==='boss-interview-origin')return JSON.stringify(z.strictObject({conversationId:z.uuid(),snapshotHash:z.string().regex(/^[a-f0-9]{64}$/)}).parse(parsed));
   if (key === 'interview-intake') return JSON.stringify(workspaceIntakeSchema.parse(parsed));
   if (key === 'jd-preparation-v1') return JSON.stringify(preparationPageSchema.parse(parsed));
   if (key === 'job-profiles-v1') return JSON.stringify(parseCollection(parsed, jobProfilesSchema, 'profiles', jobProfileSchema, salvage));
