@@ -338,3 +338,14 @@ CREATE TABLE IF NOT EXISTS app_career_contacts (
  UNIQUE(owner,posting_id),UNIQUE(approval_id,position)
 );
 CREATE INDEX IF NOT EXISTS career_contacts_owner_task ON app_career_contacts(owner,task_id,created_at);
+
+CREATE TABLE IF NOT EXISTS app_preparation_history (
+  id text PRIMARY KEY,
+  owner text NOT NULL,
+  parent_id text REFERENCES app_preparation_history(id) ON DELETE SET NULL,
+  request_hash text NOT NULL,
+  payload text NOT NULL CHECK (json_valid(payload)),
+  created_at text NOT NULL,
+  updated_at text NOT NULL
+);
+CREATE INDEX IF NOT EXISTS preparation_history_owner ON app_preparation_history(owner, created_at DESC, id DESC);

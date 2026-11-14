@@ -25,8 +25,8 @@ test('JD-only preview, edits, selected idempotent save, refresh, export and stri
   await expect(page.locator('.preparation-card')).toHaveCount(3);await expect(page.getByLabel('JD 能力要求')).toContainText('加分项');
   const edited='请结合你亲自实现的页面，说明如何防止旧请求覆盖新请求，并给出验证步骤。';
   await page.getByRole('textbox',{name:'题目 1 题面',exact:true}).fill(edited);
-  await page.locator('.preparation-card').first().getByText('回答要点与追问，可编辑',{exact:true}).click();
-  await page.getByRole('textbox',{name:'题目 1 回答要点',exact:true}).fill('先定义有效请求，再验证乱序响应不会覆盖当前结果。');
+  await page.locator('.preparation-card').first().getByText('参考回答与追问，可编辑',{exact:true}).click();
+  await page.getByRole('textbox',{name:'题目 1 参考回答',exact:true}).fill('先定义有效请求，再验证乱序响应不会覆盖当前结果。');
   await page.getByRole('checkbox',{name:'选择备题 2',exact:true}).uncheck();await page.getByRole('checkbox',{name:'选择备题 3',exact:true}).uncheck();
   for(let index=0;index<2;index++){
     await page.getByRole('button',{name:'保存所选到题库',exact:true}).click();
@@ -54,9 +54,10 @@ test('JD-only preview, edits, selected idempotent save, refresh, export and stri
   for(const question of saved)await page.request.delete(`/api/v1/question-bank/${question.id}`,{headers});
 });
 test('custom model failures preserve the previous JD draft and HR preparation stays behavioral',async({page})=>{
-  const provider=await startProviderFixture();
+  const provider=await startProviderFixture();provider.state.requirePreparationSchema=true;
   try{
     await page.goto('/#/interviews/new');await page.request.get('/api/v1/identity');
+    const headers={Origin:new URL(page.url()).origin};
     const enabled=await page.request.post('/api/v1/models/settings',{headers,data:{baseUrl:provider.baseUrl,model:'coach-alpha',apiKey:'fixture-alpha-key',remember:false,timeoutMs:10000}});expect(enabled.ok()).toBe(true);
     await page.reload();await openPreparation(page);
     const round=page.getByRole('combobox',{name:/备题轮次/});await round.click();await round.press('ArrowDown');await round.press('ArrowDown');await round.press('Enter');
@@ -68,7 +69,13 @@ test('custom model failures preserve the previous JD draft and HR preparation st
     await page.getByRole('button',{name:'重新生成题单',exact:true}).click();await expect(page.getByRole('alert')).toContainText('备题生成失败',{timeout:20000});
     await expect(page.getByRole('textbox',{name:'题目 1 题面',exact:true})).toHaveValue(text);await expect(page.getByRole('textbox',{name:'备题 JD',exact:true})).toHaveValue(jd);
     const storage=await page.evaluate(()=>JSON.stringify({...sessionStorage}));expect(storage).not.toContain('fixture-alpha-key');
-  }finally{await page.request.delete('/api/v1/models/settings',{headers});await provider.close();}
+    provider.state.badPreparationEvidence=false;
+    await page.getByRole('button',{name:'重新生成题单',exact:true}).click();
+    await expect(page.getByRole('status')).toContainText('已生成 3 道题');
+    await expect(page.getByRole('alert')).not.toBeVisible();
+    await page.reload();await expect(page.getByRole('textbox',{name:'备题 JD',exact:true})).toHaveValue(jd);
+    await expect(page.locator('.preparation-card')).toHaveCount(3);
+  }finally{await page.request.delete('/api/v1/models/settings',{headers:{Origin:new URL(page.url()).origin}});await provider.close();}
 });
 test('the HTTP batch boundary accepts valid large Chinese notes and rejects duplicate save keys',async({page})=>{
   await page.goto('/#/interviews/new');await page.request.get('/api/v1/identity');

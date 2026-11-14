@@ -1,5 +1,7 @@
 import { execFile, spawn, type ChildProcess } from 'node:child_process';
 import { readCurrentBossConversation } from './boss-inbox-reader';
+import { firstBossInboxRows,selectBossInboxRow,type BossInboxBatchPlan } from './boss-inbox-list';
+import type {BossConversation} from '../../../packages/contracts/src/boss-inbox';
 import { createHash } from 'node:crypto';
 import { chmod, mkdir, readFile, rm } from 'node:fs/promises';
 import lockfile from 'proper-lockfile';
@@ -1126,6 +1128,7 @@ export class BossBrowser {
 
   async captureConversation(guard:EffectGuard) {
     this.assertOwned();
+    if(!await guard.stillAllowed())throw new Error('同步已取消。');
     const page=await this.ownPage();
     await this.requireActable(page,'navigation');
     const observed=await this.inspectSession();
@@ -1150,6 +1153,41 @@ export class BossBrowser {
       }
     }
     return snapshot;
+  }
+
+  async captureFirstConversations(guard:EffectGuard,save:(snapshot:BossConversation,total:number)=>Promise<void>,started:(plan:BossInboxBatchPlan)=>Promise<void>,resume?:BossInboxBatchPlan){
+    this.assertOwned();
+    const page=await this.ownPage();
+    const check=async()=>{
+      await this.requireActable(page,'navigation');
+      const url=new URL(page.url());
+      if(url.origin!==new URL(this.options.origin).origin||!/^\/web\/geek\/chat\/?$/.test(url.pathname))throw Error('请在专用 BOSS 窗口打开消息页后同步前十条会话。');
+    };
+    await check();
+    const currentRows=await firstBossInboxRows(page,guard,check);
+    if(resume&&JSON.stringify(resume.targets)!==JSON.stringify(currentRows))throw Error('中断期间前十条会话列表已变化，已保留完成项，请重新发起同步。');
+    const plan=resume??{targets:currentRows,completed:0,accountKey:null};
+    const rows=plan.targets;
+    await started(plan);
+    let account=plan.accountKey;
+    for(const row of rows.slice(plan.completed)){
+      await check();if(!await guard.stillAllowed())throw Error('同步已取消。');
+      await selectBossInboxRow(page,row);
+      let selected=false;
+      for(let attempt=0;attempt<50;attempt++){
+        await check();if(!await guard.stillAllowed())throw Error('同步已取消。');
+        // A click can precede the new header/message render. Do not accept the preceding chat.
+        const current=await readCurrentBossConversation(page,this.options.origin,null).catch(()=>null);
+        if(current?.snapshot.conversationKey===row.key&&current.snapshot.postingId===row.postingId){selected=true;break;}
+        await page.waitForTimeout(200);
+      }
+      if(!selected)throw Error('会话切换后未确认岗位和简历交换证据，已停止同步。');
+      const snapshot=await this.captureConversation(guard);
+      if(snapshot.conversationKey!==row.key||snapshot.postingId!==row.postingId||account&&snapshot.accountKey!==account)throw Error('读取时账号或会话变化，已停止同步。');
+      account=snapshot.accountKey;
+      if(!await guard.stillAllowed())throw Error('同步已取消。');
+      await save(snapshot,rows.length);
+    }
   }
 
   async observeSiteResume(expectedName: string) {

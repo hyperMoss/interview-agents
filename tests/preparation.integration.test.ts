@@ -4,7 +4,7 @@ import { InterviewService } from '../apps/api/src/interviews';
 import { GenerationWorker } from '../apps/worker/src/worker';
 import { apiConfig, agentConfig, workerConfig, input, answer } from './fixtures';
 import { startProviderFixture, serveFixture } from './provider-fixture';
-import type { PreparationInput } from '../packages/contracts/src/preparation';
+import {PREPARATION_TIMEOUT_MS,type PreparationInput} from '../packages/contracts/src/preparation';
 import { preparationBankDraft } from '../packages/interview/src/preparation';
 import { demoPreparation } from '../apps/agent/src/preparation';
 
@@ -21,13 +21,68 @@ suite('JD preparation across model protocol, owned bank and strict interviews',(
     runner=new GenerationWorker({...workerConfig(),DATABASE_URL:api.config.DATABASE_URL,AGENT_URL:bridge.origin});
   });
   afterEach(async()=>{
-    provider.state.failure=false;provider.state.badPreparationEvidence=false;provider.state.rateLimited=false;
+    provider.state.failure=false;provider.state.badPreparationEvidence=false;provider.state.rateLimited=false;provider.state.requirePreparationSchema=false;provider.state.invalidPreparationOnce=false;provider.state.preparationResponse='valid';
     await api.database.pool.query("DELETE FROM app_interviews WHERE owner=$1 OR owner=$2",[owner,other]);
     await api.database.pool.query("DELETE FROM app_bank_questions WHERE owner=$1 OR owner=$2",[owner,other]);
     await api.models.clear(owner);
+    await api.database.pool.query("DELETE FROM app_preparation_history WHERE owner=$1 OR owner=$2",[owner,other]);
   });
   afterAll(async()=>{await Promise.all([api.onModuleDestroy(),runner.close(),runtime.close()]);await bridge.close();await provider.close();});
   const model=()=>api.models.save(owner,{baseUrl:provider.baseUrl,model:'coach-alpha',apiKey:'fixture-alpha-key',remember:false,timeoutMs:10000});
+  it('supplies the full output contract even when the provider does not enforce response_format',async()=>{
+    const connection=await model();provider.state.requirePreparationSchema=true;
+    const result=await api.preparation.generate(owner,{input:preparationInput,modelConnectionId:connection.id});
+    expect(result.questions).toHaveLength(3);expect(result.requirements[0]?.competency).toBeTruthy();
+  });
+  it('corrects one malformed output without accepting invalid evidence or looping',async()=>{
+    const connection=await model();provider.state.invalidPreparationOnce=true;const before=provider.calls.length;
+    const result=await api.preparation.generate(owner,{input:preparationInput,modelConnectionId:connection.id});
+    expect(result.questions).toHaveLength(3);expect(provider.calls.length-before).toBe(2);
+    provider.state.badPreparationEvidence=true;const invalidStart=provider.calls.length;
+    await expect(api.preparation.generate(owner,{input:preparationInput,modelConnectionId:connection.id})).rejects.toMatchObject({response:{code:'INVALID_JD_PREPARATION'}});
+    expect(provider.calls.length-invalidStart).toBe(2);
+  });
+  it('repairs truncated and malformed JSON responses once instead of returning a generic failure',async()=>{
+    const connection=await model();
+    for(const kind of ['invalid_json_once','truncated_once'] satisfies (typeof provider.state.preparationResponse)[]){
+      provider.state.preparationResponse=kind;const before=provider.calls.length;
+      const result=await api.preparation.generate(owner,{input:preparationInput,modelConnectionId:connection.id});
+      expect(result.questions).toHaveLength(3);expect(provider.calls.length-before).toBe(2);
+    }
+    provider.state.preparationResponse='truncated';
+    await expect(api.preparation.generate(owner,{input:preparationInput,modelConnectionId:connection.id})).rejects.toMatchObject({response:{code:'PREPARATION_OUTPUT_LIMIT'}});
+  });
+  it('persists owned success and failure history, retries into a new immutable record and replays request IDs',async()=>{
+    const connection=await model();const requestId=crypto.randomUUID();const request={requestId,input:preparationInput,modelConnectionId:connection.id};
+    const before=provider.calls.length;const result=await api.preparation.generate(owner,request);
+    expect(await api.preparation.generate(owner,request)).toEqual(result);expect(provider.calls.length-before).toBe(1);
+    const original=await api.preparation.get(owner,requestId);expect(original.outcome.status).toBe('ready');
+    await expect(api.preparation.generate(owner,{...request,input:{...preparationInput,focus:'changed'}})).rejects.toThrow('同一请求编号');
+    await expect(api.preparation.get(other,requestId)).rejects.toThrow('不存在');
+    await expect(api.preparation.retry(other,requestId,{requestId:crypto.randomUUID(),modelConnectionId:connection.id})).rejects.toThrow('不存在');
+    provider.state.badPreparationEvidence=true;const failedId=crypto.randomUUID();
+    await expect(api.preparation.generate(owner,{...request,requestId:failedId})).rejects.toThrow();
+    const failed=await api.preparation.get(owner,failedId);expect(failed.outcome).toMatchObject({status:'failed',code:'INVALID_JD_PREPARATION'});expect(failed.input).toEqual(preparationInput);
+    provider.state.badPreparationEvidence=false;const retryId=crypto.randomUUID();
+    const retry=await api.preparation.retry(owner,failedId,{requestId:retryId,modelConnectionId:connection.id});
+    expect(retry).toMatchObject({id:retryId,parentId:failedId,outcome:{status:'ready'},input:preparationInput});
+    expect(await api.preparation.get(owner,failedId)).toEqual(failed);expect(await api.preparation.get(owner,requestId)).toEqual(original);
+    const retryCalls=provider.calls.length;expect(await api.preparation.retry(owner,failedId,{requestId:retryId,modelConnectionId:connection.id})).toEqual(retry);expect(provider.calls.length).toBe(retryCalls);
+    const first=await api.preparation.history(owner,{limit:2});expect(first.items).toHaveLength(2);expect(first.nextBefore).toBeTruthy();
+    const next=await api.preparation.history(owner,{limit:2,before:first.nextBefore??undefined});expect(next.items).toHaveLength(1);expect(new Set([...first.items,...next.items].map(row=>row.id)).size).toBe(3);
+    expect(JSON.stringify(first)).not.toContain(preparationInput.jobDescription);expect(JSON.stringify(retry)).not.toContain('fixture-alpha-key');expect((await api.preparation.history(other,{limit:20})).items).toEqual([]);
+  });
+  it('marks stale generating records interrupted and can retry their saved input',async()=>{
+    const connection=await model();const id=crypto.randomUUID(),then=new Date(Date.now()-PREPARATION_TIMEOUT_MS-20000).toISOString();
+    const activeAt=new Date(Date.now()-90000).toISOString();
+    const record={id,parentId:null,input:preparationInput,modelConnectionId:connection.id,createdAt:activeAt,updatedAt:activeAt,outcome:{status:'generating'}};
+    await api.database.pool.query('INSERT INTO app_preparation_history(id,owner,request_hash,payload,created_at,updated_at) VALUES($1,$2,$3,$4,$5,$5)',[id,owner,'synthetic-interrupted',JSON.stringify(record),activeAt]);
+    expect((await api.preparation.get(owner,id)).outcome.status).toBe('generating');
+    await expect(api.preparation.retry(owner,id,{requestId:crypto.randomUUID(),modelConnectionId:connection.id})).rejects.toThrow('仍在生成');
+    await api.database.pool.query("UPDATE app_preparation_history SET created_at=$1,payload=json_set(payload,'$.createdAt',$1) WHERE id=$2",[then,id]);
+    expect((await api.preparation.get(owner,id)).outcome).toMatchObject({status:'failed',code:'PREPARATION_INTERRUPTED'});
+    expect((await api.preparation.retry(owner,id,{requestId:crypto.randomUUID(),modelConnectionId:connection.id})).outcome.status).toBe('ready');
+  });
   function batch(){const output=demoPreparation(preparationInput);return{questions:output.questions.map(question=>({requestId:crypto.randomUUID(),draft:preparationBankDraft(preparationInput,question,output.requirements)}))};}
   it('uses the selected real protocol model for JD-only output without creating an interview or bank entries',async()=>{
     const connection=await model();const before=await api.bank.list(owner);

@@ -10,9 +10,9 @@ import { ModelConnections,modelPolicy,listModels,probeModel,ModelAccessError,def
 import type { AgentConfig } from '../../../packages/config/src/index';
 import { SearchConnections,searchProvider } from './search';
 import { searchProbeSchema } from '../../../packages/contracts/src/search';
-import { preparationRuntimeSchema, personalizedPreparationRuntimeSchema } from '../../../packages/contracts/src/preparation';
+import { preparationRuntimeSchema, personalizedPreparationRuntimeSchema, PREPARATION_TIMEOUT_MS } from '../../../packages/contracts/src/preparation';
 import { careerMatchRuntimeSchema, careerGenerationRuntimeSchema } from '../../../packages/contracts/src/career';
-import { generatePreparation } from './preparation';
+import { generatePreparation, isPreparationValidationError, isPreparationOutputLimit } from './preparation';
 import { generateCareerMatch, generateCareerPreparation } from './career';
 
 export async function createAgentServer(config: AgentConfig) {
@@ -49,14 +49,18 @@ export async function createAgentServer(config: AgentConfig) {
   app.post('/internal/v1/preparations/generate', async c => {
     const request = preparationRuntimeSchema.parse(await c.req.json());
     const connection = request.modelConnectionId ? await connections.resolve(request.ownerId, request.modelConnectionId) : undefined;
-    const signal = AbortSignal.any([c.req.raw.signal, AbortSignal.timeout(connection ? Math.min(55000, connection.timeoutMs) : 55000)]);
+    const signal = AbortSignal.any([c.req.raw.signal, AbortSignal.timeout(PREPARATION_TIMEOUT_MS)]);
     try { return c.json(await generatePreparation(config, request.input, signal, connection)); }
     catch (error) {
       if (error instanceof ModelAccessError) throw error;
       const provider = modelFailure(error);
       if (provider) return c.json(provider, 503);
-      if (error instanceof z.ZodError || error instanceof Error && error.message.startsWith('PREPARATION_')) return c.json({ error: 'INVALID_JD_PREPARATION', message: '备题生成失败：模型输出的题量、类型或 JD 原文依据无效。输入和已有题单保留，可重新生成。' }, 502);
-      return c.json({ error: 'PREPARATION_FAILED', message: '备题生成失败或输出不符合岗位要求。输入和已有题单保留，可检查模型后重新生成。' }, 503);
+      if(signal.aborted)return c.json({error:'PREPARATION_TIMEOUT',message:'备题生成超时。输入和已有题单已保留，可减少题量或调整模型超时后重新生成。'},504);
+      if(isPreparationOutputLimit(error))return c.json({error:'PREPARATION_OUTPUT_LIMIT',message:'模型输出达到长度上限，题单未完整生成。输入和已有题单已保留，可减少题量或更换模型后重试。'},502);
+      if (isPreparationValidationError(error)) return c.json({ error: 'INVALID_JD_PREPARATION', message: '备题生成失败：模型输出的字段、题量、类型或 JD 原文依据无效，纠正后仍未通过校验。输入和已有题单保留，可检查模型后重新生成。' }, 502);
+      const upstream=z.object({statusCode:z.number().int()}).safeParse(error);
+      if(upstream.success)return c.json({error:'MODEL_UPSTREAM_FAILED',message:`备题生成失败：模型服务返回 HTTP ${upstream.data.statusCode}，请检查服务地址、模型权限或稍后重试。输入和已有题单已保留。`},503);
+      return c.json({ error: 'PREPARATION_FAILED', message: '模型未能完成有效的备题输出。输入和已有题单已保留，请检查模型服务或减少题量后重试。' }, 503);
     }
   });
   // Career generation receipts are keyed by career work id and can be purged by the Worker.
