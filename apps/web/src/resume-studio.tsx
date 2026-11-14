@@ -25,7 +25,7 @@ function readEditor(draft: ResumeDraft) {
 function errorMessage(error: unknown) {
   return error instanceof z.ZodError ? error.issues.map(issue => `${issue.path.join('.') || 'JSON'}：${issue.message}`).join('；') : error instanceof Error ? error.message : '操作失败，请重试。';
 }
-export function ResumeStudio({ route, navigate, onPractice }: { route: Route; navigate: (route: Route) => void; onPractice: (document: ResumeDocument) => void }) {
+export function ResumeStudio({ route, navigate, onPractice, onPreparation }: { route: Route; navigate: (route: Route) => void; onPractice: (document: ResumeDocument) => void; onPreparation: (document: ResumeDocument) => void }) {
   const cache = useQueryClient();
   const [search, setSearch] = useState('');
   const [importError, setImportError] = useState('');
@@ -39,6 +39,14 @@ export function ResumeStudio({ route, navigate, onPractice }: { route: Route; na
     navigate({ page: 'resumeStudio', resumeId: draft.id });
   } });
   function add(label: string, document: ResumeDocument) { setImportError(''); create.mutate({ id: crypto.randomUUID(), label, document }); }
+  // Card summaries omit the document, so the confirmed handoff reads the saved copy and refuses out-of-range text instead of truncating.
+  const handoff = useMutation({ mutationFn: async ({ id, mode }: { id: string; mode: 'practice' | 'preparation' }) => {
+    const draft = await api.resumeDraft(id);
+    const length = resumeText(draft.document).trim().length;
+    if (length < 20) throw new Error(`「${draft.label}」整理后只有 ${length} 字，至少需要 20 字，未带入，已有资料保持不变。`);
+    if (length > 16000) throw new Error(`「${draft.label}」有 ${length} 字，超过 16000 字上限，未带入；请先整理，不会自动截断。`);
+    return { document: draft.document, mode };
+  }, onError: (failure: Error) => setImportError(failure.message), onSuccess: ({ document, mode }) => { setImportError(''); if (mode === 'practice') onPractice(document); else onPreparation(document); } });
   return <section className="resume-studio" aria-labelledby="resume-studio-title">
     <div className="panel-heading"><div><h1 id="resume-studio-title">简历库</h1><p>导入已有简历，整理为 JSON；为不同岗位保存副本，再用于面试或导出投递附件。</p></div><Button onClick={() => navigate({ page: 'resumeLibrary' })}>查看投递附件库</Button></div>
     <div className="resume-studio-actions"><label className="resume-import-label">导入简历文件<input type="file" accept=".pdf,.docx,.txt,.md" aria-label="导入简历文件" disabled={upload.isPending || create.isPending} onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) upload.mutate(file); }} /></label>{upload.isPending ? <span role="status">正在本机解析文件…</span> : <span className="context-note">PDF / DOCX / TXT / Markdown → 核对文本 → JSON 入库</span>}</div>
@@ -56,7 +64,11 @@ export function ResumeStudio({ route, navigate, onPractice }: { route: Route; na
     <div className="resume-studio-layout"><aside className="resume-copies" aria-label="简历副本列表"><h2>我的副本 <Tag>{list.data?.length ?? 0}</Tag></h2><Input aria-label="查找简历副本" placeholder="按名称查找" value={search} onChange={event => setSearch(event.target.value)} allowClear />
       {list.isPending ? <Spin tip="正在读取简历副本" /> : null}
       {list.error ? <Alert type="error" message={list.error.message} action={<Button onClick={() => void list.refetch()}>重新读取</Button>} /> : null}
-      {list.data?.filter(item => item.label.toLocaleLowerCase().includes(search.toLocaleLowerCase())).map(item => <Button className={`resume-copy ${item.id === route.resumeId ? 'selected' : ''}`} key={item.id} onClick={() => navigate({ page: 'resumeStudio', resumeId: item.id })} aria-current={item.id === route.resumeId ? 'page' : undefined}><strong>{item.label}</strong><small>修订 {item.revision} · {new Date(item.updatedAt).toLocaleDateString('zh-CN')}</small></Button>)}
+      {list.data?.filter(item => item.label.toLocaleLowerCase().includes(search.toLocaleLowerCase())).map(item => <div key={item.id}><Button className={`resume-copy ${item.id === route.resumeId ? 'selected' : ''}`} onClick={() => navigate({ page: 'resumeStudio', resumeId: item.id })} aria-current={item.id === route.resumeId ? 'page' : undefined}><strong>{item.label}</strong><small>修订 {item.revision} · {new Date(item.updatedAt).toLocaleDateString('zh-CN')}</small></Button><div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+        <Popconfirm title={`用「${item.label}」准备面试？`} description="带入已保存的简历文本，覆盖面试准备页尚未提交的输入（含已填写的岗位与 JD）；历史面试保持原快照。" okText="确认带入" cancelText="取消带入" onConfirm={() => handoff.mutateAsync({ id: item.id, mode: 'practice' }).catch(() => {})}><Button size="small" aria-label={`带入面试：${item.label}`} disabled={handoff.isPending}>带入面试</Button></Popconfirm>
+        <Popconfirm title={`将「${item.label}」带入 JD 备题？`} description="带入已保存的简历文本与简历目标岗位，作为后续练习资料；JD 与题量仍由你在备题页填写。" okText="确认带入" cancelText="取消带入" onConfirm={() => handoff.mutateAsync({ id: item.id, mode: 'preparation' }).catch(() => {})}><Button size="small" aria-label={`带入备题：${item.label}`} disabled={handoff.isPending}>带入备题</Button></Popconfirm>
+      </div></div>)}
+      {handoff.isPending ? <span role="status">正在读取所选副本…</span> : null}
       {list.data && !list.data.length ? <p className="quiet">从空白或虚构示例开始，也可导入 cool-resume 的版本 JSON。</p> : null}
     </aside><div className="resume-editor-area">
       {!route.resumeId ? <Empty description="选择一个副本，或新建你的第一份简历。" /> : detail.isPending ? <p role="status">正在读取简历…</p> : detail.error ? <Alert type="error" message={detail.error.message} action={<Button onClick={() => void detail.refetch()}>重试读取</Button>} /> : detail.data ? <ResumeEditor onPractice={onPractice} key={detail.data.id} draft={detail.data} onCopy={add} copying={create.isPending} onDeleted={() => navigate({ page: 'resumeStudio' })} onLibrary={() => navigate({ page: 'resumeLibrary' })} /> : null}
