@@ -1,5 +1,5 @@
 import {useEffect,useState} from 'react';
-import {Alert,Button,Checkbox,Empty,Input,Popconfirm,Select,Tag} from 'antd';
+import {Alert,Button,Checkbox,Empty,Input,Modal,Popconfirm,Select,Tag} from 'antd';
 import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query';
 import {z} from 'zod';
 import {api} from './api';
@@ -10,6 +10,28 @@ import {readSession,writeSession} from './storage';
 import './boss-inbox.css';
 
 export type BossInterviewSeed={role:string;jobDescription:string;resume:string;focus:string;sourceId:string;sourceHash:string};
+const handoffLimits={jdMin:20,jdMax:12000,titleMax:120,resumeMin:20,resumeMax:16000,preview:200};
+/** Bounded JD preview for the confirmation layer; the handoff itself carries the untrimmed original text. */
+export function handoffPreview(jd:string){const text=jd.trim();return{text:text.slice(0,handoffLimits.preview),length:text.length,bounded:text.length>handoffLimits.preview};}
+export type HandoffFacts={title:string;jd:string;snapshotPending:boolean;snapshotUnavailable:boolean;resumeSelected:boolean;resumePending:boolean;resumeError:boolean;resume:string};
+/** Single source of truth for both the disabled entry and the confirmed handoff. */
+export function handoffBlockers(mode:'preparation'|'practice',facts:HandoffFacts){
+  const problems:string[]=[];
+  if(facts.snapshotPending)problems.push('正在读取所选历史快照，请稍候。');
+  else if(facts.snapshotUnavailable)problems.push('所选历史快照还没有读取成功，请重试或改回当前快照。');
+  const jd=facts.jd.trim();
+  if(!jd)problems.push('缺少 JD：请先展开站点岗位重新同步，或手动补充。');
+  else if(jd.length<handoffLimits.jdMin)problems.push(`JD 只有 ${jd.length} 字，至少需要 ${handoffLimits.jdMin} 字，不会自动补写。`);
+  else if(jd.length>handoffLimits.jdMax)problems.push(`JD 有 ${jd.length} 字，超过 ${handoffLimits.jdMax} 字上限；请先精简，不会自动截断。`);
+  if(facts.title.trim().length>handoffLimits.titleMax)problems.push(`岗位名称超过 ${handoffLimits.titleMax} 字，请先修正。`);
+  if(facts.resumeSelected){
+    if(facts.resumeError)problems.push('所选简历读取失败，请重新选择或重试。');
+    else if(facts.resumePending)problems.push('正在读取所选简历，请稍候。');
+    else if(facts.resume.trim().length<handoffLimits.resumeMin)problems.push(`所选简历整理后只有 ${facts.resume.trim().length} 字，至少需要 ${handoffLimits.resumeMin} 字。`);
+    else if(facts.resume.trim().length>handoffLimits.resumeMax)problems.push(`所选简历超过 ${handoffLimits.resumeMax} 字，请先整理，不会自动截断。`);
+  }else if(mode==='practice')problems.push('模拟面试需要先选择一份简历库副本。');
+  return problems;
+}
 export function BossInboxPanel({route,navigate,onUse}:{route:Route;navigate:(route:Route)=>void;onUse:(seed:BossInterviewSeed,mode:'preparation'|'practice')=>void}) {
   const cache=useQueryClient();
   const [search,setSearch]=useState('');
@@ -46,28 +68,36 @@ function ConversationDetail({row,onUse,onDeleted}:{row:BossConversationView;onUs
   const historical=useQuery({queryKey:['boss-inbox-snapshot',row.id,historyHash],queryFn:()=>api.bossConversationSnapshot(row.id,historyHash??''),enabled:Boolean(historyHash)});
   const shown=historical.data??row.snapshot;
   const jd=shown.jdText??row.manualJd;
+  const [handoff,setHandoff]=useState<'preparation'|'practice'|null>(null);
+  const selectedResume=useQuery({queryKey:['resume-draft',resumeId],queryFn:()=>api.resumeDraft(resumeId??''),enabled:Boolean(resumeId),refetchOnWindowFocus:false});
+  const facts:HandoffFacts={title:shown.title,jd:jd??'',snapshotPending:Boolean(historyHash&&historical.isPending),snapshotUnavailable:Boolean(historyHash&&!historical.isPending&&!historical.data),resumeSelected:Boolean(resumeId),resumePending:selectedResume.isPending,resumeError:selectedResume.isError,resume:selectedResume.data?resumeText(selectedResume.data.document):''};
+  const blockers={preparation:handoffBlockers('preparation',facts),practice:handoffBlockers('practice',facts)};
+  const preview=handoffPreview(jd??'');
+  const resumeLabel=resumes.data?.find(draft=>draft.id===resumeId)?.label??'';
   const saveJd=useMutation({mutationFn:()=>api.updateBossConversationJd(row.id,row.revision,manualJd),onSuccess:()=>void cache.invalidateQueries({queryKey:['boss-conversation',row.id]})});
   const remove=useMutation({mutationFn:()=>api.deleteBossConversation(row.id,row.revision),onSuccess:()=>{cache.removeQueries({queryKey:['boss-conversation',row.id]});cache.removeQueries({queryKey:['boss-inbox-snapshots',row.id]});cache.removeQueries({queryKey:['boss-inbox-snapshot',row.id]});onDeleted();}});
   const use=useMutation({mutationFn:async(mode:'preparation'|'practice')=>{
-    if(historyHash&&!historical.data)throw new Error('请等待所选快照读取完成。');
-    if(!jd||jd.length<20||jd.length>12000||shown.title.length>120)throw new Error('请先核对完整 JD（20–12000 字）和岗位名称（最多120字），不会自动截断。');
-    const draft=resumeId?await api.resumeDraft(resumeId):null;
-    const resume=draft?resumeText(draft.document):'';
-    if(mode==='practice'&&(!resume||resume.length<20))throw new Error('模拟面试需要先选择一份有效简历。');
-    if(resume.length>16000)throw new Error('简历文本超过16000字，请先整理，未截断。');
-    onUse({role:shown.title,jobDescription:jd,resume,focus:shareContext?context:'',sourceId:row.id,sourceHash:historyHash??row.snapshotHash},mode);
+    const problems=handoffBlockers(mode,facts);
+    if(problems.length)throw new Error(problems[0]);
+    const resume=resumeId&&selectedResume.data?resumeText(selectedResume.data.document):'';
+    onUse({role:shown.title,jobDescription:jd??'',resume,focus:shareContext?context:'',sourceId:row.id,sourceHash:historyHash??row.snapshotHash},mode);
   },onError:e=>setError(e.message)});
   return <article className="inbox-detail"><h2>{shown.company} · {shown.title}</h2><Tag>已观察到简历交换依据</Tag><p>{shown.exchangeEvidence}</p><p className="inbox-meta">读取于 {new Date(shown.observedAt).toLocaleString()} · 当前可见 {shown.messages.length} 条 · 岗位 {shown.postingId}</p>
+    <section className="inbox-handoff" aria-label="带入准备"><div><h3>带入准备</h3><p>岗位、公司、JD 与所选简历按原长度带入，不截断、不改写。</p></div><div className="inbox-handoff-pick"><Select aria-label="会话面试简历" placeholder="选择简历库副本（模拟面试必选）" value={resumeId} onChange={setResumeId} options={resumes.data?.map(draft=>({value:draft.id,label:draft.label}))}/>{resumes.error?<Alert type="error" message={resumes.error.message}/>:null}</div><div className="inbox-handoff-modes">{(['preparation','practice'] as const).map(mode=><div className="inbox-handoff-mode" key={mode}><Button type={mode==='practice'?'primary':'default'} disabled={blockers[mode].length>0||use.isPending} onClick={()=>{setError('');setHandoff(mode);}}>{mode==='preparation'?'JD 备题':'模拟面试'}</Button>{blockers[mode].length?<small>{blockers[mode][0]}</small>:null}</div>)}</div></section>
     <Select aria-label="选择会话快照" placeholder="当前快照" value={historyHash} allowClear onChange={setHistoryHash} options={versions.data?.map(version=>({value:version.hash,label:`${new Date(version.observedAt).toLocaleString()} · ${version.messageCount}条`}))}/>
     {historyHash&&historical.isPending?<p role="status">正在读取所选历史快照…</p>:null}{historical.error?<Alert type="error" message={historical.error.message}/>:null}
     {versions.error?<Alert type="warning" message="历史快照读取失败"/>:null}<h3>岗位 JD</h3>{jd?<pre>{jd}</pre>:<Alert type="warning" message="未读取到完整 JD，请展开站点岗位后重新同步，或在下面手动补充。"/>}
     {row.manualJd&&!shown.jdText?<Tag>JD 来源：手动补充</Tag>:<Tag>JD 来源：站点快照{shown.jdText?'':'（缺失）'}</Tag>}
     <details><summary>手动补充 JD（保留站点快照原文）</summary><Input.TextArea aria-label="手动补充JD" rows={7} maxLength={12000} value={manualJd} onChange={event=>setManualJd(event.target.value)}/><Button disabled={manualJd.trim().length<20||saveJd.isPending} onClick={()=>saveJd.mutate()}>保存补充 JD</Button>{saveJd.error?<Alert type="error" message={saveJd.error.message}/>:null}</details>
     <h3>沟通记录</h3><p>仅为已加载的可见窗口；旧快照可回看，不按相同文本合并消息。</p>{shown.messages.map((message,index)=><div className={`inbox-message ${message.direction}`} key={`${message.sourceId??'local'}-${index}`}><small>{({self:'我',recruiter:'招聘方',system:'系统',unknown:'方向未确认'})[message.direction]} · {message.timeLabel??'时间未显示'}</small><pre>{message.text}</pre></div>)}
-    <h3>准备下一步</h3><Select aria-label="会话面试简历" placeholder="选择简历库副本（模拟面试必选）" value={resumeId} onChange={setResumeId} options={resumes.data?.map(draft=>({value:draft.id,label:draft.label}))}/>{resumes.error?<Alert type="error" message={resumes.error.message}/>:null}
-    <Checkbox checked={shareContext} onChange={event=>setShareContext(event.target.checked)}>将下面的沟通摘要作为备题关注点</Checkbox>{shareContext?<Input.TextArea aria-label="沟通关注点" placeholder="选取相关沟通要点，最多1000字" maxLength={1000} rows={3} value={context} onChange={event=>setContext(event.target.value)}/>:null}
+    <h3>准备下一步</h3><Checkbox checked={shareContext} onChange={event=>setShareContext(event.target.checked)}>将下面的沟通摘要作为备题关注点</Checkbox>{shareContext?<Input.TextArea aria-label="沟通关注点" placeholder="选取相关沟通要点，最多1000字" maxLength={1000} rows={3} value={context} onChange={event=>setContext(event.target.value)}/>:null}
     <p>进入准备页后才生成内容；启用模型生成时，JD、所选简历及勾选的摘要将发送给所选模型。不会把沟通内容当作已验证履历。</p>
-    <div className="inbox-actions">{(['preparation','practice'] as const).map(mode=><Popconfirm key={mode} title="带入本次准备资料？" description="替换尚未提交的准备草稿，已完成的面试与会话快照保留。" okText="确认带入" cancelText="保留" onConfirm={()=>use.mutateAsync(mode)}><Button disabled={!jd||use.isPending||(mode==='practice'&&!resumeId)}>{mode==='preparation'?'JD 备题':'模拟面试'}</Button></Popconfirm>)}<Popconfirm title="删除这个会话及其历史快照？" description="同时取消本身份未完成的会话同步；已开始的面试保留。" okText="删除会话" cancelText="保留" onConfirm={()=>remove.mutateAsync()}><Button danger disabled={remove.isPending}>删除本地会话</Button></Popconfirm></div>
+    <div className="inbox-actions"><Popconfirm title="删除这个会话及其历史快照？" description="同时取消本身份未完成的会话同步；已开始的面试保留。" okText="删除会话" cancelText="保留" onConfirm={()=>remove.mutateAsync()}><Button danger disabled={remove.isPending}>删除本地会话</Button></Popconfirm></div>
+    <Modal open={Boolean(handoff)} title={handoff==='practice'?'带入前确认 · 模拟面试':'带入前确认 · JD 备题'} okText="确认带入" cancelText="取消带入" confirmLoading={use.isPending} okButtonProps={{disabled:!handoff||blockers[handoff].length>0}} onCancel={()=>{setHandoff(null);setError('');}} onOk={()=>{if(!handoff)return;void use.mutateAsync(handoff).then(()=>setHandoff(null)).catch(()=>{});}}>
+      {handoff?<><dl className="inbox-handoff-preview"><dt>岗位</dt><dd>{shown.title}</dd><dt>公司</dt><dd>{shown.company}</dd><dt>JD</dt><dd><pre>{preview.text}{preview.bounded?'…':''}</pre><small>共 {preview.length} 字；带入时按原长度完整带入，不截断。</small></dd><dt>简历</dt><dd>{resumeId?(resumeLabel||'已选择的副本'):'未选择'}{handoff==='practice'?'（模拟面试必选）':''}</dd></dl>
+        <p role="note">确认后会用本会话的岗位、公司、JD 与所选简历覆盖「{handoff==='practice'?'面试准备':'JD 备题'}」页尚未提交的输入；已生成的题单、已完成的面试与会话快照保留。取消不会写入任何草稿。</p>
+        {blockers[handoff].length?<Alert type="warning" message="还不能带入" description={<ul>{blockers[handoff].map(problem=><li key={problem}>{problem}</li>)}</ul>}/>:null}</>:null}
+    </Modal>
     {error?<Alert type="error" message={error}/>:null}{remove.error?<Alert type="error" message={remove.error.message}/>:null}
   </article>;
 }

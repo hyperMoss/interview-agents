@@ -21,7 +21,7 @@ const draftSchema = z.strictObject({ input: preparationInputSchema, result: prep
 const pageSchema = z.strictObject({ form: formSchema, draft: draftSchema.nullable() });
 type PageState = z.infer<typeof pageSchema>;
 export type PreparedPractice = { input: PreparationInput; bankIds: string[] };
-export type PreparationSeed = Pick<PreparationInput, 'role' | 'jobDescription' | 'focus' | 'candidateLevel' | 'round' | 'roleType' | 'roleFamily' | 'questionCount'>;
+export type PreparationSeed = Partial<Pick<PreparationInput, 'role' | 'jobDescription' | 'focus' | 'candidateLevel' | 'round' | 'roleType' | 'roleFamily' | 'questionCount'>>;
 
 function initialState(seed?: PreparationSeed): PageState {
   try {
@@ -47,8 +47,10 @@ export function PreparationPanel({ onUse, onModelSettings, onHistory, seed }: { 
   const [page, setPage] = useState(() => initialState(seed));
   const [validation, setValidation] = useState('');
   const [notice, setNotice] = useState('');
+  const [savedBatch, setSavedBatch] = useState<PreparedPractice | null>(null);
   const [storageFailed, setStorageFailed] = useState(false);
   const { form, draft } = page;
+  const carried = (() => { try { return z.object({ role: z.string().max(120), resume: z.string().max(64000) }).parse(JSON.parse(readSession('interview-intake') ?? 'null')); } catch { return null; } })();
   const identity = useQuery({ queryKey: ['identity'], queryFn: api.identity });
   const settings = useQuery({ queryKey: ['model-settings'], queryFn: api.modelSettings, enabled: identity.isSuccess });
   useEffect(() => { setStorageFailed(!writeSession(storageKey, JSON.stringify(page))); }, [page]);
@@ -56,6 +58,7 @@ export function PreparationPanel({ onUse, onModelSettings, onHistory, seed }: { 
     mutationFn: api.prepare,
     onSettled:()=>{void cache.invalidateQueries({queryKey:['preparation-history']});},
     onSuccess: (result, request) => {
+      setSavedBatch(null);
       setPage(current => ({ ...current, draft: { input: request.input, result, cards: result.questions.map(question => ({ requestId: crypto.randomUUID(), draft: preparationBankDraft(request.input, question, result.requirements), selected: true, savedId: null })) } }));
       setNotice(`已生成 ${result.questions.length} 道题。检查题面与参考回答后再保存。`);
     },
@@ -77,7 +80,8 @@ export function PreparationPanel({ onUse, onModelSettings, onHistory, seed }: { 
       setPage(current => current.draft ? { ...current, draft: { ...current.draft, cards: current.draft.cards.map(card => ids.has(card.requestId) ? { ...card, savedId: card.requestId } : card) } } : current);
       void cache.invalidateQueries({ queryKey: ['question-bank'] });
       void cache.invalidateQueries({ queryKey: ['plan-preview'] });
-      setNotice(`所选 ${selected.length} 道题已保存到题库。`);
+      setNotice(`所选 ${selected.length} 道题已保存到题库（本次新增 ${saved.length} 道）。`);
+      setSavedBatch({ input, bankIds: selected.map(card => card.savedId ?? card.requestId) });
       if (practice) onUse({ input, bankIds: selected.map(card => card.savedId ?? card.requestId) });
     },
   });
@@ -131,12 +135,13 @@ export function PreparationPanel({ onUse, onModelSettings, onHistory, seed }: { 
       </div>
       <label htmlFor="prep-focus">备题重点<Input id="prep-focus" maxLength={1000} value={form.focus} disabled={busy} onChange={event => changeForm({ focus: event.target.value })} placeholder="选填，例如：接口设计、复杂状态、项目追问" /></label>
       <p className="storage-note">仅向所选模型发送本页岗位、JD 与备题参数。当前模型 {settings.data?.active?.model ?? (settings.data?.mode === 'demo' ? '规则演示' : settings.data?.defaultModel || '未配置')}。生成不启用联网搜索。</p>
+      {carried?.resume.trim() ? <p className="context-note">已带入简历「{carried.role.trim() || '未命名简历'}」{carried.resume.trim().length} 字，保存并带入练习时使用；备题生成不发送简历全文。</p> : null}
       <div className="panel-actions"><Button type="primary" htmlType="submit" aria-label={draft ? '重新生成题单' : '根据 JD 生成题单'} loading={generate.isPending} disabled={busy || !ready}>{generate.isPending ? '正在分析 JD 并生成题目…' : draft ? '重新生成题单' : '根据 JD 生成题单'}</Button><Button htmlType="button" disabled={busy} onClick={onModelSettings}>配置备题模型</Button></div>
       {generate.isPending ? <p role="status">正在生成详细参考回答，最多等待 3 分钟。输入已保留，成功后替换已有题单，也可在备题历史查看进度。</p> : null}
       {validation || generate.error || settings.error ? <p role="alert" className="error">{validation || generate.error?.message || settings.error?.message}</p> : null}
     </form>
     {storageFailed ? <p role="alert" className="error">当前无法保存到本机，请先导出题单并检查数据管理。</p> : null}
-    {notice ? <p role="status">{notice}</p> : null}
+    {notice ? <p role="status">{notice}{savedBatch ? <Button type="link" aria-label="立即开始模拟面试" disabled={busy} onClick={() => onUse(savedBatch)}>立即开始模拟面试</Button> : null}</p> : null}
     {draft ? <div className="preparation-result">
       <div className="form-heading"><h2>{draft.input.role} · {draft.cards.length} 道备题</h2><Button disabled={busy} onClick={download}>导出备题单</Button></div>
       {draft.result.modelMode === 'demo' ? <p className="demo-banner" role="note">规则演示题单。按 JD 原文与固定模板演示流程，启用模型后可生成更具体的内容。</p> : <p className="session-model">题单生成模型 {draft.result.model}</p>}
@@ -149,7 +154,7 @@ export function PreparationPanel({ onUse, onModelSettings, onHistory, seed }: { 
         <label htmlFor={`prep-content-${index}`}>题目 {index + 1} 题面<Input.TextArea id={`prep-content-${index}`} minLength={10} maxLength={3000} rows={3} value={card.draft.content} disabled={busy} readOnly={Boolean(card.savedId)} onChange={event => changeCard(index, { content: event.target.value })} /></label>
         <details><summary>{card.savedId ? '参考回答与追问' : '参考回答与追问，可编辑'}</summary><label htmlFor={`prep-answer-${index}`}>题目 {index + 1} 参考回答<Input.TextArea id={`prep-answer-${index}`} maxLength={8000} rows={12} value={card.draft.expectedAnswer} disabled={busy} readOnly={Boolean(card.savedId)} onChange={event => changeCard(index, { expectedAnswer: event.target.value })} /></label></details>
       </article>)}
-      <div className="preparation-actions"><p>保存后可在题库继续编辑。带入练习会选用严格模式，并保留已有简历草稿。实际题量仍按时长与环节估算。</p><div className="panel-actions"><Button aria-label="保存所选到题库" loading={save.isPending} disabled={busy || !selected.length || selected.some(card => !bankDraftSchema.safeParse(card.draft).success)} onClick={() => save.mutate(false)}>保存所选到题库</Button><Button type="primary" aria-label="保存并带入练习" loading={save.isPending} disabled={busy || !selected.length || selected.some(card => !bankDraftSchema.safeParse(card.draft).success)} onClick={() => save.mutate(true)}>保存并带入练习</Button></div>{save.error ? <p role="alert" className="error">{save.error.message}。未确认成功时可重试相同题目。</p> : null}</div>
+      <div className="preparation-actions"><p>勾选的题目将以严格模式出现在面试中，题面不会被改写。保存后可在题库继续编辑；带入练习会保留已有简历草稿，实际题量仍按时长与环节估算。</p><div className="panel-actions"><Button aria-label="保存所选到题库" loading={save.isPending} disabled={busy || !selected.length || selected.some(card => !bankDraftSchema.safeParse(card.draft).success)} onClick={() => save.mutate(false)}>保存所选到题库</Button><Button type="primary" aria-label="保存并带入练习" loading={save.isPending} disabled={busy || !selected.length || selected.some(card => !bankDraftSchema.safeParse(card.draft).success)} onClick={() => save.mutate(true)}>保存并带入练习</Button></div>{save.error ? <p role="alert" className="error">{save.error.message}。未确认成功时可重试相同题目。</p> : null}</div>
     </div> : <p className="context-note">题单会自动保存在本机。题目保存后属于当前浏览器身份。</p>}
   </section>;
 }

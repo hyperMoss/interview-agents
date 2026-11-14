@@ -88,6 +88,16 @@ function App() {
     setIntakeVersion(value => value + 1); newPractice();
     setNotice('已从简历库带入已保存的简历。填写目标岗位与 JD 后，确认面试安排。');
   }
+  function useResumeForPreparation(document: ResumeDocument) {
+    const resume = resumeText(document);
+    const role = document.title.trim();
+    const previous = (() => { try { return workspaceIntakeSchema.parse(JSON.parse(readSession('interview-intake') ?? 'null')); } catch { return null; } })();
+    const base = previous ?? { role: '', resume, jobDescription: '', level: 'mid' as const, questionCount: 6, focus: '', planning: defaultPlanning, step: 0 as const };
+    // Keeps the existing JD and other intake fields; only the résumé text and the copy's target role are replaced.
+    writeSession('interview-intake', JSON.stringify({ ...base, role: role || base.role, resume, step: 0 }));
+    setPreparationRequest({ id: crypto.randomUUID(), seed: role ? { role } : {} });
+    navigate({ page: 'preparation' });
+  }
   function navigateMenu(next: Route) {
     if (next.page === 'preparation') setPreparationRequest(null);
     if (next.page === 'algorithm') setAlgorithmRequest(null);
@@ -152,7 +162,7 @@ function App() {
       {route.page === 'bank' ? <div className="utility-panel"><BankPanel onClose={() => navigate(returnTo)} onAlgorithmPractice={seed => { setAlgorithmRequest({ id: crypto.randomUUID(), seed }); navigate({ page: 'algorithm', view: 'patterns' }); }} /></div> : null}
       {['model', 'search', 'data'].includes(route.page) ? <div className="utility-panel"><Tabs activeKey={route.page === 'resumeLibrary' ? 'resumes' : route.page} onChange={page => { if (page === 'model' || page === 'search' || page === 'data' || page === 'resumes') navigate({ page: page === 'resumes' ? 'resumeLibrary' : page }); }} items={[{ key: 'model', label: '模型设置' }, { key: 'search', label: '联网搜索' }, { key: 'data', label: '本机数据' }]} />{route.page === 'model' ? <ModelPanel onClose={() => navigate(returnTo)} /> : route.page === 'search' ? <SearchPanel onClose={() => navigate(returnTo)} /> : route.page === 'resumeLibrary' ? <ResumeLibrary /> : <DataPanel />}</div> : null}
       {route.page === 'resumeLibrary' ? <div className="utility-panel"><ResumeLibrary /></div> : null}
-      {route.page === 'resumeStudio' ? <React.Suspense fallback={<p role="status">正在打开简历制作…</p>}><ResumeStudio route={route} navigate={navigate} onPractice={useResumeForPractice} /></React.Suspense> : null}
+      {route.page === 'resumeStudio' ? <React.Suspense fallback={<p role="status">正在打开简历制作…</p>}><ResumeStudio route={route} navigate={navigate} onPractice={useResumeForPractice} onPreparation={useResumeForPreparation} /></React.Suspense> : null}
       {route.page === 'review' ? <ReviewPanel navigate={navigate} /> : null}
       {route.page === 'career' ? <CareerPanel route={route} navigate={navigate} openModelSettings={() => openUtility('model')} openResumeLibrary={() => openUtility('resumeLibrary')} onStrictPractice={useCareerPractice} /> : null}
       {route.page === 'bossInbox' ? <BossInboxPanel route={route} navigate={navigate} onUse={useBossConversation}/> : null}
