@@ -1,21 +1,42 @@
 import { useState } from 'react';
 import { Button, Drawer, Menu } from 'antd';
+import type { InterviewHistoryPage } from '../../../packages/contracts/src/history';
 import type { Page, Route } from './navigation';
+import { historyPageLimit, useJourneyCounts, type LocalReviewState, type SourceState } from './journey-map';
 
-const groups = [
-  { label: '工作台', items: [{ key: 'home', label: '首页' }] },
-  { label: '简历管理', items: [{ key: 'resumeStudio', label: '简历库' }, { key: 'resumeLibrary', label: '投递附件库' }] },
-  { label: '求职管理', items: [{ key: 'career', label: 'BOSS 求职' },{key:'bossInbox',label:'已交换简历会话'}] },
-  { label: '面试中心', items: [{ key: 'practice', label: '面试准备' }, { key: 'preparation', label: 'JD 备题' }, {key:'preparationHistory',label:'备题历史'}, { key: 'history', label: '面试历史' }, { key: 'review', label: '面试复习清单' }] },
-  { label: '学习训练', items: [{ key: 'algorithm', label: '算法练习' }, { key: 'bank', label: '题库' }] },
-  { label: '系统设置', items: [{ key: 'model', label: '模型设置' }, { key: 'search', label: '联网搜索' }, { key: 'data', label: '本机数据与备份' }] },
-] satisfies { label: string; items: { key: Page; label: string }[] }[];
+type MenuGroup = { label: string; subtitle: string; items: { key: Page; label: string; hint?: string }[] };
+const groups: MenuGroup[] = [
+  { label: '工作台', subtitle: '从这里开始', items: [{ key: 'home', label: '首页' }] },
+  { label: '简历管理', subtitle: '第一步 · 整理简历', items: [{ key: 'resumeStudio', label: '简历库' }, { key: 'resumeLibrary', label: '投递附件库' }] },
+  { label: '求职管理', subtitle: '第二步 · 发现岗位与沟通', items: [{ key: 'career', label: 'BOSS 求职' }, { key: 'bossInbox', label: '已交换简历会话', hint: '可带入备题 & 面试' }] },
+  { label: '面试中心', subtitle: '第三步 · 备题与练习', items: [{ key: 'practice', label: '面试准备' }, { key: 'preparation', label: 'JD 备题', hint: '支持从会话带入' }, { key: 'preparationHistory', label: '备题历史' }, { key: 'history', label: '面试历史' }, { key: 'review', label: '面试复习清单' }] },
+  { label: '学习训练', subtitle: '第四步 · 持续训练', items: [{ key: 'algorithm', label: '算法练习' }, { key: 'bank', label: '题库' }] },
+  { label: '系统设置', subtitle: '模型与本机数据', items: [{ key: 'model', label: '模型设置' }, { key: 'search', label: '联网搜索' }, { key: 'data', label: '本机数据与备份' }] },
+];
+
+/** Sidebar counts come from the same owner-scoped queries as the home page; a full page is a lower bound. */
+export function interviewCountText(interviews: SourceState<InterviewHistoryPage>, reviews: LocalReviewState) {
+  const reviewText = reviews.status === 'failed' ? '待复习 不可用' : reviews.pending ? `待复习 ${reviews.pending}` : '暂无待复习';
+  if (interviews.status === 'loading') return `${reviewText} · 进行中 读取中`;
+  if (interviews.status === 'failed') return `${reviewText} · 进行中 不可用`;
+  const active = interviews.value.items.filter(item => !['completed', 'cancelled'].includes(item.status)).length;
+  const saturated = interviews.value.nextCursor !== null && interviews.value.items.length >= historyPageLimit;
+  const activeText = !saturated ? (active === 0 ? '暂无进行中' : `进行中 ${active}`) : active === 0 ? '进行中 0（本页）' : `进行中 ≥${active}`;
+  return `${reviewText} · ${activeText}`;
+}
+
 export function moduleTitle(page: Page) {
   const group = groups.find(group => group.items.some(item => item.key === page));
   return `${group?.label ?? '工作台'} / ${group?.items.find(item => item.key === page)?.label ?? '首页'}`;
 }
 export function ModuleNavigation({ page, navigate }: { page: Page; navigate: (route: Route) => void }) {
-  return <nav aria-label="模块导航"><Menu mode="inline" selectedKeys={[page]} items={groups.map(group => ({ type: 'group', key: group.label, label: group.label, children: group.items }))} onClick={({ key }) => {
+  const counts = useJourneyCounts();
+  const count = interviewCountText(counts.interviews, counts.reviews);
+  return <nav aria-label="模块导航"><Menu mode="inline" selectedKeys={[page]} items={groups.map(group => ({
+    type: 'group', key: group.label,
+    label: <span className="menu-group-label"><span className="menu-group-title">{group.label}</span><small className="menu-group-subtitle">{group.subtitle}</small>{group.label === '面试中心' ? <small className="menu-group-count">{count}</small> : null}</span>,
+    children: group.items.map(item => ({ key: item.key, label: item.hint ? <span className="menu-item-label">{item.label}<small className="menu-item-hint" aria-hidden="true">{item.hint}</small></span> : item.label })),
+  }))} onClick={({ key }) => {
     const item = groups.flatMap<{ key: Page; label: string }>(group => group.items).find(item => item.key === key);
     if (item) navigate({ page: item.key });
   }} /></nav>;
