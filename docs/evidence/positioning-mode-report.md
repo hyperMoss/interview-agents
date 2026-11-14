@@ -1,7 +1,7 @@
 # Product positioning · mode and report group · delivery record
 
 Scope: P0-4 (REQ-055, unified model-mode badge) and P1-3 (REQ-058, per-question review action).
-Repository worktree: `positioning-mode-report`, branch `hyperMoss/positioning-mode-report`, baseline commit `df9884d`.
+Repository worktree: `positioning-mode-report`, branch `hyperMoss/positioning-mode-report`, baseline commit `df9884d`. Delivery commit `10fc4f3` (implementation, tests and this record); the commit reference itself is added by a follow-up evidence-only commit. No push and no merge were performed.
 
 ## 1. Delivered files
 
