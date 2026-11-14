@@ -3,6 +3,9 @@
 Scope: P0-2 / REQ-053, P0-3 / REQ-054, P1-2 / REQ-057. Base branch `hyperMoss/positioning-handoff`, base commit
 `df9884db7dec0558b38fdf4ccc6cdeb7cf8ed734`. No push, no merge, no dependency change, no contract change.
 
+Delivery commit: `1c6a33f` (`feat: pin BOSS handoff entries, state strict-mode copy and add resume card handoff`). This
+record's own commit reference is added by an evidence-only follow-up commit.
+
 Verdict: **implementation complete for REQ-053 and REQ-054, and for the card handoff entries of REQ-057. One REQ-057
 acceptance clause is not delivered** — the freeze tag on a frozen delivery version. See §7.1 for the evidence and the
 decision that is still open.
