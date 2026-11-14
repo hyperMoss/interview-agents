@@ -3,6 +3,8 @@ import { bankCreateSchema, bankDraftSchema, bankQuestionSchema, difficultySchema
 import { planningOptionsSchema } from './planning';
 import { jdSourceRefSchema, resumeSourceRefSchema, sha256Schema } from './career';
 
+export const PREPARATION_TIMEOUT_MS=180000;
+
 export const preparationInputSchema = z.strictObject({
   role: z.string().trim().min(2).max(120),
   jobDescription: z.string().trim().min(20).max(12000),
@@ -26,7 +28,7 @@ export const preparedQuestionSchema = z.strictObject({
   requirementIndex: z.number().int().min(0).max(11),
   category: z.enum(['technical', 'behavioral']),
   difficulty: difficultySchema,
-  answerOutline: z.array(z.string().trim().min(2).max(300)).min(2).max(5),
+  answerOutline: z.array(z.string().trim().min(2).max(900)).min(2).max(6),
   followUps: z.array(z.string().trim().min(5).max(300)).min(1).max(3),
 });
 export const preparationOutputSchema = z.strictObject({

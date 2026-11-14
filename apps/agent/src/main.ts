@@ -1,10 +1,11 @@
 import { readAgentConfig } from '../../../packages/config/src/index';
 import { createAgentServer } from './server';
 import { z } from 'zod';
+import {PREPARATION_TIMEOUT_MS} from '../../../packages/contracts/src/preparation';
 const config = readAgentConfig();
 const runtime = await createAgentServer(config);
 const bunSchema = z.object({ serve: z.custom<(options: { port: number; hostname: string; fetch: typeof runtime.app.fetch; idleTimeout: number }) => { stop: () => void }>(value => typeof value === 'function') });
 const bun = bunSchema.parse(Reflect.get(globalThis, 'Bun'));
-const server = bun.serve({ port: config.AGENT_PORT, hostname: '0.0.0.0', fetch: runtime.app.fetch, idleTimeout: 70 });
+const server = bun.serve({ port: config.AGENT_PORT, hostname: '0.0.0.0', fetch: runtime.app.fetch, idleTimeout: Math.ceil(PREPARATION_TIMEOUT_MS/1000)+20 });
 process.stdout.write(`Agent runtime listening on ${config.AGENT_PORT} (${config.MODEL_MODE})\n`);
 for (const signal of ['SIGTERM', 'SIGINT']) process.once(signal, () => { server.stop(); void runtime.close(); });

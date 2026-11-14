@@ -49,7 +49,7 @@ export class InterviewService {
     this.queue.on('error', () => {});
     this.models=new ModelGateway(config);
     this.search=new SearchGateway(config);
-    this.preparation=new PreparationGateway(config);
+    this.preparation=new PreparationGateway(config,this.database.pool);
     this.bank=new QuestionBank(this.database.pool);
   }
   async onModuleDestroy() { await Promise.all([this.database.pool.end(), this.queue.close()]); }

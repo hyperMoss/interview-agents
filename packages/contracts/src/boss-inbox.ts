@@ -25,6 +25,8 @@ export const bossConversationViewSchema = z.strictObject({
 });
 export type BossConversationView = z.infer<typeof bossConversationViewSchema>;
 export const bossConversationSummarySchema=z.object({id:z.uuid(),revision:z.number().int(),company:z.string(),title:z.string(),observedAt:z.iso.datetime()});
-export const bossInboxSyncSchema = z.strictObject({ requestId: z.uuid() });
-export const bossInboxJobSchema = z.object({ id: z.uuid(), status: z.enum(['queued','processing','completed','failed','cancelled']), failure: z.string().nullable() });
+export const bossInboxSyncModeSchema=z.enum(['current','first_ten']);
+export const bossInboxProgressSchema=z.strictObject({total:z.number().int().min(0).max(10),completed:z.number().int().min(0).max(10)}).refine(value=>value.completed<=value.total);
+export const bossInboxSyncSchema = z.strictObject({ requestId: z.uuid(), mode:bossInboxSyncModeSchema.default('current') });
+export const bossInboxJobSchema = z.object({ id: z.uuid(), status: z.enum(['queued','processing','completed','failed','cancelled']), failure: z.string().nullable(),progress:bossInboxProgressSchema.nullable().default(null) });
 export const bossInboxSnapshotSchema = z.strictObject({ hash: z.string(), observedAt: z.iso.datetime(),messageCount:z.number().int() });

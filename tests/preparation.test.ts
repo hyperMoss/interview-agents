@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { preparationInputSchema, savePreparationSchema, type PreparationInput, type PreparationResult } from '../packages/contracts/src/preparation';
 import { demoPreparation, generatePreparation } from '../apps/agent/src/preparation';
-import { preparationBankDraft, preparationMarkdown, validatePreparation } from '../packages/interview/src/preparation';
+import { preparationAnswerText, preparationBankDraft, preparationMarkdown, validatePreparation } from '../packages/interview/src/preparation';
 import { agentConfig } from './fixtures';
 
 export const preparationInput:PreparationInput={role:'前端工程师',jobDescription:'熟悉 React 与 TypeScript，负责复杂页面状态与性能优化。优先考虑熟悉自动化测试的候选人。',candidateLevel:'new_grad',round:'first',roleType:'technical',roleFamily:'frontend',questionCount:6,focus:'请求竞争与状态管理'};
@@ -49,6 +49,25 @@ describe('JD preparation contracts',()=>{
     if(!drafts[0])throw new Error('Missing draft');drafts[0].content='编辑过的题面需要保留到导出的备题单中。';drafts[0].expectedAnswer='编辑后的回答要点';
     const markdown=preparationMarkdown(preparationInput,result,drafts);
     expect(markdown).toContain(drafts[0].content);expect(markdown).toContain(drafts[0].expectedAnswer);expect(markdown).toContain('规则演示');expect(markdown).toContain('优先考虑');
+  });
+  it('preserves detailed paragraphs and sequential numbering in bank drafts and Markdown',()=>{
+    const output=demoPreparation(preparationInput);
+    const question=output.questions[0];if(!question)throw Error('Missing question');
+    question.answerOutline=Array.from({length:6},(_,index)=>`${index+1}、${'实现步骤、边界和验证方法。'.repeat(40)}`);
+    const parsed=validatePreparation(preparationInput,output);
+    const draft=preparationBankDraft(preparationInput,parsed.questions[0]??question,parsed.requirements);
+    expect(question.answerOutline.every(step=>step.length>300)).toBe(true);
+    for(let index=1;index<=6;index++)expect(draft.expectedAnswer).toContain(`${index}. 实现步骤`);
+    expect(draft.expectedAnswer).not.toContain('1. 1、');
+    const markdown=preparationMarkdown(preparationInput,{...parsed,modelMode:'live',model:'test-model'});
+    expect(markdown).toContain('参考回答\n1. 实现步骤');expect(markdown).toContain('6. 实现步骤');
+    expect(draft.expectedAnswer.length).toBeLessThanOrEqual(8000);
+    expect(preparationAnswerText(['1.5 倍是这个假设场景的输入约束。','2. 按约束说明实现。'])).toBe('1. 1.5 倍是这个假设场景的输入约束。\n\n2. 按约束说明实现。');
+  });
+  it('continues to accept older short-answer history',()=>{
+    const output=demoPreparation(preparationInput);
+    for(const question of output.questions)question.answerOutline=['解释原理。','说明真实证据。'];
+    expect(validatePreparation(preparationInput,output).questions[0]?.answerOutline).toEqual(['解释原理。','说明真实证据。']);
   });
   it('never silently falls back when the default model is disabled',async()=>{
     await expect(generatePreparation({...agentConfig(),MODEL_MODE:'disabled'},preparationInput,new AbortController().signal)).rejects.toThrow('先启用模型');

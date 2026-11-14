@@ -18,7 +18,8 @@ import { importResume } from './resume';
 import { bankCreateSchema,bankUpdateSchema,leetcodeImportSchema,leetcodeBatchSchema } from '../../../packages/contracts/src/bank';
 import { searchDraftSchema,searchProbeSchema } from '../../../packages/contracts/src/search';
 import { previewPlanSchema,replanSchema } from '../../../packages/contracts/src/planning';
-import { preparationRequestSchema, savePreparationSchema } from '../../../packages/contracts/src/preparation';
+import { savePreparationSchema } from '../../../packages/contracts/src/preparation';
+import {preparationGenerateCommandSchema,preparationHistoryQuerySchema,preparationHistoryRetrySchema} from '../../../packages/contracts/src/preparation-history';
 import { interviewHistoryQuerySchema } from '../../../packages/contracts/src/history';
 import { CareerController, CareerService, CAREER } from './career';
 import { ResumeVersionsController, ResumeVersionService, RESUME_VERSIONS } from './resume-versions';
@@ -64,7 +65,10 @@ class InterviewController {
   @UseInterceptors(FileInterceptor('file',{storage:memoryStorage(),limits:{fileSize:5*1024*1024,files:1}}))
   uploadResume(@UploadedFile() file:unknown){return importResume(file);}
   @Get('question-bank') listBank(@Req() req:Request){return this.service.bank.list(owner(req));}
-  @Post('preparations/generate') prepare(@Req() req:Request,@Body() body:unknown){return this.service.preparation.generate(owner(req),parse(preparationRequestSchema,body));}
+  @Post('preparations/generate') prepare(@Req() req:Request,@Body() body:unknown){return this.service.preparation.generate(owner(req),parse(preparationGenerateCommandSchema,body));}
+  @Get('preparations/history') preparationHistory(@Req() req:Request,@Query() query:unknown){return this.service.preparation.history(owner(req),parse(preparationHistoryQuerySchema,query));}
+  @Get('preparations/history/:id') preparationRecord(@Req() req:Request,@Param('id') id:string){return this.service.preparation.get(owner(req),uuid(id));}
+  @Post('preparations/history/:id/retry') retryPreparation(@Req() req:Request,@Param('id') id:string,@Body() body:unknown){return this.service.preparation.retry(owner(req),uuid(id),parse(preparationHistoryRetrySchema,body));}
   @Post('question-bank/import/preparation') savePreparation(@Req() req:Request,@Body() body:unknown){return this.service.bank.createBatch(owner(req),parse(savePreparationSchema,body));}
   @Post('question-bank') createQuestion(@Req() req:Request,@Body() body:unknown){const input=parse(bankCreateSchema,body);return this.service.bank.create(owner(req),input.requestId,input.draft);}
   @Patch('question-bank/:id') updateQuestion(@Req() req:Request,@Param('id') id:string,@Body() body:unknown){const input=parse(bankUpdateSchema,body);return this.service.bank.update(owner(req),uuid(id),input.revision,input.draft);}

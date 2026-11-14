@@ -599,5 +599,17 @@
     ],
     "acceptance": "TEST-REQ-050",
     "task": "TASK-REQ-050"
+  },
+  {
+    "requirement": "REQ-051",
+    "capabilities": [
+      "interview.practice"
+    ],
+    "docs": [
+      "docs/generated/00-PROJECT-BRIEF.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "acceptance": "TEST-REQ-051",
+    "task": "TASK-REQ-051"
   }
 ]
