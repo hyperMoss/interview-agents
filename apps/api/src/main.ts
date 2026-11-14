@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import {BossInboxService,BossInboxController,BOSS_INBOX} from './boss-inbox';
 import { Body, Controller, Delete, Get, Inject, Module, Param, Post, Req, Query, BadRequestException,Patch,UploadedFile,UseInterceptors } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { Request } from 'express';
@@ -73,9 +74,10 @@ class InterviewController {
   @Delete('interviews/:id') remove(@Req() req: Request, @Param('id') id: string) { return this.service.remove(owner(req), uuid(id)); }
 }
 @Module({
-  controllers: [InterviewController, CareerController, ResumeVersionsController, ResumeDraftsController],
+  controllers: [InterviewController, CareerController, ResumeVersionsController, ResumeDraftsController, BossInboxController],
   providers: [
     { provide: 'INTERVIEWS', useFactory: () => new InterviewService(config) },
+    { provide: BOSS_INBOX, useFactory: () => new BossInboxService(config) },
     { provide: CAREER, useFactory: () => new CareerService(config) },
     { provide: RESUME_VERSIONS, useFactory: () => new ResumeVersionService(config) },
     { provide: RESUME_DRAFTS, useFactory: () => new ResumeDraftService(config) },

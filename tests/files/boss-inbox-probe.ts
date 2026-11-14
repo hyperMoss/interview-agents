@@ -1,0 +1,50 @@
+import 'reflect-metadata';
+import {join} from 'node:path';
+import {readFile,stat} from 'node:fs/promises';
+import {z} from 'zod';
+import {digest} from '../../packages/career/src/domain';
+import {migrateSqlite} from '../../packages/database/src/migrate';
+import {BossInboxService} from '../../apps/api/src/boss-inbox';
+import {CareerWorker} from '../../apps/worker/src/career-worker';
+import {BossBrowser,worksBossProfile} from '../../apps/worker/src/boss-browser';
+import {readWorkerConfig} from '../../packages/config/src/index';
+const [origin,directory]=process.argv.slice(2);
+if(!origin||!directory||new URL(origin).hostname!=='127.0.0.1')throw Error('FIXTURE_ONLY');
+const database=`file:${join(directory,'app.sqlite')}`;
+await migrateSqlite(database,'app');
+const service=new BossInboxService({DATABASE_URL:database,BOSS_AUTOMATION:'manual'});
+const browser=new BossBrowser({engine:'patchright',origin,profile:worksBossProfile(origin),profileDirectory:join(directory,'profile'),moliExecutable:'moli',headedFallback:true});
+const worker=new CareerWorker(readWorkerConfig({NODE_ENV:'test',DATABASE_URL:database,AGENT_URL:'http://127.0.0.1:1',REDIS_URL:'',INTERNAL_SERVICE_TOKEN:'local-fixture-internal-key-123456789',CAREER_LOCAL_DATA_DIR:directory,BOSS_AUTOMATION:'manual',BOSS_SITE_ORIGIN:origin,BOSS_BROWSER_ENGINE:'patchright'}),{browserFor:()=>browser});
+const owner=crypto.randomUUID();
+try {
+  await browser.openSession();
+  const page=await browser.ensureBrowser();
+  await page.goto(`${origin}/web/geek/chat`);
+  await service.career.writeSession(owner,{state:'ready',humanWindow:'open',engine:'patchright'});
+  const first=await service.sync(owner,crypto.randomUUID());await worker.tick();
+  const status=await service.job(owner,first.id);
+  const rows=await service.store.list(owner);
+  const saved=rows[0]?await service.store.get(owner,rows[0].id):null;
+  const replay=await service.sync(owner,crypto.randomUUID());await worker.tick();
+  await page.goto(`${origin}/web/geek/chat?linked=1`);
+  const linked=await service.sync(owner,crypto.randomUUID());await worker.tick();
+  const linkedJob=await service.job(owner,linked.id);
+  const enriched=rows[0]?await service.store.get(owner,rows[0].id):null;
+  await page.goto(`${origin}/web/geek/chat?pending=1`);
+  const pending=await service.sync(owner,crypto.randomUUID());await worker.tick();
+  const pendingJob=await service.job(owner,pending.id);
+  const diagnosticPath=join(directory,'observations',digest(owner).slice(0,32),'chat-structure.json');
+  const diagnosticText=await readFile(diagnosticPath,'utf8');
+  const diagnostic=z.object({pagePath:z.literal('/web/geek/chat'),elements:z.array(z.unknown())}).parse(JSON.parse(diagnosticText));
+  const componentUrl=`${origin}/web/geek/chat?component=1`;
+  await page.goto(componentUrl);const component=await service.sync(owner,crypto.randomUUID());await worker.tick();
+  const componentJob=await service.job(owner,component.id);
+  const componentRow=(await service.store.list(owner)).find(row=>row.company==='合成组件公司');
+  const componentSaved=componentRow?await service.store.get(owner,componentRow.id):null;
+  const selectionRetained=page.url()===componentUrl;
+  const rejected=[];
+  for(const flag of ['mismatch','missingAccount','visibleMismatch','pending']){
+    await page.goto(`${componentUrl}&${flag}=1`);const job=await service.sync(owner,crypto.randomUUID());await worker.tick();rejected.push(await service.job(owner,job.id));
+  }
+  process.stdout.write(JSON.stringify({status,saved,linked:linkedJob,enriched,replay:await service.job(owner,replay.id),pending:pendingJob,component:componentJob,componentSaved,selectionRetained,rejected,diagnostic:{count:diagnostic.elements.length,privateText:/合成测试公司|请准备|synthetic-account|请求交换简历/.test(diagnosticText),mode:(await stat(diagnosticPath)).mode&0o777},listCount:(await service.store.list(owner)).length,snapshots: saved ? (await service.store.snapshots(owner,saved.id)).length : 0}));
+}finally{await worker.close();await service.onModuleDestroy();}

@@ -1,3 +1,7 @@
 packages:
   - packages/*
   - apps/*
+allowBuilds:
+  bun: set this to true or false
+  esbuild: set this to true or false
+  msgpackr-extract: set this to true or false

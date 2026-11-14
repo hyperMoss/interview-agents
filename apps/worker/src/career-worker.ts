@@ -10,6 +10,7 @@ import { validateMatchReceipt, type CareerGenerationSources } from '../../../pac
 import { CAREER_MAX_POSTINGS, careerMatchReceiptSchema, careerPolicySchema, type CareerMatchReceipt, type ObservedPosting } from '../../../packages/contracts/src/career';
 import { personalizedPreparationSchema, type PersonalizedPreparationInput } from '../../../packages/contracts/src/preparation';
 import { BossBrowser, BrowserUnavailable, worksBossProfile, type EffectGuard, type ObservedSession } from './boss-browser';
+import {BossConversationReadError} from './boss-inbox-reader';
 import { openDatabase } from '../../../packages/database/src/client';
 
 // Career worker: reconciles durable career_work rows against the owned local browser and the Agent.
@@ -171,6 +172,11 @@ export class CareerWorker {
         else await this.runPurge(work);
         await this.store.finishWork(work.id, work.lease_generation, 'completed');
       } catch (error) {
+        if(error instanceof BossConversationReadError){
+          const directory=join(careerDataDir(this.config),'observations',digest(work.owner).slice(0,32));
+          await mkdir(directory,{recursive:true,mode:0o700});
+          await writeFile(join(directory,'chat-structure.json'),JSON.stringify(error.structure),{mode:0o600});
+        }
         if (error instanceof CareerWorkRetry) {
           // Cleanup retries back off so one unreachable receipt cannot starve the queue.
           const retryDelaySeconds = work.kind === 'purge' ? Math.min(300, 10 * work.attempts) : 0;
@@ -179,7 +185,7 @@ export class CareerWorker {
         }
         if (error instanceof BrowserUnavailable) {
           const paused = await this.pauseForBrowser(work, error);
-          if (paused && work.kind === 'session' && (work.payload.inspectResumeName || work.payload.captureControls || work.payload.inspectCompanyPostingId)) {
+          if (paused && work.kind === 'session' && (work.payload.syncConversation || work.payload.inspectResumeName || work.payload.captureControls || work.payload.inspectCompanyPostingId)) {
             await this.store.finishWork(work.id,work.lease_generation,'failed',error.message.slice(0,300));
           } else if (paused) await this.store.finishWork(work.id, work.lease_generation, 'completed');
           else await this.store.holdWork(work.id, work.lease_generation, error.code);
@@ -706,6 +712,21 @@ export class CareerWorker {
 
   // ---------- session and purge ----------
   private async runSession(work: WorkRow) {
+    if(work.payload.syncConversation === true) {
+      const prior=await this.store.session(work.owner);
+      if(!prior||prior.profile_generation!==work.payload.sessionGeneration)throw new Error('会话代际已变化，请重新检查并发起同步。');
+      const browser=await this.browserFor(work.owner);
+      if(!(await this.admit(work,browser)))throw new Error('请先在 BOSS 求职中打开并检查专用会话。');
+      const current=await browser.inspectSession();
+      if(current.state!=='ready')throw new Error('请先人工完成登录/验证并检查会话，再同步消息。');
+      const session=await this.persistSession(work.owner,null,current);
+      if(session.profile_generation!==work.payload.sessionGeneration)throw new Error('浏览器会话已切换，未同步。');
+      const snapshot=await browser.captureConversation({stillAllowed:()=>this.store.workStillOwned(work.id,work.lease_generation)});
+      if(!(await this.admit(work,browser)))throw new Error('同步租约已失效。');
+      const {BossInboxStore}=await import('../../../packages/career/src/inbox');
+      await new BossInboxStore(this.database.pool).save(work.owner,snapshot,{id:work.id,leaseGeneration:work.lease_generation,sessionGeneration:session.profile_generation});
+      return;
+    }
     const {action,captureControls,inspectResumeName,inspectCompanyPostingId}=z.object({inspectCompanyPostingId:z.uuid().optional(),inspectResumeName:z.string().trim().min(1).max(80).optional(),action:z.enum(['open','check','clear']),captureControls:z.boolean().default(false)}).parse(work.payload);
     const browser = await this.browserFor(work.owner);
     if (action === 'clear') {

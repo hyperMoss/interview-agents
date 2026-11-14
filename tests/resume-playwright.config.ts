@@ -13,7 +13,8 @@ const env = {
   MODEL_MODE: 'demo', BOSS_AUTOMATION: 'paused',
 };
 export default defineConfig({
-  testDir: './e2e', testMatch: 'resume-studio.spec.ts', workers: 1, timeout: 90000,
+  testDir: './e2e', testMatch: ['resume-studio.spec.ts','boss-inbox.spec.ts'], workers: 1, timeout: 90000,
+  metadata: { sqliteTestDatabase: env.DATABASE_URL },
   outputDir: '../test-results/resumes', reporter: [['list']],
   use: { baseURL: env.WEB_ORIGIN, channel: 'chrome', trace: 'retain-on-failure' },
   webServer: [

@@ -1,4 +1,5 @@
 import { execFile, spawn, type ChildProcess } from 'node:child_process';
+import { readCurrentBossConversation } from './boss-inbox-reader';
 import { createHash } from 'node:crypto';
 import { chmod, mkdir, readFile, rm } from 'node:fs/promises';
 import lockfile from 'proper-lockfile';
@@ -41,7 +42,7 @@ export type ManagedLocator = {
   innerText(options?: { timeout?: number }): Promise<string>;
   getAttribute(name: string): Promise<string | null>;
   evaluate<R>(pageFunction: (element: HTMLElement) => R | Promise<R>): Promise<R>;
-  evaluate<R, Arg>(pageFunction: (element: HTMLElement, arg: Arg) => R | Promise<R>, arg: Arg): Promise<R>;
+  evaluate<R, Arg>(pageFunction: (element: HTMLElement, arg: Arg) => R | Promise<R>, arg: Arg, options?: { timeout?: number }, isolatedContext?: boolean): Promise<R>;
   evaluateAll<R>(pageFunction: (elements: HTMLElement[]) => R | Promise<R>): Promise<R>;
   evaluateAll<R, Arg>(pageFunction: (elements: HTMLElement[], arg: Arg) => R | Promise<R>, arg: Arg): Promise<R>;
   selectOption(values: string | { label: string }): Promise<string[]>;
@@ -1123,6 +1124,34 @@ export class BossBrowser {
     return{observedAt:new Date().toISOString(),...evidence};
   }
 
+  async captureConversation(guard:EffectGuard) {
+    this.assertOwned();
+    const page=await this.ownPage();
+    await this.requireActable(page,'navigation');
+    const observed=await this.inspectSession();
+    if(observed.state!=='ready')throw new Error('会话未就绪，请先完成登录或人工验证。');
+    const captured=await readCurrentBossConversation(page,this.options.origin,observed.accountMarker);
+    const snapshot=captured.snapshot;
+    await this.requireActable(page,'navigation');
+    if(!snapshot.jdText&&snapshot.postingUrl&&this.options.profile.surface!=='rendered') {
+      if(!await guard.stillAllowed())throw new Error('同步已取消。');
+      if(!this.context)throw new Error('当前浏览器不支持保留聊天的新页读取，请手动补充 JD。');
+      const detailPage=await this.context.newPage();
+      try{
+        const posting=await this.readPostingPageFields(detailPage,{sitePostingId:snapshot.postingId,url:captured.postingReadUrl??snapshot.postingUrl,title:snapshot.title,company:snapshot.company,location:'',salary:''});
+        if(posting.sitePostingId!==snapshot.postingId)throw new Error('岗位与会话标识不一致，未同步。');
+        snapshot.jdText=posting.jdText;
+        if(!await guard.stillAllowed())throw new Error('同步已取消。');
+        const current=await readCurrentBossConversation(page,this.options.origin,null);
+        if(current.snapshot.accountKey!==snapshot.accountKey||current.snapshot.conversationKey!==snapshot.conversationKey||current.snapshot.postingId!==snapshot.postingId)throw new Error('读取详情期间切换了账号或聊天，未保存。');
+      }finally{
+        if(!this.pause){await detailPage.close().catch(()=>{});await page.bringToFront().catch(()=>{});}
+        else await detailPage.bringToFront().catch(()=>{});
+      }
+    }
+    return snapshot;
+  }
+
   async observeSiteResume(expectedName: string) {
     this.assertOwned();
     const page = await this.ownPage();
@@ -1670,8 +1699,14 @@ export class BossBrowser {
     });
   }
 
-  /** Fixture-only detail read: one navigation to the site's own posting link. */
+  /** Attach search evidence only for a posting read made by a search task. */
   private async readPostingPage(page: ManagedPage, card: SearchCard, evidence: NativeFilterEvidence): Promise<ObservedPosting> {
+    const posting=await this.readPostingPageFields(page,card);
+    return observedPostingSchema.parse({...posting,nativeFilterEvidence:{...evidence}});
+  }
+
+  /** Read the configured DOM surface through the site's own posting link. */
+  private async readPostingPageFields(page: ManagedPage, card: SearchCard) {
     if (!card.url) throw new BrowserUnavailable('SESSION_PAGE_NOT_READY', 'Posting card has no link');
     const url = new URL(card.url);
     if (url.origin !== new URL(this.options.origin).origin) throw new BrowserUnavailable('SESSION_PAGE_NOT_READY', 'Posting link leaves the configured origin');
@@ -1722,7 +1757,7 @@ export class BossBrowser {
       companyProfileText: companyProfileOverride ?? (await page.locator(selectors.companyProfile).first().innerText().catch(() => '')).trim().slice(0, 4000),
     };
     const identitySource = !identity ? 'missing' : card.sitePostingId && card.sitePostingId !== identity ? 'conflict' : 'detail_link';
-    return observedPostingSchema.parse({
+    return observedPostingSchema.omit({nativeFilterEvidence:true}).parse({
       site: 'boss',
       sitePostingId: identity ?? card.sitePostingId ?? '',
       url: canonicalUrl(page.url()),
@@ -1733,7 +1768,6 @@ export class BossBrowser {
       jdText: detail.jdText,
       companyProfileText: detail.companyProfileText,
       identitySource,
-      nativeFilterEvidence: { ...evidence },
     });
   }
 

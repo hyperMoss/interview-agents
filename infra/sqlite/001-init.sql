@@ -1,5 +1,17 @@
 
 
+CREATE TABLE IF NOT EXISTS app_boss_conversations (
+  id text PRIMARY KEY, owner text NOT NULL, source_key text NOT NULL,
+  revision integer NOT NULL DEFAULT 1, snapshot_hash text NOT NULL, snapshot_json text NOT NULL, manual_jd text,
+  updated_at text NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%f000Z','now')),
+  UNIQUE(owner,source_key)
+);
+CREATE TABLE IF NOT EXISTS app_boss_conversation_snapshots (
+  conversation_id text NOT NULL REFERENCES app_boss_conversations(id) ON DELETE CASCADE,
+  snapshot_hash text NOT NULL, snapshot_json text NOT NULL,
+  created_at text NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%f000Z','now')),
+  PRIMARY KEY(conversation_id,snapshot_hash)
+);
 CREATE TABLE IF NOT EXISTS app_resume_drafts (
  id TEXT PRIMARY KEY, owner TEXT NOT NULL, label TEXT NOT NULL,
  document_json TEXT NOT NULL CHECK(json_valid(document_json)),
@@ -287,6 +299,7 @@ CREATE TABLE IF NOT EXISTS app_career_work (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS career_work_request ON app_career_work(kind, request_hash);
 CREATE INDEX IF NOT EXISTS career_work_pending ON app_career_work(status, created_at);
+CREATE UNIQUE INDEX IF NOT EXISTS boss_inbox_one_sync ON app_career_work(owner) WHERE kind='session' AND payload->>'syncConversation'=1 AND status IN ('queued','processing');
 
 CREATE TABLE IF NOT EXISTS app_career_commands (
   owner text NOT NULL,
