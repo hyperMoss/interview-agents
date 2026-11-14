@@ -12,6 +12,7 @@ import { resumeText } from '../../../packages/resume/src/import';
 import { ResumeUpload } from './resume-upload';
 import { defaultPlanning, PlanningFields, PlanSummary } from './planning-panel';
 import { categoryLabels, difficultyLabels } from './labels';
+import { ModelModeTag, describeRuntimeMode } from './model-mode-tag';
 import type { PreparationSeed } from './preparation-panel';
 
 function restoreIntake() {
@@ -36,6 +37,7 @@ export function Intake({ pending, ready, error, onCreate, onSearchSettings, onBa
   const [resumeLoading, setResumeLoading] = useState(false);
   const bank = useQuery({ queryKey: ['question-bank'], queryFn: api.bankList, enabled: identity.isSuccess });
   const search = useQuery({ queryKey: ['search-settings'], queryFn: api.searchSettings, enabled: identity.isSuccess });
+  const modelSettings = useQuery({ queryKey: ['model-settings'], queryFn: api.modelSettings, enabled: identity.isSuccess });
   const preview = useQuery({ queryKey: ['plan-preview', planning], queryFn: () => api.previewPlan(planning), enabled: identity.isSuccess });
   const count = Math.max(1, preview.data?.totalQuestions ?? form.questionCount);
   const level: InterviewInput['level'] = planning.candidateLevel === 'intern' ? 'junior' : planning.candidateLevel === 'experienced' ? 'senior' : 'mid';
@@ -77,7 +79,7 @@ export function Intake({ pending, ready, error, onCreate, onSearchSettings, onBa
     saveProfiles(updated); setProfiles(updated); setProfileId(id); setProfileName(name); setNotice('岗位资料已保存到本机，可在下次练习中复用。');
   }
   return <section className="intake">
-    <div className="intro"><h1>准备好资料，再开始这一场。</h1><p>先选岗位和经历，再确认面试安排。资料会自动保存在本机。</p></div>
+    <div className="intro"><div className="intro-heading"><h1>准备好资料，再开始这一场。</h1><ModelModeTag badge={describeRuntimeMode({ data: modelSettings.data, pending: modelSettings.isPending, failed: modelSettings.isError })} /></div><p>先选岗位和经历，再确认面试安排。资料会自动保存在本机。</p></div>
     <details className="profile-manager"><summary>复用岗位资料档案 · {profiles.length} 份</summary>
       <label htmlFor="profile-picker">选择已存档案</label><Select id="profile-picker" value={profileId} placeholder="选择岗位资料" options={profiles.map(profile => ({ value: profile.id, label: profile.name }))} onChange={id => {
         const profile = profiles.find(item => item.id === id);
