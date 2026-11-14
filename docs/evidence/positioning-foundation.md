@@ -5,7 +5,7 @@ Verdict: **PASS (foundation layer)**. This delivery covers the requirement contr
 - Repository: `positioning-foundation`, branch `hyperMoss/positioning-foundation`, baseline commit `91790e75474eb2dfc723627f95107cd79573e505`.
 - Date: 2026-11-14. Host toolchain: Node.js `v26.7.0`, pnpm `12.11.2`.
 - Delivered artifacts: `app.spec.yaml` (eleven new requirements) → factory-generated managed docs → `README.md` positioning rewrite → this record.
-- Delivery commit: recorded in the final commit section below. No push or merge was performed.
+- Delivery commit: `75d3a47` (`docs: establish positioning requirements and foundation context`); this record's final commit reference is added by a follow-up evidence-only commit. No push or merge was performed.
 
 ## 1. What is actually delivered
 
