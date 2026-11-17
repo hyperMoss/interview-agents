@@ -14,9 +14,14 @@ const profileInputSchema = z.strictObject({
   level: z.enum(['junior', 'mid', 'senior']), questionCount: z.number().int().min(1).max(30),
   focus: z.string().max(1000).default(''), planning: planningOptionsSchema.optional(),
 });
+const preparationHandoffSchema = z.strictObject({
+  decisions: z.array(z.strictObject({ fingerprint: z.string().regex(/^[0-9a-f]{16}$/), decision: z.enum(['skipped', 'opened']) })).max(20).default([]),
+  bankFingerprint: z.string().regex(/^[0-9a-f]{16}$/).optional(),
+});
 export const workspaceIntakeSchema = profileInputSchema.extend({
   step: z.union([z.literal(0), z.literal(1), z.literal(2)]).optional(),
   searchEnabled: z.boolean().optional(), searchQuery: z.string().max(200).optional(),
+  preparationHandoff: preparationHandoffSchema.optional(),
 });
 export const jobProfileSchema = z.strictObject({
   id: z.uuid(), name: z.string().min(1).max(120), input: profileInputSchema, updatedAt: z.iso.datetime(),
@@ -67,7 +72,7 @@ const preparationPageSchema = z.strictObject({
   draft: z.strictObject({ input: preparationInputSchema, result: preparationResultSchema, cards: z.array(preparationCardSchema).min(3).max(12) }).nullable(),
 });
 const answerKey = /^answer-[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}-.{1,150}$/i;
-const knownKeys = new Set(['boss-inbox-job','boss-interview-origin','interview-intake', 'interview-selected', 'jd-preparation-v1', 'algorithm-practice-v1', 'hot100-practice-v1', 'algorithm-view', 'job-profiles-v1', 'review-list-v1', 'workspace-route']);
+const knownKeys = new Set(['boss-inbox-job','boss-interview-origin','interview-intake', 'interview-selected', 'resume-library-draft', 'jd-preparation-v1', 'algorithm-practice-v1', 'hot100-practice-v1', 'algorithm-view', 'job-profiles-v1', 'review-list-v1', 'workspace-route']);
 export function isWorkspaceKey(key: string) { return knownKeys.has(key) || answerKey.test(key); }
 export function workspaceCategory(key: string): WorkspaceCategory {
   if (key === 'algorithm-practice-v1' || key === 'hot100-practice-v1' || key === 'algorithm-view') return 'algorithm';
@@ -82,7 +87,7 @@ export function normalizeWorkspaceValue(key: string, value: string, salvage = fa
   if (!isWorkspaceKey(key)) throw new Error('不支持的本机数据类型。');
   if (value.length > 2_000_000) throw new Error('单项本机数据超过 2 MB。');
   if (answerKey.test(key)) return z.string().max(30000).parse(value);
-  if (key === 'interview-selected') return z.uuid().parse(value);
+  if (key === 'interview-selected' || key === 'resume-library-draft') return z.uuid().parse(value);
   if (key === 'boss-inbox-job') return z.uuid().parse(value);
   if (key === 'algorithm-view') return z.enum(['patterns', 'hot100']).parse(value);
   if (key === 'workspace-route') return z.string().max(500).regex(/^#/).parse(value);

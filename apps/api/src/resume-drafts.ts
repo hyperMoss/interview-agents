@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
-import { BadRequestException, Body, ConflictException, Controller, Delete, Get, Inject, NotFoundException, Param, Patch, Post, Query, Req, Res, ServiceUnavailableException, UseFilters } from '@nestjs/common';
+import { BadRequestException, Body, ConflictException, Controller, Delete, Get, Inject, NotFoundException, Param, Patch, Post, Query, Req, Res, UseFilters } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { chromium } from 'playwright';
+import { renderLocalPdf } from './pdf';
 import { z } from 'zod';
 import type { ApiConfig } from '../../../packages/config/src/index';
 import { openDatabase } from '../../../packages/database/src/client';
@@ -52,17 +52,8 @@ export class ResumeDraftService {
     const draft = await this.get(owner, id);
     if (draft.revision !== revision) throw new ConflictException('副本已更新，请重新读取再导出。');
     const css = await readFile(new URL('../../../packages/resume/src/resume.css', import.meta.url), 'utf8');
-    const browser = await chromium.launch({ headless: true }).catch(() => chromium.launch({ channel: 'chrome', headless: true })).catch(() => { throw new ServiceUnavailableException('无法启动本机 PDF 引擎。请安装 Chrome，或运行 pnpm exec playwright install chromium 后重试；也可导出 HTML 后用浏览器打印。'); });
-    const deadline = setTimeout(() => { void browser.close(); }, 30000);
-    try {
-      const context = await browser.newContext({ offline: true, serviceWorkers: 'block' });
-      await context.route('**/*', route => route.abort());
-      const page = await context.newPage();
-      await page.setContent(resumeHtml(draft.document, css), { timeout: 15000 });
-      await page.evaluate(() => document.fonts.ready);
-      const bytes = await page.pdf({ format: 'A4', printBackground: true, preferCSSPageSize: true });
-      return { bytes, filename: `${draft.label}.pdf`, revision: draft.revision };
-    } finally { clearTimeout(deadline); await browser.close(); }
+    const bytes = await renderLocalPdf(resumeHtml(draft.document, css));
+    return { bytes, filename: `${draft.label}.pdf`, revision: draft.revision };
   }
   async close() { await this.pool.end(); }
 }

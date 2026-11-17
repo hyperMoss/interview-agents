@@ -1,3 +1,4 @@
+import { expectStatus } from './ui-helpers';
 import { navigateModule } from './ui-helpers';
 import { nextStep, confirmDelete } from './ui-helpers';
 import { test, expect, type Page } from '@playwright/test';
@@ -5,7 +6,7 @@ import { readFile } from 'node:fs/promises';
 import { startProviderFixture } from '../provider-fixture';
 import { answer } from '../fixtures';
 
-const headers={Origin:'http://localhost:5173'};
+const headers=(page:Page)=>({Origin:new URL(page.url()).origin});
 const jd='熟悉 React 与 TypeScript，负责复杂页面状态与性能优化。优先考虑熟悉自动化测试的候选人。';
 test.setTimeout(90000);
 test.use({actionTimeout:10000});
@@ -30,7 +31,7 @@ test('JD-only preview, edits, selected idempotent save, refresh, export and stri
   await page.getByRole('checkbox',{name:'选择备题 2',exact:true}).uncheck();await page.getByRole('checkbox',{name:'选择备题 3',exact:true}).uncheck();
   for(let index=0;index<2;index++){
     await page.getByRole('button',{name:'保存所选到题库',exact:true}).click();
-    await expect(page.getByRole('status')).toContainText('所选 1 道题已保存到题库');
+    await expectStatus(page, '所选 1 道题已保存到题库');
   }
   const bank=await (await page.request.get('/api/v1/question-bank')).json();
   const saved=bank.filter((question:{content:string})=>question.content===edited);expect(saved).toHaveLength(1);
@@ -40,6 +41,15 @@ test('JD-only preview, edits, selected idempotent save, refresh, export and stri
   await expect(page.getByRole('checkbox',{name:'选择备题 2',exact:true})).not.toBeChecked();
   const download=page.waitForEvent('download');await page.getByRole('button',{name:'导出备题单',exact:true}).click();
   const path=await (await download).path();if(!path)throw new Error('Missing export');const markdown=await readFile(path,'utf8');expect(markdown).toContain(edited);expect(markdown).toContain('先定义有效请求');expect(markdown).toContain('优先考虑');
+  await page.context().grantPermissions(['clipboard-read','clipboard-write']);
+  await page.getByRole('button',{name:'复制 Markdown',exact:true}).click();
+  await expectStatus(page,'已复制 Markdown');
+  expect(await page.evaluate(()=>navigator.clipboard.readText())).toBe(markdown);
+  await page.evaluate(()=>{Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw new DOMException('Blocked','NotAllowedError');}}});});
+  await page.getByRole('button',{name:'复制 Markdown',exact:true}).click();
+  await expect(page.getByRole('textbox',{name:'Markdown 分享内容',exact:true})).toHaveValue(markdown);
+  await expect(page.getByRole('textbox',{name:'Markdown 分享内容',exact:true})).toHaveAttribute('readonly','');
+  await expect(page.getByRole('textbox',{name:'题目 1 题面',exact:true})).toHaveValue(edited);
   await page.screenshot({path:'docs/evidence/screenshots/jd-preparation-desktop.png',fullPage:true});
   await page.setViewportSize({width:390,height:844});await page.screenshot({path:'docs/evidence/screenshots/jd-preparation-mobile.png',fullPage:true});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
@@ -51,14 +61,13 @@ test('JD-only preview, edits, selected idempotent save, refresh, export and stri
   await page.getByLabel('你的回答',{exact:true}).fill(answer);await page.getByRole('button',{name:'提交回答',exact:true}).click();
   await expect(page.locator('.question-panel h2')).toHaveText(edited,{timeout:20000});
   await page.getByRole('button',{name:'删除此练习及简历资料',exact:true}).click();await confirmDelete(page);
-  for(const question of saved)await page.request.delete(`/api/v1/question-bank/${question.id}`,{headers});
+  for(const question of saved)await page.request.delete(`/api/v1/question-bank/${question.id}`,{headers:headers(page)});
 });
 test('custom model failures preserve the previous JD draft and HR preparation stays behavioral',async({page})=>{
   const provider=await startProviderFixture();provider.state.requirePreparationSchema=true;
   try{
     await page.goto('/#/interviews/new');await page.request.get('/api/v1/identity');
-    const headers={Origin:new URL(page.url()).origin};
-    const enabled=await page.request.post('/api/v1/models/settings',{headers,data:{baseUrl:provider.baseUrl,model:'coach-alpha',apiKey:'fixture-alpha-key',remember:false,timeoutMs:10000}});expect(enabled.ok()).toBe(true);
+    const enabled=await page.request.post('/api/v1/models/settings',{headers:headers(page),data:{baseUrl:provider.baseUrl,model:'coach-alpha',apiKey:'fixture-alpha-key',remember:false,timeoutMs:10000}});expect(enabled.ok()).toBe(true);
     await page.reload();await openPreparation(page);
     const round=page.getByRole('combobox',{name:/备题轮次/});await round.click();await round.press('ArrowDown');await round.press('ArrowDown');await round.press('Enter');
     await page.getByRole('button',{name:'根据 JD 生成题单',exact:true}).click();await expect(page.locator('.preparation-card')).toHaveCount(3);
@@ -66,13 +75,13 @@ test('custom model failures preserve the previous JD draft and HR preparation st
     await expect(page.locator('.preparation-result .session-model')).toContainText('coach-alpha');
     const text=await page.getByRole('textbox',{name:'题目 1 题面',exact:true}).inputValue();
     provider.state.badPreparationEvidence=true;
-    await page.getByRole('button',{name:'重新生成题单',exact:true}).click();await expect(page.getByRole('alert')).toContainText('备题生成失败',{timeout:20000});
+    await page.getByRole('button',{name:'重新生成题单',exact:true}).click();await expect(page.locator('main').getByRole('alert').filter({hasText:/\S/})).toContainText('备题生成失败',{timeout:20000});
     await expect(page.getByRole('textbox',{name:'题目 1 题面',exact:true})).toHaveValue(text);await expect(page.getByRole('textbox',{name:'备题 JD',exact:true})).toHaveValue(jd);
     const storage=await page.evaluate(()=>JSON.stringify({...sessionStorage}));expect(storage).not.toContain('fixture-alpha-key');
     provider.state.badPreparationEvidence=false;
     await page.getByRole('button',{name:'重新生成题单',exact:true}).click();
-    await expect(page.getByRole('status')).toContainText('已生成 3 道题');
-    await expect(page.getByRole('alert')).not.toBeVisible();
+    await expectStatus(page, '已生成 3 道题');
+    await expect(page.locator('main').getByRole('alert').filter({hasText:/\S/})).not.toBeVisible();
     await page.reload();await expect(page.getByRole('textbox',{name:'备题 JD',exact:true})).toHaveValue(jd);
     await expect(page.locator('.preparation-card')).toHaveCount(3);
   }finally{await page.request.delete('/api/v1/models/settings',{headers:{Origin:new URL(page.url()).origin}});await provider.close();}
@@ -81,12 +90,12 @@ test('the HTTP batch boundary accepts valid large Chinese notes and rejects dupl
   await page.goto('/#/interviews/new');await page.request.get('/api/v1/identity');
   const questions=Array.from({length:12},(_,index)=>({requestId:crypto.randomUUID(),draft:{title:`长备题 ${index}`,content:'请结合实际项目解释页面状态管理与异步请求竞争的验证方法。',category:'technical',difficulty:'medium',roleFamilies:['frontend'],tags:['JD备题'],expectedAnswer:'验证与证据'.repeat(1500),jdRequirement:{competency:'状态管理',priority:'required',quote:'能够解释实际项目中的状态管理与验证。'}}}));
   expect(Buffer.byteLength(JSON.stringify({questions}))).toBeGreaterThan(128*1024);
-  const response=await page.request.post('/api/v1/question-bank/import/preparation',{headers,data:{questions}});expect(response.ok()).toBe(true);
+  const response=await page.request.post('/api/v1/question-bank/import/preparation',{headers:headers(page),data:{questions}});expect(response.ok()).toBe(true);
   try{
-    const repeat=await page.request.post('/api/v1/question-bank/import/preparation',{headers,data:{questions}});expect(repeat.ok()).toBe(true);
+    const repeat=await page.request.post('/api/v1/question-bank/import/preparation',{headers:headers(page),data:{questions}});expect(repeat.ok()).toBe(true);
     expect((await repeat.json()).map((question:{id:string})=>question.id)).toEqual(questions.map(question=>question.requestId));
-    const duplicate=await page.request.post('/api/v1/question-bank/import/preparation',{headers,data:{questions:[questions[0],questions[0]]}});expect(duplicate.status()).toBe(400);
+    const duplicate=await page.request.post('/api/v1/question-bank/import/preparation',{headers:headers(page),data:{questions:[questions[0],questions[0]]}});expect(duplicate.status()).toBe(400);
     const first=questions[0];if(!first)throw new Error('Missing question');
-    const noEvidence=await page.request.post('/api/v1/question-bank/import/preparation',{headers,data:{questions:[{...first,draft:{...first.draft,jdRequirement:undefined}}]}});expect(noEvidence.status()).toBe(400);
-  }finally{for(const question of questions)await page.request.delete(`/api/v1/question-bank/${question.requestId}`,{headers});}
+    const noEvidence=await page.request.post('/api/v1/question-bank/import/preparation',{headers:headers(page),data:{questions:[{...first,draft:{...first.draft,jdRequirement:undefined}}]}});expect(noEvidence.status()).toBe(400);
+  }finally{for(const question of questions)await page.request.delete(`/api/v1/question-bank/${question.requestId}`,{headers:headers(page)});}
 });

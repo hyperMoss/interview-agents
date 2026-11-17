@@ -6,7 +6,7 @@ import { modelSettingsSchema,modelProfileSchema,modelListSchema,modelProbeSchema
 import { planningOptionsSchema,planSchema,replanSchema } from '../../../packages/contracts/src/planning';
 import { bankListSchema,bankQuestionSchema,bankDraftSchema,bankImportResultSchema } from '../../../packages/contracts/src/bank';
 import { searchSettingsSchema,searchProfileSchema,searchDraftSchema,searchChoiceSchema,searchProbeResultSchema } from '../../../packages/contracts/src/search';
-import { preparationRequestSchema, preparationResultSchema, savePreparationSchema, savedPreparationSchema } from '../../../packages/contracts/src/preparation';
+import { preparationRequestSchema, preparationResultSchema, savePreparationSchema, savedPreparationSchema, type PreparationPdf } from '../../../packages/contracts/src/preparation';
 import {preparationGenerateCommandSchema,preparationHistorySchema,preparationHistoryPageSchema,preparationHistoryRetrySchema} from '../../../packages/contracts/src/preparation-history';
 import { interviewHistoryPageSchema, type InterviewHistoryQuery } from '../../../packages/contracts/src/history';
 import {
@@ -44,8 +44,8 @@ function attachmentName(header: string | null) {
   if (utf8) return decodeURIComponent(utf8);
   return /filename="?([^";]+)"?/i.exec(header ?? '')?.[1] ?? 'download';
 }
-async function download(path: string, fallback: string) {
-  const response = await fetch(`/api/v1${path}`, { credentials: 'same-origin' });
+async function download(path: string, fallback: string, init?:RequestInit) {
+  const response = await fetch(`/api/v1${path}`, { ...init, credentials: 'same-origin' });
   if (!response.ok) throw await failure(response);
   return { filename: attachmentName(response.headers.get('content-disposition')) || fallback, body: await response.blob() };
 }
@@ -60,6 +60,8 @@ export const api = {
   prepare:(body:z.infer<typeof preparationGenerateCommandSchema>)=>request('/preparations/generate',preparationResultSchema,{method:'POST',body:JSON.stringify(body)}),
   preparationHistory:(before?:string)=>request(`/preparations/history${before?`?before=${before}`:''}`,preparationHistoryPageSchema),
   preparationRecord:(id:string)=>request(`/preparations/history/${id}`,preparationHistorySchema),
+  preparationPdf:(body:PreparationPdf)=>download('/preparations/pdf','jd-preparation.pdf',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}),
+  preparationHistoryPdf:(id:string)=>download(`/preparations/history/${id}/pdf`,'jd-preparation.pdf'),
   retryPreparation:(id:string,body:z.infer<typeof preparationHistoryRetrySchema>)=>request(`/preparations/history/${id}/retry`,preparationHistorySchema,{method:'POST',body:JSON.stringify(body)}),
   savePreparation:(body:z.infer<typeof savePreparationSchema>)=>request('/question-bank/import/preparation',savedPreparationSchema,{method:'POST',body:JSON.stringify(body)}),
   list: () => request('/interviews', sessionListSchema),

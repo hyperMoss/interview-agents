@@ -1,4 +1,4 @@
-import { Button } from 'antd';
+import { Button } from '@astryxdesign/core/Button';
 import type { InterviewHistoryPage } from '../../../packages/contracts/src/history';
 import type { Route } from './navigation';
 import { readSession } from './storage';
@@ -39,9 +39,9 @@ export function OnboardingPanel({ interviews, resumes, navigate }: { interviews:
     <h2 id="onboarding-title">你想从哪里开始？</h2>
     <p>面试历史与简历库都还是空的。三条入口都不会自动创建记录，也不会调用模型。</p>
     <div className="onboarding-options">
-      <Button type="primary" onClick={() => navigate({ page: 'preparation' })}>我已有目标 JD，直接备题</Button>
-      <Button onClick={() => navigate({ page: 'career' })}>我需要先找岗位</Button>
-      <Button onClick={() => navigate({ page: 'practice' })}>先体验模拟面试</Button>
+      <Button variant="primary" label="我已有目标 JD，直接备题" onClick={() => navigate({ page: 'preparation' })} />
+      <Button label="我需要先找岗位" onClick={() => navigate({ page: 'career' })} />
+      <Button label="先体验模拟面试" onClick={() => navigate({ page: 'practice' })} />
     </div>
   </section>;
 }

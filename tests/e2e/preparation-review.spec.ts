@@ -1,9 +1,10 @@
+import { expectStatus } from './ui-helpers';
 import { navigateModule } from './ui-helpers';
 import { nextStep } from './ui-helpers';
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { bankListSchema } from '../../packages/contracts/src/bank';
 
-const headers={Origin:'http://localhost:5173'};
+const headers=(page:Page)=>({Origin:new URL(page.url()).origin});
 test.use({actionTimeout:10000});
 test('priority corrections and unfinished edits survive refresh and remain attached to saved bank questions',async({page})=>{
   await page.goto('/#/interviews/new');await navigateModule(page, 'JD 备题');
@@ -13,13 +14,15 @@ test('priority corrections and unfinished edits survive refresh and remain attac
   await expect(page.locator('.preparation-card')).toHaveCount(3);
   await page.getByRole('combobox',{name:'要求 1 分类',exact:true}).click();await page.getByRole('option',{name:'加分项',exact:true}).click();
   await page.getByRole('textbox',{name:'题目 1 题面',exact:true}).fill('');
+  await expect(page.getByRole('textbox',{name:'题目 1 题面',exact:true})).toHaveValue('');
+  await expect(page.locator('.workspace-save-status')).toContainText('已保存到本机');
   await page.reload();await navigateModule(page, 'JD 备题');
   await expect(page.getByRole('textbox',{name:'题目 1 题面',exact:true})).toHaveValue('');
   await expect(page.locator('.requirement-list article').first().getByRole('heading')).toContainText('加分项');
   await expect(page.getByRole('button',{name:'保存所选到题库',exact:true})).toBeDisabled();
   await page.getByRole('textbox',{name:'题目 1 题面',exact:true}).fill('请结合实际项目解释状态管理的设计取舍，并说明验证方法。');
   await page.getByRole('button',{name:'清空选择',exact:true}).click();await page.getByRole('checkbox',{name:'选择备题 1',exact:true}).check();
-  await page.getByRole('button',{name:'保存所选到题库',exact:true}).click();await expect(page.getByRole('status')).toContainText('所选 1 道题已保存');
+  await page.getByRole('button',{name:'保存所选到题库',exact:true}).click();await expectStatus(page, '所选 1 道题已保存');
   const saved=bankListSchema.parse(await(await page.request.get('/api/v1/question-bank')).json()).find(question=>question.editable);
   if(!saved)throw new Error('Missing saved JD question');
   try{
@@ -28,10 +31,10 @@ test('priority corrections and unfinished edits survive refresh and remain attac
     await row.getByText('查看题面',{exact:true}).click();await expect(row).toContainText('JD 依据 · 加分项');await expect(row).toContainText(quote);
     await row.getByRole('button',{name:`编辑 ${saved.title}`,exact:true}).click();
     await page.getByLabel('题目标题',{exact:true}).fill('保留 JD 依据的修改题');await page.getByRole('button',{name:'保存题目',exact:true}).click();
-    await expect(page.getByRole('status')).toContainText('题目已更新');
+    await expectStatus(page, '题目已更新');
     const updated=bankListSchema.parse(await(await page.request.get('/api/v1/question-bank')).json()).find(question=>question.id===saved.id);
     expect(updated?.jdRequirement).toEqual(saved.jdRequirement);
-  }finally{await page.request.delete(`/api/v1/question-bank/${saved.id}`,{headers});}
+  }finally{await page.request.delete(`/api/v1/question-bank/${saved.id}`,{headers:headers(page)});}
 });
 
 test('explicit intake handoff replaces an older preparation form and preserves current planning choices',async({page})=>{
@@ -51,7 +54,7 @@ test('explicit intake handoff replaces an older preparation form and preserves c
   await page.getByRole('button',{name:'根据 JD 提前备题',exact:true}).click();
   await expect(page.getByRole('textbox',{name:'备题岗位',exact:true})).toHaveValue('新项目负责人');await expect(page.getByRole('textbox',{name:'备题 JD',exact:true})).toHaveValue(currentJd);
   const form=page.locator('.preparation-form');
-  for(const label of ['社招','HR 面','非技术岗','后端'])await expect(form.getByText(label,{exact:true})).toBeVisible();
+  for(const {name,label} of [{name:'备题级别',label:'社招'},{name:'备题轮次',label:'HR 面'},{name:'备题岗位类型',label:'非技术岗'},{name:'备题岗位方向',label:'后端'}])await expect(form.getByRole('combobox',{name,exact:true})).toContainText(label);
   await expect(page.getByRole('note').filter({hasText:'输入已修改'})).toBeVisible();
   await page.getByRole('button',{name:'重新生成题单',exact:true}).click();await expect(page.locator('.preparation-result h2')).toContainText('新项目负责人');
   expect((await page.locator('.preparation-card-heading').allTextContents()).every(value=>value.includes('综合素质')&&value.includes('深入'))).toBe(true);

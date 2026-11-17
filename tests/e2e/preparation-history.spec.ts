@@ -10,7 +10,7 @@ test('keeps failed and successful preparation history, retries with an immutable
     await page.reload();await navigateModule(page,'JD 备题');
     await page.getByLabel('备题岗位',{exact:true}).fill('企业前端工程师');await page.getByRole('textbox',{name:'备题 JD',exact:true}).fill(jd);await page.getByLabel('预生成题量',{exact:true}).fill('3');
     provider.state.preparationResponse='truncated';
-    await page.getByRole('button',{name:'根据 JD 生成题单',exact:true}).click();await expect(page.getByRole('alert')).toContainText('长度上限');
+    await page.getByRole('button',{name:'根据 JD 生成题单',exact:true}).click();await expect(page.locator('main').getByRole('alert').filter({hasText:/\S/})).toContainText('长度上限');
     await navigateModule(page,'备题历史');await page.locator('.preparation-history-row').first().click();
     await expect(page.locator('.preparation-history-detail')).toContainText('PREPARATION_OUTPUT_LIMIT');
     const failedUrl=page.url();await page.reload();await expect(page.locator('.preparation-history-detail')).toContainText('长度上限');
@@ -19,6 +19,12 @@ test('keeps failed and successful preparation history, retries with an immutable
     expect(page.url()).not.toBe(failedUrl);await expect(page.locator('.preparation-history-row')).toHaveCount(2);
     const successUrl=page.url();await page.reload();await expect(page.locator('.preparation-history-detail .preparation-card')).toHaveCount(3);
     await expect(page.locator('.preparation-history-detail .preparation-card').first().locator('ol > li')).toHaveCount(4);
+    await page.context().grantPermissions(['clipboard-read','clipboard-write']);
+    await page.getByRole('button',{name:'复制 Markdown',exact:true}).click();
+    await expect(page.getByRole('status').filter({hasText:'已复制 Markdown'})).toBeVisible();
+    const shared=await page.evaluate(()=>navigator.clipboard.readText());
+    expect(shared).toContain('# 企业前端工程师备题单');expect(shared).toContain('### 3.');expect(shared).toContain(jd);
+
     await page.getByRole('button',{name:'查看重试来源',exact:true}).click();await expect(page).toHaveURL(failedUrl);await expect(page.locator('.preparation-history-detail')).toContainText('长度上限');
     await page.goto(successUrl);await page.getByRole('button',{name:'载入题单继续编辑',exact:true}).click();await page.getByRole('button',{name:'载入记录',exact:true}).click();
     await expect(page.getByRole('textbox',{name:'备题 JD',exact:true})).toHaveValue(jd);await expect(page.locator('.preparation-card')).toHaveCount(3);

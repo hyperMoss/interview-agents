@@ -1,3 +1,4 @@
+import { expectStatus } from './ui-helpers';
 import { navigateModule } from './ui-helpers';
 import { expectEditorValue } from './ui-helpers';
 import { test, expect, type Page } from '@playwright/test';
@@ -6,7 +7,7 @@ import { bankListSchema, bankQuestionSchema } from '../../packages/contracts/src
 
 test.use({ actionTimeout: 15000 });
 test.setTimeout(90000);
-const headers = { Origin: 'http://localhost:5173' };
+const headers = (page: Page) => ({ Origin: new URL(page.url()).origin });
 async function openAlgorithm(page: Page) {
   await page.goto('/#/algorithms/patterns');
   await expect(page.getByRole('heading', { name: '先认套路，再亲手打出来。' })).toBeVisible();
@@ -25,10 +26,10 @@ test('Python code and statement typing retain separate drafts, locate difference
   await typing.press('Tab');
   await expectEditorValue(typing, 'def solve(nums, target):\n    ');
   await page.getByRole('button', { name: '核对跟打', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('第 2 行、第 5 列');
+  await expectStatus(page, '第 2 行、第 5 列');
   await typing.fill(code);
   await page.getByRole('button', { name: '核对跟打', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('跟打一致');
+  await expectStatus(page, '跟打一致');
   await page.getByRole('switch', { name: '显示参考' }).click();
   await expect(page.getByLabel('跟打参考文本')).toHaveCount(0);
   await page.getByRole('switch', { name: '显示参考' }).click();
@@ -54,7 +55,7 @@ test('Python code and statement typing retain separate drafts, locate difference
   await page.getByRole('button', { name: '重置本次跟打', exact: true }).click();await page.getByRole('button',{name:'确认清空',exact:true}).click();
   await typing.fill(code.replace('seen = {}', 'seen = []'));
   await page.getByRole('button', { name: '核对跟打', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('第 2 行、第 12 列');
+  await expectStatus(page, '第 2 行、第 12 列');
   await expect(page.locator('.algorithm-line-review .different').first()).toContainText('第 2 行');
 });
 
@@ -77,7 +78,7 @@ test('keywords provide evidence and limits; pasted Unicode statements match with
   await page.getByText('题面跟打', { exact: true }).click();
   await page.getByRole('textbox', { name: '你的题面', exact: true }).fill(unicode);
   await page.getByRole('button', { name: '核对跟打', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('跟打一致');
+  await expectStatus(page, '跟打一致');
   await problem.fill('');
   await expect(page.getByRole('textbox', { name: '你的题面', exact: true })).toBeDisabled();
   await expect(page.getByRole('button', { name: '核对跟打', exact: true })).toBeDisabled();
@@ -90,7 +91,7 @@ test('coding bank cards transfer an original snapshot, and changed text cannot i
   await page.request.get('/api/v1/identity');
   const title = '跟打测试 · 无重复字符子串';
   const content = '给定字符串，返回无重复字符的最长连续子串长度。请说明窗口左右边界如何移动。';
-  const response = await page.request.post('/api/v1/question-bank', { headers, data: { requestId: crypto.randomUUID(), draft: { title, content, category: 'coding', difficulty: 'easy', roleFamilies: ['general'], tags: ['滑动窗口'], expectedAnswer: '' } } });
+  const response = await page.request.post('/api/v1/question-bank', { headers: headers(page), data: { requestId: crypto.randomUUID(), draft: { title, content, category: 'coding', difficulty: 'easy', roleFamilies: ['general'], tags: ['滑动窗口'], expectedAnswer: '' } } });
   expect(response.ok()).toBe(true);
   const saved = bankQuestionSchema.parse(await response.json());
   try {
@@ -109,10 +110,10 @@ test('coding bank cards transfer an original snapshot, and changed text cannot i
     await expectEditorValue(page.getByRole('textbox', { name: '你的题面', exact: true }), '');
     const bank = bankListSchema.parse(await (await page.request.get('/api/v1/question-bank')).json());
     expect(bank.find(question => question.id === saved.id)?.content).toBe(content);
-    await page.getByRole('combobox', { name: '从编程题库选择', exact: true }).click();
+    await page.getByRole('button', { name: /^从编程题库选择(?:\s|$)/ }).click();
     await page.getByRole('option', { name: title, exact: true }).click();
     await expectEditorValue(page.getByRole('textbox', { name: '你的题面', exact: true }), '独立题面草稿');
-  } finally { await page.request.delete(`/api/v1/question-bank/${saved.id}`, { headers }); }
+  } finally { await page.request.delete(`/api/v1/question-bank/${saved.id}`, { headers: headers(page) }); }
 });
 
 test('corrupt legacy storage is isolated and the Python workbench fits mobile', async ({ page }) => {

@@ -1,3 +1,4 @@
+import { expectStatus } from './ui-helpers';
 import { navigateModule } from './ui-helpers';
 import { expectEditorValue } from './ui-helpers';
 import { test, expect, type Page } from '@playwright/test';
@@ -6,7 +7,7 @@ import { bankListSchema, leetcodeBatchSchema } from '../../packages/contracts/sr
 
 test.setTimeout(90000);
 test.use({ actionTimeout: 12000 });
-const headers = { Origin: 'http://localhost:5173' };
+const headers = (page: Page) => ({ Origin: new URL(page.url()).origin });
 async function openHot100(page: Page) {
   await page.goto('/#/interviews/new');
   await navigateModule(page, '算法练习');
@@ -64,9 +65,9 @@ test('uncovered routines stay explicit and next question follows the selected to
   await page.getByRole('button', { name: '下一道待练习', exact: true }).click();
   await expect(page.locator('.hot100-practice-card h3')).toHaveText('76. 最小覆盖子串');
   await page.getByRole('textbox', { name: '搜索题号、标题或关键词', exact: true }).fill('没有这道题');
-  await expect(page.getByText('没有符合筛选条件的题目')).toBeVisible();
+  await expect(page.getByRole('heading', { name: '没有符合筛选条件的题目', exact: true })).toBeVisible();
   await page.getByRole('button', { name: '下一道待练习', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('暂无其他到期复习或待练习题');
+  await expectStatus(page, '暂无其他到期复习或待练习题');
 });
 
 test('exported one hundred cards import through the real bank boundary and repeated imports skip duplicates', async ({ page }) => {
@@ -83,7 +84,7 @@ test('exported one hundred cards import through the real bank boundary and repea
     await panel.getByRole('tab', { name: '导入题目', exact: true }).click();
     for (let attempt = 0; attempt < 2; attempt++) {
       await panel.getByLabel('导入 LeetCode JSON 题库').setInputFiles(path);
-      await expect(panel.getByRole('status')).toContainText(attempt ? '导入 0 题，跳过 100' : '导入 100 题，跳过 0');
+      await expectStatus(panel, attempt ? '导入 0 题，跳过 100' : '导入 100 题，跳过 0');
     }
     await panel.getByRole('tab', { name: '已保存题目', exact: true }).click();
     const question = panel.locator('.bank-card').filter({ hasText: '1. 两数之和' });
@@ -94,7 +95,7 @@ test('exported one hundred cards import through the real bank boundary and repea
     await expect(page.getByRole('textbox', { name: '题面或关键词', exact: true })).toHaveValue(/Hot 100 学习摘要/);
   } finally {
     const questions = bankListSchema.parse(await (await page.request.get('/api/v1/question-bank')).json()).filter(question => question.editable && question.tags.includes('Hot100'));
-    for (let index = 0; index < questions.length; index += 10) await Promise.all(questions.slice(index, index + 10).map(question => page.request.delete(`/api/v1/question-bank/${question.id}`, { headers })));
+    for (let index = 0; index < questions.length; index += 10) await Promise.all(questions.slice(index, index + 10).map(question => page.request.delete(`/api/v1/question-bank/${question.id}`, { headers: headers(page) })));
   }
 });
 
@@ -111,6 +112,6 @@ test('Hot 100 mobile layout and unavailable storage keep Python practice usable'
   await page.addInitScript(() => { Object.defineProperty(window, 'indexedDB', { value: undefined }); });
   await page.reload(); await navigateModule(page, '算法练习');
   await expect(page.locator('.workspace-save-status')).toContainText('本机保存失败');
-  await page.getByRole('textbox', { name: 'Python 独立作答', exact: true }).fill('still editable');
+  await page.getByRole('textbox', { name: 'Python 独立作答', exact: true }).pressSequentially('still editable');
   await expectEditorValue(page.getByRole('textbox', { name: 'Python 独立作答', exact: true }), 'still editable');
 });

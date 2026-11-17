@@ -8,6 +8,7 @@ import lockfile from 'proper-lockfile';
 import { chromium as patchrightChromium } from 'patchright';
 import { chromium as playwrightChromium, type Browser } from 'playwright';
 import { CAREER_MAX_POSTINGS, observedPostingSchema, type BossEngine, type CareerPolicy, type ObservedPosting } from '../../../packages/contracts/src/career';
+import { bossCityCode } from '../../../packages/contracts/src/career-cities';
 import {
   BOSS_DETAIL_RESPONSE_TIMEOUT_MS, BOSS_SEARCH_RESPONSE_TIMEOUT_MS, BossDetailLedger, BossResponseObserver, acceptDetail,
   acceptSearch, activePostingIdentity, awaitBossCapture, bossControlMismatches, bossPostingLinkSelector, cardSelectorFor, classifyBossRelease,
@@ -375,12 +376,11 @@ export function worksBossProfile(origin: string): WorksBossProfile {
 
 export function worksSearchUrl(origin: string, target: SearchTarget) {
   // Official city snapshot distributed in works; these are route parameters, not observed selected controls.
-  const cities: Record<string, string> = { '广州': '101280100', '深圳': '101280600' };
-  const city = cities[target.city];
-  if (!city) throw new BrowserUnavailable('NATIVE_FILTER_UNVERIFIED', '搜索城市不在已记录的站点城市映射中。');
+  const city = bossCityCode(target.city);
+  if (city === undefined) throw new BrowserUnavailable('NATIVE_FILTER_UNVERIFIED', '搜索城市不在已记录的站点城市映射中。');
   const url = new URL('/web/geek/jobs', origin);
   url.searchParams.set('query', target.position);
-  url.searchParams.set('city', city);
+  url.searchParams.set('city', String(city));
   return url.toString();
 }
 
@@ -1118,7 +1118,7 @@ export class BossBrowser {
         loginForms:groups[1]??[],
         inputs:Array.from(doc.querySelectorAll('input,select')).filter(element=>{const r=element.getBoundingClientRect();return r.width>0&&r.height>0&&getComputedStyle(element).visibility!=='hidden';}).slice(0,40).map(element=>({tag:element.tagName,id:element.id.slice(0,100),className:element.getAttribute('class')?.slice(0,180)??'',name:element.getAttribute('name')?.slice(0,80)??'',type:element.getAttribute('type')??'',placeholder:element.getAttribute('placeholder')?.slice(0,120)??''})),
         forms:Array.from(doc.querySelectorAll('form')).slice(0,8).map(element=>({tag:element.tagName,id:element.id.slice(0,100),className:element.getAttribute('class')?.slice(0,180)??'',method:element.method,actionPath:new URL(element.action,doc.location.href).pathname})),
-        controls:Array.from(doc.querySelectorAll('a,button,[role="button"],label')).filter(element=>{const r=element.getBoundingClientRect();return r.width>0&&r.height>0&&getComputedStyle(element).visibility!=='hidden';}).map(element=>({element,text:element.textContent?.replace(/\s+/g,' ').trim()??''})).filter(item=>item.text.length<=40&&/搜索|城市|薪资|广州|深圳|切换|不限|待遇|职位|简历/.test(item.text)).slice(0,50).map(({element,text})=>({tag:element.tagName,id:element.id.slice(0,100),className:element.getAttribute('class')?.slice(0,180)??'',text,linkPath:element.tagName==='A'?new URL(element.getAttribute('href')??'',doc.location.href).pathname:null})),
+        controls:Array.from(doc.querySelectorAll('a,button,[role="button"],label')).filter(element=>{const r=element.getBoundingClientRect();return r.width>0&&r.height>0&&getComputedStyle(element).visibility!=='hidden';}).map(element=>({element,text:element.textContent?.replace(/\s+/g,' ').trim()??''})).filter(item=>item.text.length<=40&&/搜索|城市|薪资|切换|不限|待遇|职位|简历/.test(item.text)).slice(0,50).map(({element,text})=>({tag:element.tagName,id:element.id.slice(0,100),className:element.getAttribute('class')?.slice(0,180)??'',text,linkPath:element.tagName==='A'?new URL(element.getAttribute('href')??'',doc.location.href).pathname:null})),
         scripts:Array.from(doc.querySelectorAll('script[src]')).slice(0,30).map(element=>{const raw=element.getAttribute('src')??'';return new URL(raw,doc.location.href).pathname;}),
       };
     });

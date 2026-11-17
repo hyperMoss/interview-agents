@@ -3,13 +3,25 @@ import {createHash,randomUUID} from 'node:crypto';
 import {z} from 'zod';
 import type {ApiConfig} from '../../../packages/config/src/index';
 import type {Pool} from '../../../packages/database/src/sqlite';
-import {preparationResultSchema,PREPARATION_TIMEOUT_MS} from '../../../packages/contracts/src/preparation';
+import {preparationResultSchema,PREPARATION_TIMEOUT_MS,type PreparationPdf} from '../../../packages/contracts/src/preparation';
+import {preparationPdfHtml} from '../../../packages/interview/src/preparation-pdf';
+import {renderLocalPdf} from './pdf';
 import {preparationGenerateCommandSchema,preparationHistorySchema,preparationHistoryPageSchema,preparationHistoryQuerySchema,preparationHistoryRetrySchema,type PreparationHistory} from '../../../packages/contracts/src/preparation-history';
 import {RuntimeGateway} from './runtime-gateway';
 import {validatePreparation} from '../../../packages/interview/src/preparation';
 
 export class PreparationGateway extends RuntimeGateway {
   constructor(config:ApiConfig,readonly pool:Pool){super(config);}
+  async pdf(input:PreparationPdf){
+    try { validatePreparation(input.input,{requirements:input.result.requirements,questions:input.result.questions}); }
+    catch { throw new HttpException('题单结构或 JD 依据无效，请重新载入后导出。',400); }
+    return {bytes:await renderLocalPdf(preparationPdfHtml(input),true),filename:`${input.input.role}备题单.pdf`};
+  }
+  async historyPdf(owner:string,id:string){
+    const record=await this.get(owner,id);
+    if(record.outcome.status!=='ready')throw new ConflictException('该备题记录尚未生成成功，无法导出 PDF。');
+    return this.pdf({input:record.input,result:record.outcome.result});
+  }
   private async expire(owner:string){
     const now=new Date().toISOString(),cutoff=new Date(Date.now()-PREPARATION_TIMEOUT_MS-10000).toISOString();
     await this.pool.query("UPDATE app_preparation_history SET payload=json_set(payload,'$.outcome',json($1),'$.updatedAt',$2),updated_at=$2 WHERE owner=$3 AND payload->'outcome'->>'status'='generating' AND created_at<$4",[JSON.stringify({status:'failed',code:'PREPARATION_INTERRUPTED',message:'备题生成已中断，原输入已保留，可重新选择模型后重试。'}),now,owner,cutoff]);

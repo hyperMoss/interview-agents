@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { Button } from 'antd';
+import { Button } from '@astryxdesign/core/Button';
 import { Annotation, Compartment, EditorState, Prec } from '@codemirror/state';
 import { EditorView, drawSelection, highlightActiveLine, highlightActiveLineGutter, keymap, lineNumbers, placeholder as editorPlaceholder } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, indentLess, indentMore } from '@codemirror/commands';
@@ -142,7 +142,7 @@ export function CodeEditor({ id, label, value, onChange, maxLength, mode, readOn
     if (event.shiftKey && document.activeElement === first && last) { event.preventDefault(); last.focus(); }
     else if (!event.shiftKey && document.activeElement === last && first) { event.preventDefault(); first.focus(); }
   }}>
-    <div className="code-editor-toolbar"><span>{mode === 'text' ? '文本跟打' : 'Python'}{readOnly ? ' · 只读' : mode === 'drill-code' ? ' · 跟打模式' : ''}</span><Button size="small" onClick={() => setFocused(current => !current)} aria-pressed={focused}>{focused ? '退出专注' : '专注编辑'}</Button></div>
+    <div className="code-editor-toolbar"><span>{mode === 'text' ? '文本跟打' : 'Python'}{readOnly ? ' · 只读' : mode === 'drill-code' ? ' · 跟打模式' : ''}</span><Button size="sm" label={focused ? '退出专注' : '专注编辑'} onClick={() => setFocused(current => !current)} aria-pressed={focused} /></div>
     <div className="code-editor-host" ref={host} />
     <div className="code-editor-footer"><span id={helpId}>{mode === 'text' ? 'Tab 移到下一个控件。' : 'Tab 缩进；先按 Esc 再按 Tab 移出编辑器。'} Ctrl/⌘ + F 搜索。</span><span>{value.length} / {maxLength}</span></div>
     {lengthWarning ? <p className="code-editor-limit" role="status">已达到 {maxLength} 字符上限，未添加超出的内容。</p> : null}

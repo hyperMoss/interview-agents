@@ -25,8 +25,8 @@ async function openCareer(page: Page) {
 }
 async function uploadResume(page: Page, label: string) {
   await page.goto('/#/settings/resumes');
-  await expect(page.getByRole('heading', { name: '投递附件库', exact: true })).toBeVisible();
-  await page.getByLabel('选择简历原始文件（只在本机解析，不会上传到 BOSS）').setInputFiles({ name: 'synthetic-resume.txt', mimeType: 'text/plain', buffer: syntheticResume });
+  await expect(page.getByRole('heading', { name: '投递附件', exact: true })).toBeVisible();
+  await page.getByLabel('选择简历原始文件（只在本机解析，不会上传到 BOSS）').and(page.locator('input[type="file"]')).setInputFiles({ name: 'synthetic-resume.txt', mimeType: 'text/plain', buffer: syntheticResume });
   await page.getByLabel('版本名称（仅用于你自己区分版本）').fill(label);
   await page.getByRole('button', { name: '保存为不可变版本', exact: true }).click();
   await expect(page.getByRole('status').filter({ hasText: '已保存不可变版本' })).toBeVisible();

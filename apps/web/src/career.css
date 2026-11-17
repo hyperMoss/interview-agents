@@ -1,4 +1,4 @@
-/* Local BOSS career area: reuses the shell typography and Ant Design tokens. */
+/* Local BOSS career area: reuses the shell typography and Astryx theme tokens. */
 .career{max-width:1040px;margin:0 auto}
 .career-card{background:white;border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:18px}
 .career-card h2{font-size:18px;margin-bottom:8px}
@@ -70,5 +70,8 @@
 @media(max-width:680px){
   .career-card,.career-library{padding:16px}
   .career-selection{align-items:flex-start;flex-direction:column}
-  .career-actions .ant-btn,.career .panel-actions .ant-btn{width:100%;margin-left:0}
+  .career-actions .astryx-button,.career .panel-actions .astryx-button{width:100%;margin-left:0}
 }
+
+.career .form-heading{flex-wrap:wrap}.career .form-heading h2{flex-shrink:0}
+.career-city-field{width:100%;border-top:1px solid var(--border);padding-top:12px;margin:16px 0}

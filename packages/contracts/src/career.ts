@@ -1,5 +1,8 @@
 import { z } from 'zod';
 import { difficultySchema, roleFamilySchema } from './bank';
+import { CAREER_MAX_CITIES, careerCitySchema } from './career-cities';
+
+export { CAREER_DEFAULT_CITIES, CAREER_MAX_CITIES, bossCities, bossCityCode, bossCitySchema, bossCitySnapshot, careerCityNames, careerCitySchema, findBossCity, searchBossCities, type BossCity } from './career-cities';
 
 // Shared candidate-side BOSS career contracts. JD, resume, company and page text are
 // untrusted data; these schemas describe observations and decisions, never instructions.
@@ -8,12 +11,11 @@ export const bossAutomationModeSchema=z.enum(['enabled','contact','search','manu
 export type BossAutomationMode=z.infer<typeof bossAutomationModeSchema>;
 export const careerSiteSchema = z.literal('boss');
 export const careerRoleTargetSchema = z.enum(['fullstack', 'agent_development']);
-export const careerCitySchema = z.enum(['广州', '深圳']);
 
 export const careerPolicySchema = z.strictObject({
   roleTargets: z.array(careerRoleTargetSchema).max(2),
   customRoleKeywords: z.array(z.string().trim().min(1).max(40).refine(value => !/[\u0000-\u001f\u007f]/.test(value), '方向不能包含控制字符')).max(6).refine(values => new Set(values.map(value => value.normalize('NFKC').toLowerCase())).size === values.length, '自定义方向不能重复').optional(),
-  cities: z.array(careerCitySchema).min(1).max(2),
+  cities: z.array(careerCitySchema).min(1).max(CAREER_MAX_CITIES).refine(values => new Set(values).size === values.length, '城市不能重复'),
   salaryUpperMinCnyMonthly: z.number().int().min(1000).max(100000),
   preferAiApplication: z.boolean(),
   companyBlacklistKeywords: z.array(z.string().trim().min(1).max(40)).max(50),

@@ -1,3 +1,4 @@
+import { expectStatus } from './ui-helpers';
 import { navigateModule } from './ui-helpers';
 import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
@@ -10,18 +11,18 @@ test.setTimeout(90000);
 test('home, reusable profiles, wizard and settings return keep data after closing the page', async ({ page, context }) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
   await page.goto('/#/home');
-  await expect(page.getByRole('heading', { name: '今天，继续练好一道题。' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '工作台', exact: true })).toBeVisible();
   await page.screenshot({ path: 'docs/evidence/screenshots/usability-home.png', fullPage: true });
   await page.getByRole('button', { name: '配置模型', exact: true }).click();
   await page.getByRole('button', { name: '返回练习', exact: true }).click();
-  await expect(page.getByRole('heading', { name: '今天，继续练好一道题。' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '工作台', exact: true })).toBeVisible();
   await page.getByRole('button', { name: '新建面试', exact: true }).click();
-  await nextStep(page); await expect(page.getByRole('alert')).toContainText('岗位需');
+  await nextStep(page); await expect(page.locator('main').getByRole('alert').filter({hasText:/\S/})).toContainText('岗位需');
   await page.getByRole('button', { name: '填入示例', exact: true }).click();
   await page.getByText('复用岗位资料档案', { exact: false }).click();
   await page.getByLabel('档案名称', { exact: true }).fill('固定测试 · 校招资料');
   await page.getByRole('button', { name: '保存当前资料', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('岗位资料已保存');
+  await expectStatus(page, '岗位资料已保存');
   await nextStep(page);
   await page.getByLabel('面试时长（分钟）', { exact: true }).fill('10');
   await settingsTab(page, '模型设置');
@@ -79,10 +80,10 @@ test('default backup excludes personal materials and restore previews without re
   const file = await download; const path = await file.path(); if (!path) throw new Error('Missing backup');
   const text = await readFile(path, 'utf8'); const backup = workspaceBackupSchema.parse(JSON.parse(text));
   expect(backup.includesSensitive).toBe(false); expect(text).toContain('备份中的算法代码'); expect(text).not.toContain('示例经历'); expect(text).not.toContain('interview_identity');
-  await page.getByLabel('选择备份 JSON').setInputFiles(path);
+  await page.getByLabel('选择备份 JSON').and(page.locator('input[type="file"]')).setInputFiles({name:file.suggestedFilename(),mimeType:'application/json',buffer:Buffer.from(text)});
   await expect(page.getByLabel('备份恢复预览')).toContainText('内容相同');
   await page.getByRole('button', { name: '确认恢复数据', exact: true }).click();
-  await expect(page.getByRole('alert').filter({ hasText: '已恢复' })).toBeVisible();
+  await expect(page.locator('main').getByRole('alert').filter({hasText:/\S/}).filter({ hasText: '已恢复' })).toBeVisible();
   await page.screenshot({ path: 'docs/evidence/screenshots/usability-data.png', fullPage: true });
 });
 
@@ -99,6 +100,7 @@ test('two pages preserve conflicting draft versions while page preferences remai
   await expect(second.getByLabel('待处理的多页面冲突')).toContainText('另一页的新岗位');
   await expect(second.getByLabel('待处理的多页面冲突')).toContainText('当前页保留的岗位');
   await second.getByRole('button', { name: '采用本机版本', exact: true }).click();
+  await expect(second.getByRole('alert').filter({hasText:'已采用本机保存的版本'})).toBeVisible();
   await second.reload(); await navigateModule(second, '面试准备');
   await expect(second.getByLabel('目标岗位')).toHaveValue('另一页的新岗位');
 });

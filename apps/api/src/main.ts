@@ -1,8 +1,8 @@
 import 'reflect-metadata';
 import {BossInboxService,BossInboxController,BOSS_INBOX} from './boss-inbox';
-import { Body, Controller, Delete, Get, Inject, Module, Param, Post, Req, Query, BadRequestException,Patch,UploadedFile,UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Inject, Module, Param, Post, Req, Res, Query, BadRequestException,Patch,UploadedFile,UseInterceptors } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import { json } from 'express';
 import { z } from 'zod';
 import { startInterviewSchema, answerSchema,retrySchema } from '../../../packages/contracts/src/index';
@@ -18,7 +18,7 @@ import { importResume } from './resume';
 import { bankCreateSchema,bankUpdateSchema,leetcodeImportSchema,leetcodeBatchSchema } from '../../../packages/contracts/src/bank';
 import { searchDraftSchema,searchProbeSchema } from '../../../packages/contracts/src/search';
 import { previewPlanSchema,replanSchema } from '../../../packages/contracts/src/planning';
-import { savePreparationSchema } from '../../../packages/contracts/src/preparation';
+import { savePreparationSchema, preparationPdfSchema } from '../../../packages/contracts/src/preparation';
 import {preparationGenerateCommandSchema,preparationHistoryQuerySchema,preparationHistoryRetrySchema} from '../../../packages/contracts/src/preparation-history';
 import { interviewHistoryQuerySchema } from '../../../packages/contracts/src/history';
 import { CareerController, CareerService, CAREER } from './career';
@@ -28,6 +28,13 @@ await checkReferenceRuntime();
 const config = readApiConfig();
 function owner(req: Request) { return z.string().parse(req.headers['x-owner-id']); }
 function uuid(value: string) { const result = z.uuid().safeParse(value); if (!result.success) throw new BadRequestException('Invalid interview ID'); return result.data; }
+function sendPdf(res:Response,file:{filename:string;bytes:Buffer}){
+  res.setHeader('content-type','application/pdf');
+  res.setHeader('content-disposition',`attachment; filename*=UTF-8''${encodeURIComponent(file.filename)}`);
+  res.setHeader('cache-control','no-store');
+  res.setHeader('x-content-type-options','nosniff');
+  res.end(file.bytes);
+}
 function parse<T>(schema: z.ZodType<T>, body: unknown): T {
   const result = schema.safeParse(body);
   if (!result.success) throw new BadRequestException(result.error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`).join('; '));
@@ -66,6 +73,8 @@ class InterviewController {
   uploadResume(@UploadedFile() file:unknown){return importResume(file);}
   @Get('question-bank') listBank(@Req() req:Request){return this.service.bank.list(owner(req));}
   @Post('preparations/generate') prepare(@Req() req:Request,@Body() body:unknown){return this.service.preparation.generate(owner(req),parse(preparationGenerateCommandSchema,body));}
+  @Post('preparations/pdf') async preparationPdf(@Body() body:unknown,@Res() res:Response){sendPdf(res,await this.service.preparation.pdf(parse(preparationPdfSchema,body)));}
+  @Get('preparations/history/:id/pdf') async preparationHistoryPdf(@Req() req:Request,@Param('id') id:string,@Res() res:Response){sendPdf(res,await this.service.preparation.historyPdf(owner(req),uuid(id)));}
   @Get('preparations/history') preparationHistory(@Req() req:Request,@Query() query:unknown){return this.service.preparation.history(owner(req),parse(preparationHistoryQuerySchema,query));}
   @Get('preparations/history/:id') preparationRecord(@Req() req:Request,@Param('id') id:string){return this.service.preparation.get(owner(req),uuid(id));}
   @Post('preparations/history/:id/retry') retryPreparation(@Req() req:Request,@Param('id') id:string,@Body() body:unknown){return this.service.preparation.retry(owner(req),uuid(id),parse(preparationHistoryRetrySchema,body));}
@@ -96,6 +105,7 @@ app.use('/api/v1/career/tasks',json({limit:'2mb'}));
 app.use('/api/v1/career/batches',json({limit:'2mb'}));
 app.use('/api/v1/career/preparations',json({limit:'2mb'}));
 app.use('/api/v1/resume-drafts',json({limit:'1mb'}));
+app.use('/api/v1/preparations/pdf',json({limit:'2mb'}));
 app.use(json({ limit: '128kb' }));
 app.enableShutdownHooks();
 await app.listen(config.API_PORT, '0.0.0.0');

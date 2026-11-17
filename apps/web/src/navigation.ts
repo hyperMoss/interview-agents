@@ -16,8 +16,20 @@ const pages = z.enum(['home', 'history', 'practice', 'preparation', 'preparation
 const paths: Record<Page, string> = {
   home: 'home', history: 'interviews/history', practice: 'interviews', preparation: 'preparation', preparationHistory:'preparation/history', algorithm: 'algorithms',
   bank: 'bank', model: 'settings/models', search: 'settings/search', data: 'settings/data', review: 'review',
-  career: 'career', bossInbox:'boss-conversations', resumeLibrary: 'settings/resumes', resumeStudio: 'resumes',
+  career: 'career', bossInbox:'boss-conversations', resumeLibrary: 'resumes/attachments', resumeStudio: 'resumes',
 };
+/** The attachments page used to be its own module; the unified resume library keeps the old URLs working. */
+export const resumeAttachmentsPath = '#/resumes/attachments';
+export const legacyResumeLibraryPath = '#/settings/resumes';
+export type ResumeLibraryTab = 'editor' | 'attachments';
+/** The two library views are routes: the editor keeps its per-copy deep link, attachments have one canonical URL. */
+export function resumeLibraryTab(page: Page): ResumeLibraryTab {
+  return page === 'resumeLibrary' ? 'attachments' : 'editor';
+}
+/** Both library views share the single resume-library menu entry and breadcrumb. */
+export function menuPage(page: Page): Page {
+  return page === 'resumeLibrary' ? 'resumeStudio' : page;
+}
 export function parseRoute(hash: string): Route | null {
   const parts = hash.replace(/^#\/?/, '').split('/');
   if(parts[0]==='preparation'&&parts[1]==='history'){const id=z.uuid().safeParse(parts[2]);return {page:'preparationHistory',...(id.success?{preparationId:id.data}:{})};}
@@ -26,10 +38,13 @@ export function parseRoute(hash: string): Route | null {
     const id = z.coerce.number().int().positive().safeParse(parts[2]);
     return { page: 'algorithm', view, ...(id.success ? { questionId: id.data } : {}), ...(parts[3] && /^[a-z0-9-]{1,80}$/.test(parts[3]) ? { patternId: parts[3] } : {}) };
   }
+  if (parts[0] === 'resumes' && parts[1] === 'attachments') return { page: 'resumeLibrary' };
   if (parts[0] === 'resumes') {
     const id = z.uuid().safeParse(parts[1]);
     return { page: 'resumeStudio', ...(id.success ? { resumeId: id.data } : {}) };
   }
+  // Old bookmarks and BOSS career links still open the attachments page of the unified library.
+  if (parts[0] === 'settings' && parts[1] === 'resumes') return { page: 'resumeLibrary' };
   if(parts[0]==='boss-conversations'){const id=z.uuid().safeParse(parts[1]);return {page:'bossInbox',...(id.success?{conversationId:id.data}:{})};}
   if (parts[0] === 'interviews' && parts[1] === 'history') return { page: 'history' };
   if (parts[0] === 'interviews') {
@@ -52,6 +67,7 @@ export function parseRoute(hash: string): Route | null {
 export function routeHash(route: Route) {
   if(route.page==='preparationHistory')return `#/preparation/history${route.preparationId?`/${route.preparationId}`:''}`;
   if(route.page==='bossInbox')return `#/boss-conversations${route.conversationId?`/${route.conversationId}`:''}`;
+  if (route.page === 'resumeLibrary') return resumeAttachmentsPath;
   if (route.page === 'resumeStudio') return `#/resumes${route.resumeId ? `/${route.resumeId}` : ''}`;
   if (route.page === 'career') return `#/career${route.taskId ? `/tasks/${route.taskId}` : route.batchId ? `/batches/${route.batchId}` : route.preparationId ? `/preparations/${route.preparationId}` : ''}`;
   if (route.page === 'algorithm') return `#/algorithms/${route.view ?? 'hot100'}${route.questionId ? `/${route.questionId}` : route.patternId ? '/0' : ''}${route.patternId ? `/${route.patternId}` : ''}`;
@@ -68,6 +84,7 @@ export function useWorkspaceRoute() {
     const hash = routeHash(route);
     writeSession('workspace-route', hash);
     if (!window.location.hash) window.history.replaceState(null, '', hash);
+    else if (window.location.hash === legacyResumeLibraryPath) window.history.replaceState(null, '', hash);
   }, [route]);
   function navigate(next: Route) {
     setRoute(next);

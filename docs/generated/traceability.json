@@ -752,5 +752,54 @@
     ],
     "acceptance": "TEST-REQ-062",
     "task": "TASK-REQ-062"
+  },
+  {
+    "requirement": "REQ-063",
+    "capabilities": [
+      "core.platform"
+    ],
+    "docs": [
+      "docs/generated/00-PROJECT-BRIEF.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "acceptance": "TEST-REQ-063",
+    "task": "TASK-REQ-063"
+  },
+  {
+    "requirement": "REQ-064",
+    "capabilities": [
+      "resume.import",
+      "core.platform"
+    ],
+    "docs": [
+      "docs/generated/00-PROJECT-BRIEF.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "acceptance": "TEST-REQ-064",
+    "task": "TASK-REQ-064"
+  },
+  {
+    "requirement": "REQ-065",
+    "capabilities": [
+      "interview.practice"
+    ],
+    "docs": [
+      "docs/generated/00-PROJECT-BRIEF.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "acceptance": "TEST-REQ-065",
+    "task": "TASK-REQ-065"
+  },
+  {
+    "requirement": "REQ-066",
+    "capabilities": [
+      "career.boss"
+    ],
+    "docs": [
+      "docs/generated/00-PROJECT-BRIEF.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "acceptance": "TEST-REQ-066",
+    "task": "TASK-REQ-066"
   }
 ]

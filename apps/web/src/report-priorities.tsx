@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button } from 'antd';
+import { Button } from '@astryxdesign/core/Button';
 import type { Session, Turn } from '../../../packages/contracts/src/index';
 import type { ReviewItem } from '../../../packages/contracts/src/workspace';
 import { addReviewItem, readReviews, saveReviews } from './personal-data';
@@ -80,7 +80,7 @@ export function ReportPriorities({ session, review }: { session: Session; review
     if (element instanceof HTMLDetailsElement) { const parent = element.parentElement; if (parent instanceof HTMLDetailsElement) parent.open = true; element.open = true; element.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
   }
   return <section className="report-priorities" aria-label="优先复习的 QA"><h3>先复习这几道题</h3><p>按本次评分从低到高选择，改进建议来自对应 QA。{session.modelMode === 'demo' ? '规则演示评分仅供体验流程。' : ''}</p>
-    {priorities.map(({ turn, index }) => <article key={turn.question.id ?? index}><strong>第 {index + 1} 题 · {turn.question.competency}</strong><p>{turn.assessment.improvements.join('；')}</p><div className="panel-actions"><Button onClick={() => reveal(index)}>查看第 {index + 1} 题依据</Button><Button onClick={() => review.add(turn, index)}>加入第 {index + 1} 题复习</Button></div></article>)}
+    {priorities.map(({ turn, index }) => <article key={turn.question.id ?? index}><strong>第 {index + 1} 题 · {turn.question.competency}</strong><p>{turn.assessment.improvements.join('；')}</p><div className="panel-actions"><Button label={`查看第 ${index + 1} 题依据`} onClick={() => reveal(index)} /><Button label={`加入第 ${index + 1} 题复习`} onClick={() => review.add(turn, index)} /></div></article>)}
     {review.message ? <p role="status" className="review-message">{review.message}</p> : null}
   </section>;
 }

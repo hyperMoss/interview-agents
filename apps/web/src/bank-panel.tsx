@@ -1,10 +1,16 @@
 import { useRef, useState, type FormEvent } from 'react';
-import { Alert, Button, Empty, Input, Select, Spin, Tabs } from 'antd';
+import { Banner } from '@astryxdesign/core/Banner';
+import { Button } from '@astryxdesign/core/Button';
+import { EmptyState } from '@astryxdesign/core/EmptyState';
+import { Spinner } from '@astryxdesign/core/Spinner';
+import { Tab, TabList } from '@astryxdesign/core/TabList';
+import { Selector } from '@astryxdesign/core/Selector';
+import { TextArea } from '@astryxdesign/core/TextArea';
+import { TextInput } from '@astryxdesign/core/TextInput';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from './api';
 import { bankDraftSchema, difficultySchema, roleFamilySchema, leetcodeBatchSchema, type BankDraft, type BankQuestion } from '../../../packages/contracts/src/bank';
 
-const { TextArea } = Input;
 const emptyDraft: BankDraft = { title: '', content: '', category: 'technical', difficulty: 'medium', roleFamilies: ['general'], tags: [], expectedAnswer: '' };
 const categories = { intro: '开场', technical: '技术问答', behavioral: '综合素质', coding: '编程', reverse: '反问' };
 const difficultyOptions = [{ value: 'easy', label: '基础' }, { value: 'medium', label: '中等' }, { value: 'hard', label: '深入' }];
@@ -97,96 +103,88 @@ export function BankPanel({ onClose, onAlgorithmPractice }: { onClose: () => voi
           <h2 id="bank-title">题库管理</h2>
           <p>题库最多 500 题，包含内置题。自建题目只属于当前浏览器身份。编辑或删除不会改变旧面试快照。</p>
         </div>
-        <Button disabled={busy} onClick={onClose}>返回练习</Button>
+        <Button label="返回练习" isDisabled={busy} onClick={onClose} />
       </div>
       <div aria-live="polite" style={{ display: 'grid', gap: 12, marginBottom: 16 }}>
-        {identity.isPending ? <div role="status"><Spin size="small" /> 正在准备题库身份…</div> : null}
-        {identity.isError ? <Alert type="error" showIcon message={identity.error.message} action={<Button disabled={busy || identity.isFetching} onClick={() => void identity.refetch()}>重试</Button>} /> : null}
-        {busy ? <div role="status"><Spin size="small" /> 正在处理题库操作…</div> : null}
-        {error ? <Alert type="error" showIcon message={error} role="alert" /> : null}
-        {message ? <Alert type="success" showIcon message={message} role="status" /> : null}
+        {identity.isPending ? <div role="status"><Spinner size="sm" /> 正在准备题库身份…</div> : null}
+        {identity.isError ? <Banner role="alert" status="error" title={identity.error.message} endContent={<Button label="重试" isDisabled={busy || identity.isFetching} onClick={() => void identity.refetch()} />} /> : null}
+        {busy ? <div role="status"><Spinner size="sm" /> 正在处理题库操作…</div> : null}
+        {error ? <Banner status="error" title={error} role="alert" /> : null}
+        {message ? <Banner status="success" title={message} role="status" /> : null}
       </div>
-      <Tabs activeKey={activeTab} onChange={setActiveTab} items={[
-        {
-          key: 'saved',
-          label: '已保存题目',
-          children: (
-            <section className="bank-list" aria-labelledby="bank-saved-title">
-              <h3 id="bank-saved-title">已保存的题目</h3>
-              <label htmlFor="bank-search">查找题库</label>
-              <Input id="bank-search" placeholder="按标题、标签或题面查找" value={filter} disabled={busy || !identity.isSuccess} onChange={e => setFilter(e.target.value)} />
-              {list.isError ? <Alert type="error" showIcon message={list.error.message} action={<Button disabled={busy || list.isFetching} onClick={() => void list.refetch()}>重新读取题库</Button>} /> : null}
-              {identity.isSuccess && list.isPending ? <div role="status" style={{ padding: 24 }}><Spin /> 正在读取题库…</div> : null}
-              {list.isSuccess && questions.length === 0 ? <Empty description={filter ? '没有匹配的题目' : '题库暂无题目，可自建或导入题目'} /> : null}
-              {questions.map(q => (
-                <article className="bank-card" key={q.id}>
-                  <div><strong>{q.title}</strong><span>{categories[q.category]} · {q.difficulty} · {q.source === 'builtin' ? '内置' : q.source === 'leetcode' ? 'LeetCode' : '自建'}</span></div>
-                  <details>
-                    <summary>查看题面</summary>
-                    <p className="answer-text">{q.content}</p>
-                    {q.jdRequirement ? <><h4>JD 依据 · {q.jdRequirement.priority === 'required' ? '必备项' : '加分项'}</h4><p>{q.jdRequirement.competency}</p><blockquote>{q.jdRequirement.quote}</blockquote></> : null}
-                    {q.expectedAnswer ? <><h4>参考答案</h4><p className="answer-text">{q.expectedAnswer}</p></> : null}
-                    {q.sourceUrl ? <a href={q.sourceUrl} target="_blank" rel="noreferrer">查看原始来源</a> : null}
-                  </details>
-                  {q.category === 'coding' ? <Button onClick={() => onAlgorithmPractice(q)}>算法跟打 · {q.title}</Button> : null}
-                  {q.editable ? <div className="panel-actions">
-                    <Button disabled={disabled} onClick={() => edit(q)}>编辑 {q.title}</Button>
-                    <Button danger disabled={disabled} onClick={() => void perform(() => api.bankRemove(q.id), '题目已删除，旧面试快照保留。')}>删除 {q.title}</Button>
-                  </div> : null}
-                </article>
-              ))}
-            </section>
-          ),
-        },
-        {
-          key: 'edit',
-          label: editing ? '编辑题目' : '自建题目',
-          children: (
-            <form onSubmit={save} style={{ display: 'grid', gap: 12 }}>
-              <h3>{editing ? '编辑题目' : '自建题目'}</h3>
-              <div><label htmlFor="bank-question-title">题目标题</label><Input id="bank-question-title" required minLength={2} maxLength={200} disabled={disabled} value={draft.title} onChange={e => setDraft({ ...draft, title: e.target.value })} /></div>
-              <div><label htmlFor="bank-question-content">题面</label><TextArea id="bank-question-content" required minLength={10} maxLength={14000} rows={4} disabled={disabled} value={draft.content} onChange={e => setDraft({ ...draft, content: e.target.value })} /></div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: 16 }}>
-                <div><label htmlFor="bank-question-category">题目类别</label><Select id="bank-question-category" style={{ width: '100%' }} disabled={disabled} value={draft.category} options={Object.entries(categories).map(([value, label]) => ({ value, label }))} onChange={value => setDraft({ ...draft, category: bankDraftSchema.shape.category.parse(value) })} /></div>
-                <div><label htmlFor="bank-question-difficulty">题目难度</label><Select id="bank-question-difficulty" style={{ width: '100%' }} disabled={disabled} value={draft.difficulty} options={difficultyOptions} onChange={value => setDraft({ ...draft, difficulty: difficultySchema.parse(value) })} /></div>
-                <div><label htmlFor="bank-question-role">适用岗位</label><Select id="bank-question-role" style={{ width: '100%' }} disabled={disabled} value={draft.roleFamilies[0] ?? 'general'} options={roleOptions} onChange={value => setDraft({ ...draft, roleFamilies: [roleFamilySchema.parse(value)] })} /></div>
-              </div>
-              <div><label htmlFor="bank-question-tags">标签，以逗号分隔</label><Input id="bank-question-tags" disabled={disabled} value={tagText} maxLength={500} onChange={e => setTagText(e.target.value)} /></div>
-              <div><label htmlFor="bank-question-answer">参考答案（选填）</label><TextArea id="bank-question-answer" rows={3} maxLength={8000} disabled={disabled} value={draft.expectedAnswer} onChange={e => setDraft({ ...draft, expectedAnswer: e.target.value })} /></div>
-              <div className="panel-actions">
-                {editing ? <Button htmlType="button" disabled={disabled} onClick={resetDraft}>取消编辑</Button> : null}
-                <Button type="primary" htmlType="submit" aria-label={editing ? '保存题目' : '创建题目'} disabled={disabled} loading={busy}>{editing ? '保存题目' : '创建题目'}</Button>
-              </div>
-            </form>
-          ),
-        },
-        {
-          key: 'import',
-          label: '导入题目',
-          children: (
-            <section className="bank-import" aria-labelledby="bank-import-title">
-              <h3 id="bank-import-title">从 LeetCode 导入</h3>
-              <p>填写公开题目链接，或导入 JSON 题库。每次 JSON 最多 100 题，相同地区和题目名不会重复创建。</p>
-              <form onSubmit={event => {
-                event.preventDefault();
-                if (disabled) return;
-                void perform(async () => {
-                  const result = await api.importLeetCode(url);
-                  return `导入 ${result.imported} 题，跳过 ${result.skipped} 道已有题。`;
-                }, '公开题目导入已完成。');
-              }} style={{ display: 'grid', gap: 12 }}>
-                <div><label htmlFor="bank-import-url">LeetCode 公开题目链接</label><Input id="bank-import-url" type="url" required disabled={disabled} value={url} onChange={e => setUrl(e.target.value)} placeholder="https://leetcode.cn/problems/two-sum/" /></div>
-                <div><Button htmlType="submit" aria-label="导入公开题目" disabled={disabled} loading={busy}>导入公开题目</Button></div>
-              </form>
-              <div style={{ marginTop: 16 }}>
-                <label htmlFor="bank-import-file">导入 LeetCode JSON 题库</label>
-                <input id="bank-import-file" type="file" accept=".json,application/json" disabled={disabled} onChange={e => { const file = e.target.files?.[0]; if (file) void importJson(file); e.target.value = ''; }} />
-              </div>
-              <details><summary>JSON 格式示例</summary><pre style={{ maxWidth: '100%', overflowX: 'auto' }}>{JSON.stringify({ questions: [{ slug: 'two-sum', region: 'cn', title: '题目标题', content: '从导出文件提供的完整题面。', category: 'coding', difficulty: 'easy', roleFamilies: ['general'], tags: ['数组'], expectedAnswer: '' }] }, null, 2)}</pre></details>
-            </section>
-          ),
-        },
-      ]} />
+      <TabList role="tablist" value={activeTab} onChange={setActiveTab} hasDivider aria-label="题库管理">
+        <Tab value="saved" label="已保存题目" panelId="bank-saved-panel" />
+        <Tab value="edit" label={editing ? '编辑题目' : '自建题目'} panelId="bank-edit-panel" />
+        <Tab value="import" label="导入题目" panelId="bank-import-panel" />
+      </TabList>
+      {activeTab === 'saved' ? (
+        <section id="bank-saved-panel" role="tabpanel" aria-label="已保存题目" className="bank-list" aria-labelledby="bank-saved-title">
+          <h3 id="bank-saved-title">已保存的题目</h3>
+          <TextInput id="bank-search" label="查找题库" placeholder="按标题、标签或题面查找" value={filter} isDisabled={busy || !identity.isSuccess} onChange={value => setFilter(value)} />
+          {list.isError ? <Banner role="alert" status="error" title={list.error.message} endContent={<Button label="重新读取题库" isDisabled={busy || list.isFetching} onClick={() => void list.refetch()} />} /> : null}
+          {identity.isSuccess && list.isPending ? <div role="status" style={{ padding: 24 }}><Spinner /> 正在读取题库…</div> : null}
+          {list.isSuccess && questions.length === 0 ? <EmptyState title={filter ? '没有匹配的题目' : '题库暂无题目，可自建或导入题目'} /> : null}
+          {questions.map(q => (
+            <article className="bank-card" key={q.id}>
+              <div><strong>{q.title}</strong><span>{categories[q.category]} · {q.difficulty} · {q.source === 'builtin' ? '内置' : q.source === 'leetcode' ? 'LeetCode' : '自建'}</span></div>
+              <details>
+                <summary>查看题面</summary>
+                <p className="answer-text">{q.content}</p>
+                {q.jdRequirement ? <><h4>JD 依据 · {q.jdRequirement.priority === 'required' ? '必备项' : '加分项'}</h4><p>{q.jdRequirement.competency}</p><blockquote>{q.jdRequirement.quote}</blockquote></> : null}
+                {q.expectedAnswer ? <><h4>参考答案</h4><p className="answer-text">{q.expectedAnswer}</p></> : null}
+                {q.sourceUrl ? <a href={q.sourceUrl} target="_blank" rel="noreferrer">查看原始来源</a> : null}
+              </details>
+              {q.category === 'coding' ? <Button label={`算法跟打 · ${q.title}`} onClick={() => onAlgorithmPractice(q)} /> : null}
+              {q.editable ? <div className="panel-actions">
+                <Button label={`编辑 ${q.title}`} isDisabled={disabled} onClick={() => edit(q)} />
+                <Button variant="destructive" label={`删除 ${q.title}`} isDisabled={disabled} onClick={() => void perform(() => api.bankRemove(q.id), '题目已删除，旧面试快照保留。')} />
+              </div> : null}
+            </article>
+          ))}
+        </section>
+      ) : null}
+      {activeTab === 'edit' ? (
+        <div id="bank-edit-panel" role="tabpanel" aria-label={editing ? '编辑题目' : '自建题目'}>
+          <form onSubmit={save} style={{ display: 'grid', gap: 12 }}>
+            <h3>{editing ? '编辑题目' : '自建题目'}</h3>
+            <TextInput id="bank-question-title" label="题目标题" aria-label="题目标题" isRequired isDisabled={disabled} value={draft.title} onChange={value => setDraft({ ...draft, title: value.slice(0, 200) })} />
+            <TextArea id="bank-question-content" label="题面" aria-label="题面" isRequired maxLength={14000} rows={4} isDisabled={disabled} value={draft.content} onChange={value => setDraft({ ...draft, content: value })} />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: 16 }}>
+              <Selector id="bank-question-category" label="题目类别" width="100%" isDisabled={disabled} value={draft.category} options={Object.entries(categories).map(([value, label]) => ({ value, label }))} onChange={value => setDraft({ ...draft, category: bankDraftSchema.shape.category.parse(value) })} />
+              <Selector id="bank-question-difficulty" label="题目难度" width="100%" isDisabled={disabled} value={draft.difficulty} options={difficultyOptions} onChange={value => setDraft({ ...draft, difficulty: difficultySchema.parse(value) })} />
+              <Selector id="bank-question-role" label="适用岗位" width="100%" isDisabled={disabled} value={draft.roleFamilies[0] ?? 'general'} options={roleOptions} onChange={value => setDraft({ ...draft, roleFamilies: [roleFamilySchema.parse(value)] })} />
+            </div>
+            <TextInput id="bank-question-tags" label="标签，以逗号分隔" isDisabled={disabled} value={tagText} onChange={value => setTagText(value.slice(0, 500))} />
+            <TextArea id="bank-question-answer" label="参考答案（选填）" rows={3} maxLength={8000} isDisabled={disabled} value={draft.expectedAnswer} onChange={value => setDraft({ ...draft, expectedAnswer: value })} />
+            <div className="panel-actions">
+              {editing ? <Button type="button" label="取消编辑" isDisabled={disabled} onClick={resetDraft} /> : null}
+              <Button variant="primary" type="submit" label={editing ? '保存题目' : '创建题目'} isDisabled={disabled} isLoading={busy} />
+            </div>
+          </form>
+        </div>
+      ) : null}
+      {activeTab === 'import' ? (
+        <section id="bank-import-panel" role="tabpanel" aria-label="导入题目" className="bank-import" aria-labelledby="bank-import-title">
+          <h3 id="bank-import-title">从 LeetCode 导入</h3>
+          <p>填写公开题目链接，或导入 JSON 题库。每次 JSON 最多 100 题，相同地区和题目名不会重复创建。</p>
+          <form onSubmit={event => {
+            event.preventDefault();
+            if (disabled) return;
+            void perform(async () => {
+              const result = await api.importLeetCode(url);
+              return `导入 ${result.imported} 题，跳过 ${result.skipped} 道已有题。`;
+            }, '公开题目导入已完成。');
+          }} style={{ display: 'grid', gap: 12 }}>
+            <TextInput id="bank-import-url" label="LeetCode 公开题目链接" aria-label="LeetCode 公开题目链接" type="url" isRequired isDisabled={disabled} value={url} onChange={setUrl} placeholder="https://leetcode.cn/problems/two-sum/" />
+            <div><Button type="submit" label="导入公开题目" isDisabled={disabled} isLoading={busy} /></div>
+          </form>
+          <div style={{ marginTop: 16 }}>
+            <label htmlFor="bank-import-file">导入 LeetCode JSON 题库</label>
+            <input id="bank-import-file" type="file" accept=".json,application/json" disabled={disabled} onChange={event => { const file = event.target.files?.[0]; if (file) void importJson(file); event.target.value = ''; }} />
+          </div>
+          <details><summary>JSON 格式示例</summary><pre style={{ maxWidth: '100%', overflowX: 'auto' }}>{JSON.stringify({ questions: [{ slug: 'two-sum', region: 'cn', title: '题目标题', content: '从导出文件提供的完整题面。', category: 'coding', difficulty: 'easy', roleFamilies: ['general'], tags: ['数组'], expectedAnswer: '' }] }, null, 2)}</pre></details>
+        </section>
+      ) : null}
     </section>
   );
 }

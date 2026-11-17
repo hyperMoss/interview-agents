@@ -1,4 +1,4 @@
-import { Tag } from 'antd';
+import { Badge, type BadgeVariant } from '@astryxdesign/core/Badge';
 import { z } from 'zod';
 import { modelSettingsSchema, type ModelSource } from '../../../packages/contracts/src/models';
 import './model-mode.css';
@@ -15,8 +15,8 @@ export type ModelModeBadge = {
   hint: string;
 };
 
-const tagColors: Record<ModelModeBadge['tone'], string | undefined> = {
-  live: 'green', demo: 'orange', pending: undefined, unconfigured: undefined, unconfirmed: undefined,
+const badgeVariants: Record<ModelModeBadge['tone'], BadgeVariant> = {
+  live: 'green', demo: 'orange', pending: 'neutral', unconfigured: 'neutral', unconfirmed: 'neutral',
 };
 
 const demoBadge: ModelModeBadge = {
@@ -83,6 +83,7 @@ export function describeRuntimeMode(input: { data?: ModelSettings | undefined; p
 
 /** Small shared badge. It only renders the reading it receives; no key, hash or connection ID is shown. */
 export function ModelModeTag({ badge, className }: { badge: ModelModeBadge; className?: string }) {
-  const color = tagColors[badge.tone];
-  return <Tag className={className ? `model-mode-tag ${className}` : 'model-mode-tag'} title={badge.hint} data-model-mode={badge.tone} {...(color ? { color } : {})}>{badge.label}</Tag>;
+  return <span className={className ? `model-mode-tag ${className}` : 'model-mode-tag'} title={badge.hint} data-model-mode={badge.tone}>
+    <Badge label={badge.label} variant={badgeVariants[badge.tone]} />
+  </span>;
 }

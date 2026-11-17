@@ -1,6 +1,5 @@
 import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
-import { MastraServer, type HonoBindings, type HonoVariables } from '@mastra/hono';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { Pool } from "../../../packages/database/src/sqlite";
 import { z } from 'zod';
@@ -14,16 +13,16 @@ import { preparationRuntimeSchema, personalizedPreparationRuntimeSchema, PREPARA
 import { careerMatchRuntimeSchema, careerGenerationRuntimeSchema } from '../../../packages/contracts/src/career';
 import { generatePreparation, isPreparationValidationError, isPreparationOutputLimit } from './preparation';
 import { generateCareerMatch, generateCareerPreparation } from './career';
+import { generationFailure } from './generation-failure';
 
 export async function createAgentServer(config: AgentConfig) {
   const pool = new Pool({ connectionString: config.AGENT_DATABASE_URL, max: 5, connectionTimeoutMillis: 5000 });
-  const settingsPool=new Pool({connectionString:config.AGENT_DATABASE_URL,max:5,connectionTimeoutMillis:5000});
   const evaluator = createEvaluator(config);
   await evaluator.storage.init();
-  const connections=new ModelConnections(settingsPool,config);
-  const searchConnections=new SearchConnections(settingsPool,config);
+  const connections=new ModelConnections(pool,config);
+  const searchConnections=new SearchConnections(pool,config);
   const cleanup=setInterval(()=>{void Promise.all([connections.purge(),searchConnections.purge()]).catch(()=>{});},60000);
-  const app = new Hono<{ Bindings: HonoBindings; Variables: HonoVariables }>();
+  const app = new Hono();
   app.get('/health', async c => { await pool.query('SELECT 1'); return c.json({ status: 'ok', modelMode: config.MODEL_MODE }); });
   app.use('*', bodyLimit({ maxSize: 8 * 1024 * 1024 }));
   app.use('*', async (c, next) => {
@@ -144,6 +143,7 @@ export async function createAgentServer(config: AgentConfig) {
     if(!request.modelConnectionId&&request.defaultModelReference&&request.defaultModelReference!==defaultModelReference(config))return c.json({error:'MODEL_DEFAULT_CHANGED'},409);
     const digest = createHash('sha256').update(JSON.stringify(request)).digest('hex');
     const client = await pool.connect();
+    let signal = AbortSignal.any([AbortSignal.timeout(55000), c.req.raw.signal]);
     try {
       await client.query('BEGIN');
       const deleted=await client.query("SELECT 1 FROM agent_runtime_deleted_jobs WHERE job_id=$1",[request.jobId]);
@@ -154,7 +154,6 @@ export async function createAgentServer(config: AgentConfig) {
         if (existing.input_hash !== digest) { await client.query('ROLLBACK'); return c.json({ error: 'IDEMPOTENCY_CONFLICT' }, 409); }
         await client.query('COMMIT'); return c.json(runtimeResponseSchema.parse(existing.response));
       }
-      const signal = AbortSignal.any([AbortSignal.timeout(55000), c.req.raw.signal]);
       let custom:ReturnType<typeof createEvaluator>|undefined;
       let response;
       try{
@@ -166,7 +165,8 @@ export async function createAgentServer(config: AgentConfig) {
         if(request.modelConnectionId){if(!request.ownerId)throw new ModelAccessError('MODEL_OWNER_REQUIRED',400,'缺少模型归属。');
           const connection=await connections.resolve(request.ownerId,request.modelConnectionId);
           custom=createEvaluator({...config,MODEL_MODE:'live'},connection,evaluator.storage);
-          response=await custom.generate(context,AbortSignal.any([signal,AbortSignal.timeout(connection.timeoutMs)]));
+          signal=AbortSignal.any([signal,AbortSignal.timeout(connection.timeoutMs)]);
+          response=await custom.generate(context,signal);
         }else response=await evaluator.generate(context,signal);
         if(research)response={...response,research};
       }finally{if(custom)await custom.close();}
@@ -176,8 +176,7 @@ export async function createAgentServer(config: AgentConfig) {
     } catch(error) {
       await client.query('ROLLBACK');
       if(error instanceof ModelAccessError)return c.json({error:error.code,message:error.message},error.status===403?403:error.status===409?409:503);
-      const provider=modelFailure(error);if(provider)return c.json(provider,503);
-      return c.json({ error: 'GENERATION_FAILED' }, 503);
+      return c.json(generationFailure(error,signal), 503);
     } finally { client.release(); }
   });
   app.delete('/internal/v1/receipts/:id',async c=>{
@@ -188,8 +187,6 @@ export async function createAgentServer(config: AgentConfig) {
       await client.query("DELETE FROM agent_runtime_receipts WHERE job_id=$1",[parsed.data]);await client.query('COMMIT');return c.json({deleted:true});
     }catch{await client.query('ROLLBACK');return c.json({error:'DELETE_FAILED'},503);}finally{client.release();}
   });
-  const server = new MastraServer({ app, mastra: evaluator.mastra, prefix: '/mastra' });
-  await server.init();
   app.onError((error,c)=>{if(error instanceof ModelAccessError)return c.json({error:error.code,message:error.message},error.status===403?403:error.status===409?409:502);if(error instanceof z.ZodError)return c.json({error:'INVALID_REQUEST',message:'配置或请求字段无效。'},400);return c.json({error:'RUNTIME_ERROR',message:'模型服务暂时不可用，请稍后重试。'},503);});
-  return { app, close: async () => {clearInterval(cleanup);await Promise.all([pool.end(),settingsPool.end(),evaluator.close()]);} };
+  return { app, close: async () => {clearInterval(cleanup);await Promise.all([pool.end(),evaluator.close()]);} };
 }

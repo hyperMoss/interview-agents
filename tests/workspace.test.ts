@@ -177,3 +177,15 @@ describe('long-term browser workspace', () => {
     store.close(); const reopened = makeStore(factory); await reopened.initialize(); expect(reopened.read('algorithm-view')).toBeNull(); expect(reopened.read('interview-intake')).toBe(intake);
   });
 });
+
+
+it('persists the selected resume copy for attachment round trips without including it in default backups', async () => {
+  const factory = new IDBFactory();
+  const store = makeStore(factory); await store.initialize();
+  const id = crypto.randomUUID();
+  expect(store.write('resume-library-draft', id)).toBe(true);
+  await store.flush(); store.close();
+  const reopened = makeStore(factory); await reopened.initialize();
+  expect(reopened.read('resume-library-draft')).toBe(id);
+  expect(JSON.stringify(reopened.backup())).not.toContain(id);
+});

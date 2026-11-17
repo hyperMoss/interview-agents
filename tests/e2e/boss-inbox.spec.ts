@@ -32,7 +32,7 @@ test('browses snapshots, isolates owners and carries exact JD, resume and select
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await page.screenshot({path:'test-results/resumes/boss-inbox-mobile.png',fullPage:true,animations:'disabled'});
   await page.setViewportSize({width:1280,height:900});
-  await page.getByLabel('会话面试简历').click();await page.getByText('合成会话面试简历',{exact:true}).click();
+  await page.getByRole('combobox',{name:'会话面试简历',exact:true}).click();await page.getByRole('option',{name:'合成会话面试简历',exact:true}).click();
   await page.getByRole('checkbox',{name:'将下面的沟通摘要作为备题关注点'}).check();
   await page.getByLabel('沟通关注点').fill('招聘方关注：架构与测试策略。');
   await page.getByRole('button',{name:'JD 备题',exact:true}).click();await page.getByRole('button',{name:'确认带入',exact:true}).click();
@@ -41,7 +41,7 @@ test('browses snapshots, isolates owners and carries exact JD, resume and select
   await expect(page.locator('#intake-resume')).toHaveValue(/合成经历/);
   await expect(page.locator('#intake-jd')).toHaveValue(/项目架构复盘/);
   await navigateModule(page,'已交换简历会话');await page.getByRole('button',{name:'合成会话公司 全栈工程师'}).click();
-  await page.getByLabel('会话面试简历').click();await page.getByText('合成会话面试简历',{exact:true}).click();
+  await page.getByRole('combobox',{name:'会话面试简历',exact:true}).click();await page.getByRole('option',{name:'合成会话面试简历',exact:true}).click();
   await page.getByRole('button',{name:'模拟面试',exact:true}).click();await page.getByRole('button',{name:'确认带入',exact:true}).click();
   await expect(page.locator('#intake-resume')).toHaveValue(/合成经历/);
   await expect(page.locator('#intake-jd')).toHaveValue('岗位要求：负责 React 与 NestJS 开发、接口设计、自动化测试和项目架构复盘。');

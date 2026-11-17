@@ -1,4 +1,5 @@
 import { careerDecisionSchema, careerPolicySchema, careerEvidenceSchema, type CareerDecision, type CareerEvidence, type CareerPolicy, type ObservedPosting, type SalaryRange } from '../../contracts/src/career';
+import { bossCities } from '../../contracts/src/career-cities';
 
 // Hard-filter evaluation for candidate-side BOSS postings. Native site filters narrow the
 // result set; these decisions re-check the observed posting text so a native control is never
@@ -11,12 +12,36 @@ const AGENT = /智能体|agent|大模型|llm|ai\s*应用|ai应用/i;
 const DIRECT_EMPLOYMENT = /直招|公司直招|自有团队|自研|正式员工|签约本公司/i;
 const INTERMEDIARY = /猎头顾问|招聘中介|客户公司[:：]/i;
 const OUTSOURCING = /外包|外派|驻场|劳务派遣|人才派遣|人力派遣|驻点服务|staffing|vendor|outsourc/i;
-const CITY_MARKERS: Array<{ city: string; pattern: RegExp }> = [
-  { city: '广州', pattern: /广州/ },
-  { city: '深圳', pattern: /深圳/ },
-  { city: '其他', pattern: /北京|上海|杭州|成都|武汉|南京|西安|苏州|重庆|长沙|厦门|合肥|郑州|天津/ },
-];
+// A location segment is a city only when the site renders the controlled city name itself (or its
+// `市` form). This rejects street/county overlap such as 上海路 or 长沙县 instead of treating a
+// substring as proof of a city.
+const CITY_ADMIN_SUFFIX = /(?:市|地区|盟|自治州|县)$/;
+const CITY_ALIASES = new Map<string, string>();
+for (const city of bossCities) {
+  CITY_ALIASES.set(city.name, city.name);
+  if (!CITY_ADMIN_SUFFIX.test(city.name)) CITY_ALIASES.set(`${city.name}市`, city.name);
+}
+const LOCATION_SEPARATOR = /[·•・|/／,，;；、\s]+/;
 const AMBIGUOUS_LOCATION = /远程|全国|不限|多地|珠三角|粤港澳|华南|线上/;
+
+type CityMention = { city: string; start: number; end: number };
+
+/** Every controlled city the location explicitly names, with the exact segment as its evidence. */
+function cityMentions(location: string): CityMention[] {
+  const mentions: CityMention[] = [];
+  // Keep offsets pointing into the original text when NFKC would change its length.
+  const normalized = location.normalize('NFKC');
+  const text = normalized.length === location.length ? normalized : location;
+  let cursor = 0;
+  for (const part of text.split(LOCATION_SEPARATOR)) {
+    const start = location.indexOf(part, cursor);
+    if (start < 0) continue;
+    cursor = start + part.length;
+    const city = CITY_ALIASES.get(part);
+    if (city) mentions.push({ city, start, end: start + part.length });
+  }
+  return mentions;
+}
 
 function fold(text: string) {
   const normalized = text.normalize('NFKC');
@@ -129,14 +154,18 @@ function roleReasons(policy: CareerPolicy, posting: ObservedPosting): CareerDeci
 function cityReasons(policy: CareerPolicy, posting: ObservedPosting) {
   const reasons: CareerDecision['reasons'] = [];
   const location = posting.location;
-  const matched = CITY_MARKERS.filter(marker => marker.city !== '其他' && policy.cities.includes(marker.city as '广州' | '深圳')).map(marker => ({ city: marker.city, evidence: findEvidence('location', location, marker.pattern) })).find(item => item.evidence);
-  if (matched?.evidence) {
-    reasons.push({ code: 'city_matched', evidence: [matched.evidence] });
+  const selected = new Set<string>(policy.cities);
+  const mentions = cityMentions(location);
+  const matched = mentions.find(mention => selected.has(mention.city));
+  const unmatched = mentions.find(mention => !selected.has(mention.city));
+  // Any controlled city outside the frozen selection makes this a cross-city posting, even when
+  // one selected city is also named. Only a location naming selected cities alone can match.
+  if (unmatched) {
+    reasons.push({ code: 'city_mismatch', evidence: [evidenceOf('location', location, unmatched.start, unmatched.end)] });
     return reasons;
   }
-  const other = findEvidence('location', location, CITY_MARKERS[2]?.pattern ?? /$^/);
-  if (other) {
-    reasons.push({ code: 'city_mismatch', evidence: [other] });
+  if (matched) {
+    reasons.push({ code: 'city_matched', evidence: [evidenceOf('location', location, matched.start, matched.end)] });
     return reasons;
   }
   const ambiguous = findEvidence('location', location, AMBIGUOUS_LOCATION);

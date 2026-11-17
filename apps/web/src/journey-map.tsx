@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Button, Tag } from 'antd';
+import { Badge, type BadgeVariant } from '@astryxdesign/core/Badge';
+import { Button } from '@astryxdesign/core/Button';
 import type { InterviewHistoryPage } from '../../../packages/contracts/src/history';
 import { reviewListSchema } from '../../../packages/contracts/src/workspace';
 import { api } from './api';
@@ -31,7 +32,7 @@ export type JourneyInput = {
 };
 
 export const stageLabel: Record<StageStatus, string> = { done: '已完成', open: '未开始', loading: '加载中', unavailable: '不可用' };
-export const stageTagColor: Record<StageStatus, string | undefined> = { done: 'green', open: undefined, loading: 'blue', unavailable: 'orange' };
+export const stageTagColor: Record<StageStatus, BadgeVariant> = { done: 'success', open: 'neutral', loading: 'info', unavailable: 'warning' };
 
 export function sourceState<T>(query: { isPending: boolean; isError: boolean; data: T | undefined }): SourceState<T> {
   if (query.isPending) return { status: 'loading' };
@@ -193,15 +194,15 @@ export function JourneyMap({ data, navigate }: { data: { input: JourneyInput; re
   return <section className="journey-map" aria-labelledby="journey-map-title">
     <div className="section-heading">
       <div><h2 id="journey-map-title">求职旅程地图</h2><p>各阶段状态来自你自己保存的简历、备题、会话、面试与本机复习记录。它不推断投递、送达或录用结果。</p></div>
-      <Button onClick={data.retry}>刷新状态</Button>
+      <Button label="刷新状态" onClick={data.retry} />
     </div>
     <div className="journey-map-grid">
       {stages.map(stage => <article className={`journey-stage ${stage.status}`} key={stage.id}>
-        <div className="journey-stage-head"><h3>{stage.title}</h3><Tag color={stageTagColor[stage.status]}>{stageLabel[stage.status]}</Tag></div>
+        <div className="journey-stage-head"><h3>{stage.title}</h3><Badge variant={stageTagColor[stage.status]} label={stageLabel[stage.status]} /></div>
         <p>{stage.detail}</p>
-        <Button size="small" disabled={stage.status === 'loading'} onClick={() => navigate({ page: stage.page })}>{stage.status === 'done' ? '再次进入' : '进入'}</Button>
+        <Button size="sm" isDisabled={stage.status === 'loading'} label={stage.status === 'done' ? '再次进入' : '进入'} onClick={() => navigate({ page: stage.page })} />
       </article>)}
     </div>
-    <p className="journey-next" role="status">{next ? <>下一步建议：<Button type="link" onClick={() => navigate({ page: next.page })}>{next.title}</Button></> : loading ? '正在读取你的记录…' : unavailable ? '部分记录读取失败，可先刷新状态或直接进入对应模块。' : '这些阶段都已有记录，可以按当前目标继续。'}</p>
+    <p className="journey-next" role="status">{next ? <>下一步建议：<Button variant="ghost" label={next.title} onClick={() => navigate({ page: next.page })} /></> : loading ? '正在读取你的记录…' : unavailable ? '部分记录读取失败，可先刷新状态或直接进入对应模块。' : '这些阶段都已有记录，可以按当前目标继续。'}</p>
   </section>;
 }

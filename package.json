@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "devDependencies": {
+    "@astryxdesign/cli": "0.7.16",
     "@playwright/test": "^1.55.1",
     "@types/express": "^5.0.3",
     "@types/node": "^22.18.6",
@@ -47,10 +48,14 @@
     "factory:check": "node --import tsx scripts/check-runtime.ts",
     "skill:validate": "node scripts/validate-skill.mjs",
     "verify:sqlite": "node scripts/verify-sqlite.mjs",
-    "test:offline": "RUN_INTEGRATION=1 vitest run --exclude tests/career-browser-session.integration.test.ts --exclude tests/career-browser.integration.test.ts --exclude tests/career-authority.integration.test.ts --exclude tests/career-privacy.integration.test.ts --exclude tests/career-recovery.integration.test.ts --exclude tests/career.integration.test.ts --exclude tests/boss-login-cli.integration.test.ts"
+    "test:offline": "RUN_INTEGRATION=1 vitest run --exclude tests/career-browser-session.integration.test.ts --exclude tests/career-browser.integration.test.ts --exclude tests/career-authority.integration.test.ts --exclude tests/career-privacy.integration.test.ts --exclude tests/career-recovery.integration.test.ts --exclude tests/career.integration.test.ts --exclude tests/boss-login-cli.integration.test.ts",
+    "test:e2e:astryx": "playwright test --config tests/astryx-playwright.config.ts",
+    "test:e2e:workflow": "playwright test --config tests/workflow-playwright.config.ts"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "2.0.62",
+    "@astryxdesign/core": "0.7.16",
+    "@astryxdesign/theme-neutral": "0.7.16",
     "@codemirror/autocomplete": "^6.20.4",
     "@codemirror/commands": "^6.11.1",
     "@codemirror/lang-python": "^6.2.1",
@@ -64,9 +69,9 @@
     "@nestjs/common": "12.1.3",
     "@nestjs/core": "12.1.3",
     "@nestjs/platform-express": "12.1.3",
+    "@stylexjs/stylex": "^0.19.2",
     "@tanstack/react-query": "^5.90.0",
     "@types/multer": "2.0.0",
-    "antd": "6.6.7",
     "bullmq": "^5.61.0",
     "drizzle-orm": "^0.44.5",
     "express": "5.1.0",

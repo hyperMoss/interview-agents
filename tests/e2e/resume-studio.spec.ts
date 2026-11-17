@@ -8,8 +8,8 @@ import { resumeVersionListSchema } from '../../packages/contracts/src/career';
 test('green theme retains the reference layout in preview, HTML and PDF', async ({ page }) => {
   await page.goto('/#/resumes');
   await page.getByRole('button', { name: '从示例开始', exact: true }).click();
-  await page.getByLabel('简历主题').click();
-  await page.getByText('绿色', { exact: true }).click();
+  await page.getByRole('combobox', { name: '简历主题', exact: true }).click();
+  await page.getByRole('option', { name: '绿色', exact: true }).click();
   const frame = page.frameLocator('iframe');
   await expect(frame.locator('html')).toHaveAttribute('data-theme', 'green');
   await expect(frame.locator('body')).toHaveCSS('padding-top', '0px');
@@ -51,7 +51,7 @@ test('converts a local resume file, persists JSON and brings a snapshot into int
   await page.goto('/#/home');
   await navigateModule(page, '简历库');
   const text = '姓名：虚构文件导入用户\n目标岗位：React 工程师\n项目经历：负责 React 页面与 NestJS 接口联调，通过自动化测试验证状态恢复。';
-  await page.getByLabel('导入简历文件', { exact: true }).setInputFiles({ name: '合成简历.txt', mimeType: 'text/plain', buffer: Buffer.from(text) });
+  await page.getByLabel('导入简历文件', { exact: true }).and(page.locator('input[type="file"]')).setInputFiles({ name: '合成简历.txt', mimeType: 'text/plain', buffer: Buffer.from(text) });
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.getByLabel('提取原文')).toHaveValue(text);
   await page.getByRole('button', { name: '转换并存入简历库', exact: true }).click();
@@ -78,7 +78,7 @@ test('imports a cool-resume JSON and exports edits with extension fields intact'
   await page.goto('/#/resumes');
   const example = JSON.parse(await readFile(new URL('../../packages/resume/example.json', import.meta.url), 'utf8'));
   const imported = { ...example, name: '虚构导入验收', extension: { preserved: true } };
-  await page.getByLabel('导入简历 JSON').setInputFiles({ name: '岗位简历.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(imported)) });
+  await page.getByLabel('导入简历 JSON').and(page.locator('input[type="file"]')).setInputFiles({ name: '岗位简历.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(imported)) });
   await expect(page.getByLabel('副本名称')).toHaveValue('岗位简历');
   await expect(page.frameLocator('iframe').getByRole('heading', { name: '虚构导入验收', exact: true })).toBeVisible();
   const json = page.getByLabel('简历 JSON', { exact: true });
@@ -135,8 +135,8 @@ test('makes independent JSON copies, restores edits, exports a PDF and freezes e
   const copyRoute = page.url();
   const copy = JSON.parse(await json.inputValue()); copy.name = '独立岗位副本';
   await json.fill(JSON.stringify(copy, null, 2));
-  await page.getByLabel('简历主题').click();
-  await page.getByText('松石', { exact: true }).click();
+  await page.getByRole('combobox', { name: '简历主题', exact: true }).click();
+  await page.getByRole('option', { name: '松石', exact: true }).click();
   await page.getByRole('button', { name: '保存修改', exact: true }).click();
   await expect(page.getByText('简历副本已保存。', { exact: true })).toBeVisible();
   await page.goto(firstRoute);
@@ -160,7 +160,7 @@ test('makes independent JSON copies, restores edits, exports a PDF and freezes e
   await expect(page.getByRole('button', { name: '重试这个投递版本请求', exact: true })).toBeEnabled({ timeout: 45000 });
   await page.reload();
   await page.getByRole('button', { name: '重试这个投递版本请求', exact: true }).click();
-  await expect(page.getByText('已将生成的 PDF 保存为不可变投递版本，可前往投递附件库核对。', { exact: true })).toBeVisible({ timeout: 45000 });
+  await expect(page.getByText('已将生成的 PDF 保存为不可变投递版本，可在简历库的“投递附件”中核对。', { exact: true })).toBeVisible({ timeout: 45000 });
   const versions = resumeVersionListSchema.parse(await (await page.request.get('/api/v1/resume-versions')).json());
   expect(versions).toHaveLength(1);
   const saved = versions.find(version => version.label === '合成测试简历 · 修订 2');
@@ -198,8 +198,10 @@ test('mobile menu reaches every feature, keeps deep links and does not overflow'
   await expect(page.getByRole('menuitem')).toHaveCount(14);
   await page.getByRole('menuitem', { name: '简历库', exact: true }).scrollIntoViewIfNeeded();
   await page.screenshot({ path: 'test-results/resumes/module-menu-mobile.png', animations: 'disabled' });
-  await page.getByRole('menuitem', { name: '投递附件库', exact: true }).click();
-  await expect(page).toHaveURL(/#\/settings\/resumes$/);
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: '功能模块', exact: true })).not.toBeVisible();
+  await page.getByRole('tab', { name: '投递附件', exact: true }).click();
+  await expect(page).toHaveURL(/#\/resumes\/attachments$/);
   await page.goBack();
   await expect(page.getByLabel('副本名称')).toBeVisible();
   await page.reload();

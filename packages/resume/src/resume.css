@@ -493,7 +493,7 @@ a:hover { border-bottom-color: var(--theme-link-hover-border); }
 .resume-project-divider {
   border: none;
   border-top: 1.5px solid var(--theme-border);
-  margin: 14px 0 10px 0;
+  margin: 3px 0 2px 0;
   opacity: 0.8;
 }
 
@@ -501,7 +501,7 @@ a:hover { border-bottom-color: var(--theme-link-hover-border); }
 .resume-project-divider {
   border: none;
   height: 1px;
-  margin: 14px 0 10px 0;
+  margin: 3px 0 2px 0;
   background: linear-gradient(
     to right,
     transparent,
@@ -512,10 +512,14 @@ a:hover { border-bottom-color: var(--theme-link-hover-border); }
 }
 
 /* ===== Project entry separator (between projects) ===== */
+.resume-project-entry .resume-entry-summary,
+.resume-project-entry .resume-entry-summary ul {
+  margin-top: 0;
+}
 .resume-project-entry {
   position: relative;
-  padding-bottom: 16px;
-  margin-bottom: 16px;
+  padding-bottom: 8px;
+  margin-bottom: min(var(--resume-entry-gap), 8px);
 }
 .resume-project-entry::after {
   content: '';
@@ -605,3 +609,7 @@ a:hover { border-bottom-color: var(--theme-link-hover-border); }
 @media print {
   [data-theme="green"] body { page: resume-green; max-width: none; margin: 0; padding: 0; border-radius: 0; box-shadow: none; }
 }
+
+.resume-section[data-section="education"] { margin-top: min(var(--resume-section-gap), 12px); }
+.resume-section[data-section="education"] .resume-section-title { margin-bottom: 6px; }
+.resume-section[data-section="education"] .resume-entry:not(:last-child) { margin-bottom: min(var(--resume-entry-gap), 6px); }

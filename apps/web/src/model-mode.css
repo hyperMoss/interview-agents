@@ -3,3 +3,6 @@
 .session-mode-row,.feedback-mode-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:11px;color:var(--muted);margin:0 0 10px}
 .feedback-mode-row{margin-bottom:14px}
 .report-question-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:16px}
+.model-mode-tag{display:inline-flex;min-width:0;vertical-align:middle}
+.model-mode-tag>.astryx-badge{max-width:100%;min-width:0}
+.model-mode-tag>.astryx-badge>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

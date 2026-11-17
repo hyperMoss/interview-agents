@@ -35,7 +35,7 @@ suite('real model configuration → API → worker → Mastra → provider → r
     runner=new GenerationWorker({...workerConfig(),DATABASE_URL:api.config.DATABASE_URL,AGENT_URL:bridge.origin});
     agentPool=new Pool({connectionString:config.AGENT_DATABASE_URL});store=new ModelConnections(agentPool,config);
   });
-  afterEach(async()=>{provider.state.failure=false;provider.state.badEvidence=false;await api.database.pool.query("DELETE FROM app_interviews WHERE owner=$1 OR owner=$2",[owner,other]);await store.clear(owner);await store.clear(other);});
+  afterEach(async()=>{provider.state.failure=false;provider.state.badEvidence=false;provider.state.requireInterviewSchema=false;provider.state.minimumInterviewTokens=0;provider.state.truncateInterview=false;await api.database.pool.query("DELETE FROM app_interviews WHERE owner=$1 OR owner=$2",[owner,other]);await store.clear(owner);await store.clear(other);});
   afterAll(async()=>{await Promise.all([api.onModuleDestroy(),runner.close(),runtime.close(),agentPool.end()]);await bridge.close();await provider.close();});
   const draft=(model='coach-alpha')=>({baseUrl:provider.baseUrl,model,apiKey:model==='coach-alpha'?'fixture-alpha-key':'fixture-beta-key',remember:false,timeoutMs:5000});
   it('reads model lists without a known model, probes briefly and returns no key',async()=>{
@@ -55,6 +55,27 @@ suite('real model configuration → API → worker → Mastra → provider → r
     expect(session.status).toBe('completed');if(session.status!=='completed')throw new Error('Not completed');expect(session.report.overallScore).toBe(78);expect(session.report.dimensions?.depth).toBe(75);
     expect(provider.calls.at(-1)?.authorization).toBe('Bearer fixture-alpha-key');expect(provider.calls.at(-1)?.content).toContain('系统设计与故障恢复');expect(session.turns.every(turn=>turn.modelSource.model==='coach-alpha')).toBe(true);
     expect(JSON.stringify(session)).not.toContain('fixture-alpha-key');expect(reportMarkdown(session)).not.toContain('fixture-alpha-key');
+  });
+  it('provides an explicit scoring contract and enough output budget for a short planned answer',async()=>{
+    const profile=await api.models.save(owner,draft());
+    const planning={durationMinutes:5,answerLength:'long',candidateLevel:'experienced',round:'first',practiceMode:'candidate',roleType:'technical',roleFamily:'frontend',codingRequested:false,bankMode:'adaptive',bankIds:[]} satisfies NonNullable<typeof input.planning>;
+    const created=await api.create(owner,{...input,planning},profile.id);await runner.tick();
+    const ready=await api.get(owner,created.id);expect(ready.status).toBe('awaiting_answer');
+    const shortAnswer='合成案例：负责前端知识库，用测试验证检索流程。';
+    provider.state.requireInterviewSchema=true;provider.state.minimumInterviewTokens=6000;
+    await api.answer(owner,created.id,{answer:shortAnswer,revision:ready.revision,requestId:crypto.randomUUID()});await runner.tick();await runner.tick();
+    const next=await api.get(owner,created.id);expect(next.status).toBe('awaiting_answer');expect(next.turns).toHaveLength(1);expect(next.turns[0]?.answer).toBe(shortAnswer);
+    expect(next.turns[0]?.assessment.evaluation?.technical).toBeNull();
+    expect(provider.calls.at(-1)?.content).toContain('"outputSchema"');expect(provider.calls.at(-1)?.maxTokens).toBeGreaterThanOrEqual(6000);
+  });
+  it('distinguishes truncated scoring output and keeps the original answer for an explicit retry',async()=>{
+    const profile=await api.models.save(owner,draft());const created=await api.create(owner,input,profile.id);await runner.tick();
+    const ready=await api.get(owner,created.id);await api.answer(owner,created.id,{answer,revision:ready.revision,requestId:crypto.randomUUID()});
+    provider.state.truncateInterview=true;await runner.tick();await runner.tick();
+    const failed=await api.get(owner,created.id);expect(failed.status).toBe('failed');if(failed.status!=='failed')throw Error('Expected failure');
+    expect(failed.error).toContain('长度上限');expect(failed.recovery?.answer).toBe(answer);expect(failed.turns).toHaveLength(0);
+    provider.state.truncateInterview=false;await api.retry(owner,created.id,{requestId:crypto.randomUUID(),revision:failed.revision,modelConnectionId:profile.id});await runner.tick();
+    const recovered=await api.get(owner,created.id);expect(recovered.turns).toHaveLength(1);expect(recovered.turns[0]?.answer).toBe(answer);
   });
   it('switching the active connection does not alter an existing interview snapshot',async()=>{
     const a=await api.models.save(owner,draft());const session=await api.create(owner,input,a.id);await runner.tick();const ready=await api.get(owner,session.id);
@@ -98,6 +119,6 @@ suite('real model configuration → API → worker → Mastra → provider → r
   });
   it('forged evidence cannot advance an interview',async()=>{
     const profile=await api.models.save(owner,draft());const session=await api.create(owner,input,profile.id);await runner.tick();const ready=await api.get(owner,session.id);
-    provider.state.badEvidence=true;await api.answer(owner,session.id,{answer,revision:ready.revision,requestId:crypto.randomUUID()});await runner.tick();await runner.tick();const failed=await api.get(owner,session.id);expect(failed.status).toBe('failed');expect(failed.turns).toHaveLength(0);
+    provider.state.badEvidence=true;await api.answer(owner,session.id,{answer,revision:ready.revision,requestId:crypto.randomUUID()});await runner.tick();await runner.tick();const failed=await api.get(owner,session.id);expect(failed.status).toBe('failed');expect(failed.turns).toHaveLength(0);if(failed.status==='failed')expect(failed.error).toContain('原文');
   });
 });

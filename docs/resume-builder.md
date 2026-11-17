@@ -12,7 +12,7 @@ Import a version file from cool-resume, such as `data/versions/<id>.json`. Impor
 
 Select **导入简历文件** to parse PDF, DOCX, TXT or Markdown on the local machine. Check the extracted text and any warnings, give the resume a name, then choose **转换并存入简历库**. The saved JSON contains the full corrected text and source filename. Clearly labeled name, target role and experience fields are mapped; unclassified lines stay in the summary for manual organization. The converter does not invent employment or project entries. Scanned PDFs need OCR before import.
 
-Import creates an editable JSON copy, not an immutable original attachment. To retain original attachment bytes, upload the original separately in **投递附件库**. Creating a generated PDF version follows the existing export flow below.
+Import creates an editable JSON copy, not an immutable original attachment. To retain original attachment bytes, upload the original separately in **简历库的“投递附件”标签**. Creating a generated PDF version follows the existing export flow below.
 
 ## Use a saved resume for an interview
 
@@ -36,7 +36,7 @@ The preview offers **查看原始大小** and **适应宽度**. Long resumes scr
 
 1. Save the JSON copy.
 2. Click **保存为投递版本**.
-3. Open **查看附件库** and check the extracted text and original PDF.
+3. Open **查看投递附件** and check the extracted text and original PDF.
 4. Select that immutable version when preparing a career task.
 
 The attachment library keeps the generated PDF bytes and their SHA-256 digest. Editing or deleting the JSON copy does not change that attachment or an existing task. Delete attachments separately in the attachment library when required.

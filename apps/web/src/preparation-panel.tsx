@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Button, Checkbox, Input, InputNumber, Select, Tag } from 'antd';
+import { Badge } from '@astryxdesign/core/Badge';
+import { Button } from '@astryxdesign/core/Button';
+import { CheckboxInput } from '@astryxdesign/core/CheckboxInput';
+import { NumberInput } from '@astryxdesign/core/NumberInput';
+import { Selector } from '@astryxdesign/core/Selector';
+import { TextArea } from '@astryxdesign/core/TextArea';
+import { TextInput } from '@astryxdesign/core/TextInput';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { preparationInputSchema, preparationResultSchema, savePreparationSchema, type PreparationInput } from '../../../packages/contracts/src/preparation';
@@ -11,6 +17,8 @@ import { categoryLabels, difficultyLabels } from './labels';
 import { readSession, writeSession } from './storage';
 import { api } from './api';
 import type {PreparationHistory} from '../../../packages/contracts/src/preparation-history';
+import { MarkdownShare } from './ui/markdown-share';
+import { PdfExport } from './ui/pdf-export';
 import './preparation.css';
 
 const storageKey = 'jd-preparation-v1';
@@ -90,6 +98,7 @@ export function PreparationPanel({ onUse, onModelSettings, onHistory, seed }: { 
   const selected = draft?.cards.filter(card => card.selected) ?? [];
   const currentInput = preparationInputSchema.safeParse(form);
   const changed = draft && (!currentInput.success || JSON.stringify(draft.input) !== JSON.stringify(currentInput.data));
+  const markdown = draft ? preparationMarkdown(draft.input, draft.result, draft.cards.map(card => card.draft)) : '';
   function changeForm(patch: Partial<PageState['form']>) { setPage(current => ({ ...current, form: { ...current.form, ...patch } })); }
   function changeCard(index: number, patch: Partial<BankDraft>) {
     save.reset(); setNotice('');
@@ -117,44 +126,44 @@ export function PreparationPanel({ onUse, onModelSettings, onHistory, seed }: { 
   }
   function download() {
     if (!draft) return;
-    const content = preparationMarkdown(draft.input, draft.result, draft.cards.map(card => card.draft));
-    const url = URL.createObjectURL(new Blob([content], { type: 'text/markdown;charset=utf-8' }));
+    const url = URL.createObjectURL(new Blob([markdown], { type: 'text/markdown;charset=utf-8' }));
     const link = document.createElement('a'); link.href = url; link.download = 'jd-preparation.md'; link.click(); URL.revokeObjectURL(url);
   }
   return <section className="preparation" aria-labelledby="preparation-title">
-    <div className="panel-actions"><Button onClick={onHistory}>备题历史</Button></div><div className="intro"><h1 id="preparation-title">先读懂 JD，再准备每一道题。</h1><p>提取岗位能力要求，提前查看问题、追问与参考回答。可以只填 JD，简历留到正式练习时补充。</p></div>
+    <div className="panel-actions"><Button label="备题历史" onClick={onHistory} /></div><div className="intro"><h1 id="preparation-title">先读懂 JD，再准备每一道题。</h1><p>提取岗位能力要求，提前查看问题、追问与参考回答。可以只填 JD，简历留到正式练习时补充。</p></div>
     <form onSubmit={submit} className="preparation-form">
-      <label htmlFor="prep-role">备题岗位<Input id="prep-role" required minLength={2} maxLength={120} value={form.role} disabled={busy} onChange={event => changeForm({ role: event.target.value })} placeholder="例如：前端工程师" /></label>
-      <label htmlFor="prep-jd">备题 JD<Input.TextArea id="prep-jd" required minLength={20} maxLength={12000} rows={6} value={form.jobDescription} disabled={busy} onChange={event => changeForm({ jobDescription: event.target.value })} placeholder="粘贴完整岗位职责与任职要求，保留必备与优先条件。" /></label>
+      <TextInput id="prep-role" label="备题岗位" aria-label="备题岗位" isRequired value={form.role} isDisabled={busy} onChange={value => changeForm({ role: value.slice(0, 120) })} placeholder="例如：前端工程师" />
+      <TextArea id="prep-jd" label="备题 JD" aria-label="备题 JD" isRequired maxLength={12000} rows={6} value={form.jobDescription} isDisabled={busy} onChange={value => changeForm({ jobDescription: value })} placeholder="粘贴完整岗位职责与任职要求，保留必备与优先条件。" />
       <div className="planning-grid">
-        <label htmlFor="prep-level">备题级别<Select id="prep-level" value={form.candidateLevel} disabled={busy} onChange={value => changeForm({ candidateLevel: preparationInputSchema.shape.candidateLevel.parse(value) })} options={[{ value: 'intern', label: '实习' }, { value: 'new_grad', label: '校招' }, { value: 'experienced', label: '社招' }]} /></label>
-        <label htmlFor="prep-round">备题轮次<Select id="prep-round" value={form.round} disabled={busy} onChange={value => changeForm({ round: preparationInputSchema.shape.round.parse(value) })} options={[{ value: 'first', label: '一面' }, { value: 'second', label: '二面' }, { value: 'hr', label: 'HR 面' }]} /></label>
-        <label htmlFor="prep-type">备题岗位类型<Select id="prep-type" value={form.roleType} disabled={busy} onChange={value => changeForm({ roleType: preparationInputSchema.shape.roleType.parse(value) })} options={[{ value: 'technical', label: '技术岗' }, { value: 'nontechnical', label: '非技术岗' }]} /></label>
-        <label htmlFor="prep-family">备题岗位方向<Select id="prep-family" value={form.roleFamily} disabled={busy} onChange={value => changeForm({ roleFamily: preparationInputSchema.shape.roleFamily.parse(value) })} options={[{ value: 'frontend', label: '前端' }, { value: 'backend', label: '后端' }, { value: 'fullstack', label: '全栈' }, { value: 'data', label: '数据与算法' }, { value: 'embedded', label: '嵌入式' }, { value: 'qa', label: '测试' }, { value: 'general', label: '通用' }]} /></label>
-        <label htmlFor="prep-count">预生成题量<InputNumber<number> id="prep-count" min={3} max={12} value={form.questionCount} disabled={busy} onChange={value => { if (value !== null) changeForm({ questionCount: value }); }} /></label>
+        <Selector id="prep-level" label="备题级别" value={form.candidateLevel} isDisabled={busy} onChange={value => changeForm({ candidateLevel: preparationInputSchema.shape.candidateLevel.parse(value) })} options={[{ value: 'intern', label: '实习' }, { value: 'new_grad', label: '校招' }, { value: 'experienced', label: '社招' }]} />
+        <Selector id="prep-round" label="备题轮次" value={form.round} isDisabled={busy} onChange={value => changeForm({ round: preparationInputSchema.shape.round.parse(value) })} options={[{ value: 'first', label: '一面' }, { value: 'second', label: '二面' }, { value: 'hr', label: 'HR 面' }]} />
+        <Selector id="prep-type" label="备题岗位类型" value={form.roleType} isDisabled={busy} onChange={value => changeForm({ roleType: preparationInputSchema.shape.roleType.parse(value) })} options={[{ value: 'technical', label: '技术岗' }, { value: 'nontechnical', label: '非技术岗' }]} />
+        <Selector id="prep-family" label="备题岗位方向" value={form.roleFamily} isDisabled={busy} onChange={value => changeForm({ roleFamily: preparationInputSchema.shape.roleFamily.parse(value) })} options={[{ value: 'frontend', label: '前端' }, { value: 'backend', label: '后端' }, { value: 'fullstack', label: '全栈' }, { value: 'data', label: '数据与算法' }, { value: 'embedded', label: '嵌入式' }, { value: 'qa', label: '测试' }, { value: 'general', label: '通用' }]} />
+        <NumberInput id="prep-count" label="预生成题量" min={3} max={12} value={form.questionCount} isDisabled={busy} onChange={value => changeForm({ questionCount: value })} />
       </div>
-      <label htmlFor="prep-focus">备题重点<Input id="prep-focus" maxLength={1000} value={form.focus} disabled={busy} onChange={event => changeForm({ focus: event.target.value })} placeholder="选填，例如：接口设计、复杂状态、项目追问" /></label>
+      <TextInput id="prep-focus" label="备题重点" value={form.focus} isDisabled={busy} onChange={value => changeForm({ focus: value.slice(0, 1000) })} placeholder="选填，例如：接口设计、复杂状态、项目追问" />
       <p className="storage-note">仅向所选模型发送本页岗位、JD 与备题参数。当前模型 {settings.data?.active?.model ?? (settings.data?.mode === 'demo' ? '规则演示' : settings.data?.defaultModel || '未配置')}。生成不启用联网搜索。</p>
       {carried?.resume.trim() ? <p className="context-note">已带入简历「{carried.role.trim() || '未命名简历'}」{carried.resume.trim().length} 字，保存并带入练习时使用；备题生成不发送简历全文。</p> : null}
-      <div className="panel-actions"><Button type="primary" htmlType="submit" aria-label={draft ? '重新生成题单' : '根据 JD 生成题单'} loading={generate.isPending} disabled={busy || !ready}>{generate.isPending ? '正在分析 JD 并生成题目…' : draft ? '重新生成题单' : '根据 JD 生成题单'}</Button><Button htmlType="button" disabled={busy} onClick={onModelSettings}>配置备题模型</Button></div>
+      <div className="panel-actions"><Button variant="primary" type="submit" label={generate.isPending ? '正在分析 JD 并生成题目…' : draft ? '重新生成题单' : '根据 JD 生成题单'} isLoading={generate.isPending} isDisabled={busy || !ready} /><Button type="button" label="配置备题模型" isDisabled={busy} onClick={onModelSettings} /></div>
       {generate.isPending ? <p role="status">正在生成详细参考回答，最多等待 3 分钟。输入已保留，成功后替换已有题单，也可在备题历史查看进度。</p> : null}
       {validation || generate.error || settings.error ? <p role="alert" className="error">{validation || generate.error?.message || settings.error?.message}</p> : null}
     </form>
     {storageFailed ? <p role="alert" className="error">当前无法保存到本机，请先导出题单并检查数据管理。</p> : null}
-    {notice ? <p role="status">{notice}{savedBatch ? <Button type="link" aria-label="立即开始模拟面试" disabled={busy} onClick={() => onUse(savedBatch)}>立即开始模拟面试</Button> : null}</p> : null}
+    {notice ? <p role="status">{notice}{savedBatch ? <Button variant="ghost" label="立即开始模拟面试" isDisabled={busy} onClick={() => onUse(savedBatch)} /> : null}</p> : null}
     {draft ? <div className="preparation-result">
-      <div className="form-heading"><h2>{draft.input.role} · {draft.cards.length} 道备题</h2><Button disabled={busy} onClick={download}>导出备题单</Button></div>
+      <div className="form-heading"><h2>{draft.input.role} · {draft.cards.length} 道备题</h2><Button label="导出备题单" isDisabled={busy} onClick={download} /></div>
+      <div className="preparation-exports"><MarkdownShare content={markdown} isDisabled={busy} /><PdfExport isDisabled={busy} generate={() => api.preparationPdf({input:draft.input,result:draft.result,drafts:draft.cards.map(({draft:card})=>({title:card.title,content:card.content,expectedAnswer:card.expectedAnswer}))})} /></div>
       {draft.result.modelMode === 'demo' ? <p className="demo-banner" role="note">规则演示题单。按 JD 原文与固定模板演示流程，启用模型后可生成更具体的内容。</p> : <p className="session-model">题单生成模型 {draft.result.model}</p>}
       {changed ? <p role="note">输入已修改。下方仍是上次生成的题单，保存与练习使用下方题单的原始参数。</p> : null}
-      <div className="requirement-list" aria-label="JD 能力要求">{draft.result.requirements.map((requirement, index) => <article key={index}><h3>{index + 1}. {requirement.competency} <Tag color={requirement.priority === 'required' ? 'blue' : 'default'}>{requirement.priority === 'required' ? '必备项' : '加分项'}</Tag></h3><label htmlFor={`prep-priority-${index}`}>要求 {index + 1} 分类<Select id={`prep-priority-${index}`} aria-label={`要求 ${index + 1} 分类`} value={requirement.priority} disabled={busy || draft.cards.some((card, i) => Boolean(card.savedId) && draft.result.questions[i]?.requirementIndex === index)} options={[{ value: 'required', label: '必备项' }, { value: 'preferred', label: '加分项' }]} onChange={value => changePriority(index, value)} /></label><blockquote>{requirement.quote}</blockquote></article>)}</div>
-      <div className="panel-actions"><Button disabled={busy} onClick={() => setPage(current => current.draft ? { ...current, draft: { ...current.draft, cards: current.draft.cards.map(card => ({ ...card, selected: true })) } } : current)}>全选题目</Button><Button disabled={busy} onClick={() => setPage(current => current.draft ? { ...current, draft: { ...current.draft, cards: current.draft.cards.map(card => ({ ...card, selected: false })) } } : current)}>清空选择</Button><span>已选 {selected.length} 道</span></div>
+      <div className="requirement-list" aria-label="JD 能力要求">{draft.result.requirements.map((requirement, index) => <article key={index}><h3>{index + 1}. {requirement.competency} <Badge variant={requirement.priority === 'required' ? 'blue' : 'neutral'} label={requirement.priority === 'required' ? '必备项' : '加分项'} /></h3><Selector id={`prep-priority-${index}`} label={`要求 ${index + 1} 分类`} value={requirement.priority} isDisabled={busy || draft.cards.some((card, i) => Boolean(card.savedId) && draft.result.questions[i]?.requirementIndex === index)} options={[{ value: 'required', label: '必备项' }, { value: 'preferred', label: '加分项' }]} onChange={value => changePriority(index, value)} /><blockquote>{requirement.quote}</blockquote></article>)}</div>
+      <div className="panel-actions"><Button label="全选题目" isDisabled={busy} onClick={() => setPage(current => current.draft ? { ...current, draft: { ...current.draft, cards: current.draft.cards.map(card => ({ ...card, selected: true })) } } : current)} /><Button label="清空选择" isDisabled={busy} onClick={() => setPage(current => current.draft ? { ...current, draft: { ...current.draft, cards: current.draft.cards.map(card => ({ ...card, selected: false })) } } : current)} /><span>已选 {selected.length} 道</span></div>
       {draft.cards.map((card, index) => <article className="preparation-card" key={card.requestId}>
-        <div className="preparation-card-heading"><Checkbox checked={card.selected} disabled={busy} aria-label={`选择备题 ${index + 1}`} onChange={event => setPage(current => current.draft ? { ...current, draft: { ...current.draft, cards: current.draft.cards.map((item, i) => i === index ? { ...item, selected: event.target.checked } : item) } } : current)}>第 {index + 1} 题</Checkbox><span>{categoryLabels[card.draft.category]} · {difficultyLabels[card.draft.difficulty]} · 对应要求 {(draft.result.questions[index]?.requirementIndex ?? 0) + 1}{card.savedId ? ' · 已入库' : ''}</span></div>
-        <label htmlFor={`prep-title-${index}`}>题目 {index + 1} 标题<Input id={`prep-title-${index}`} minLength={2} maxLength={160} value={card.draft.title} disabled={busy} readOnly={Boolean(card.savedId)} onChange={event => changeCard(index, { title: event.target.value })} /></label>
-        <label htmlFor={`prep-content-${index}`}>题目 {index + 1} 题面<Input.TextArea id={`prep-content-${index}`} minLength={10} maxLength={3000} rows={3} value={card.draft.content} disabled={busy} readOnly={Boolean(card.savedId)} onChange={event => changeCard(index, { content: event.target.value })} /></label>
-        <details><summary>{card.savedId ? '参考回答与追问' : '参考回答与追问，可编辑'}</summary><label htmlFor={`prep-answer-${index}`}>题目 {index + 1} 参考回答<Input.TextArea id={`prep-answer-${index}`} maxLength={8000} rows={12} value={card.draft.expectedAnswer} disabled={busy} readOnly={Boolean(card.savedId)} onChange={event => changeCard(index, { expectedAnswer: event.target.value })} /></label></details>
+        <div className="preparation-card-heading"><CheckboxInput label={`第 ${index + 1} 题`} aria-label={`选择备题 ${index + 1}`} value={card.selected} isDisabled={busy} onChange={checked => setPage(current => current.draft ? { ...current, draft: { ...current.draft, cards: current.draft.cards.map((item, i) => i === index ? { ...item, selected: checked } : item) } } : current)} /><span>{categoryLabels[card.draft.category]} · {difficultyLabels[card.draft.difficulty]} · 对应要求 {(draft.result.questions[index]?.requirementIndex ?? 0) + 1}{card.savedId ? ' · 已入库' : ''}</span></div>
+        <TextInput id={`prep-title-${index}`} label={`题目 ${index + 1} 标题`} value={card.draft.title} isDisabled={busy} isReadOnly={Boolean(card.savedId)} onChange={value => changeCard(index, { title: value.slice(0, 160) })} />
+        <TextArea id={`prep-content-${index}`} label={`题目 ${index + 1} 题面`} maxLength={3000} rows={3} value={card.draft.content} isDisabled={busy} isReadOnly={Boolean(card.savedId)} onChange={value => changeCard(index, { content: value })} />
+        <details><summary>{card.savedId ? '参考回答与追问' : '参考回答与追问，可编辑'}</summary><TextArea id={`prep-answer-${index}`} label={`题目 ${index + 1} 参考回答`} maxLength={8000} rows={12} value={card.draft.expectedAnswer} isDisabled={busy} isReadOnly={Boolean(card.savedId)} onChange={value => changeCard(index, { expectedAnswer: value })} /></details>
       </article>)}
-      <div className="preparation-actions"><p>勾选的题目将以严格模式出现在面试中，题面不会被改写。保存后可在题库继续编辑；带入练习会保留已有简历草稿，实际题量仍按时长与环节估算。</p><div className="panel-actions"><Button aria-label="保存所选到题库" loading={save.isPending} disabled={busy || !selected.length || selected.some(card => !bankDraftSchema.safeParse(card.draft).success)} onClick={() => save.mutate(false)}>保存所选到题库</Button><Button type="primary" aria-label="保存并带入练习" loading={save.isPending} disabled={busy || !selected.length || selected.some(card => !bankDraftSchema.safeParse(card.draft).success)} onClick={() => save.mutate(true)}>保存并带入练习</Button></div>{save.error ? <p role="alert" className="error">{save.error.message}。未确认成功时可重试相同题目。</p> : null}</div>
+      <div className="preparation-actions"><p>勾选的题目将以严格模式出现在面试中，题面不会被改写。保存后可在题库继续编辑；带入练习会保留已有简历草稿，实际题量仍按时长与环节估算。</p><div className="panel-actions"><Button label="保存所选到题库" isLoading={save.isPending} isDisabled={busy || !selected.length || selected.some(card => !bankDraftSchema.safeParse(card.draft).success)} onClick={() => save.mutate(false)} /><Button variant="primary" label="保存并带入练习" isLoading={save.isPending} isDisabled={busy || !selected.length || selected.some(card => !bankDraftSchema.safeParse(card.draft).success)} onClick={() => save.mutate(true)} /></div>{save.error ? <p role="alert" className="error">{save.error.message}。未确认成功时可重试相同题目。</p> : null}</div>
     </div> : <p className="context-note">题单会自动保存在本机。题目保存后属于当前浏览器身份。</p>}
   </section>;
 }

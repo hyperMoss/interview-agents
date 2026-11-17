@@ -2,13 +2,14 @@
   "config": {
     "argv": [
       "/opt/homebrew/Cellar/node/26.7.0/bin/node",
-      "/Users/gooingyu/Documents/project/interview-agents/node_modules/.pnpm/playwright@1.64.0/node_modules/playwright/cli.js",
+      "/Users/gooingyu/Projects/10-apps/interview-agents/node_modules/.pnpm/playwright@1.64.0/node_modules/playwright/cli.js",
       "test",
-      "tests/e2e/career.spec.ts",
+      "--config",
+      "tests/workflow-playwright.config.ts",
       "--reporter=list,json"
     ],
-    "configFile": "/Users/gooingyu/Documents/project/interview-agents/playwright.config.ts",
-    "rootDir": "/Users/gooingyu/Documents/project/interview-agents/tests/e2e",
+    "configFile": "/Users/gooingyu/Projects/10-apps/interview-agents/tests/workflow-playwright.config.ts",
+    "rootDir": "/Users/gooingyu/Projects/10-apps/interview-agents/tests/e2e",
     "failOnFlakyTests": false,
     "forbidOnly": false,
     "fullyParallel": false,
@@ -16,48 +17,73 @@
     "globalTeardown": null,
     "globalTimeout": 0,
     "grep": {},
-    "grepInvert": null,
+    "grepInvert": {},
     "maxFailures": 0,
     "metadata": {
+      "sqliteTestDatabase": "file:/var/folders/9j/xltt_8nx6tg7ypzfrvyy9_lc0000gn/T/resume-browser-BODkzZ/app.sqlite",
       "actualWorkers": 1
     },
     "preserveOutput": "always",
     "projects": [
       {
-        "outputDir": "/Users/gooingyu/Documents/project/interview-agents/test-results",
+        "outputDir": "/Users/gooingyu/Projects/10-apps/interview-agents/test-results/workflow",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
+          "sqliteTestDatabase": "file:/var/folders/9j/xltt_8nx6tg7ypzfrvyy9_lc0000gn/T/resume-browser-BODkzZ/app.sqlite",
           "actualWorkers": 1
         },
         "id": "",
         "name": "",
-        "testDir": "/Users/gooingyu/Documents/project/interview-agents/tests/e2e",
+        "testDir": "/Users/gooingyu/Projects/10-apps/interview-agents/tests/e2e",
         "testIgnore": [],
         "testMatch": [
-          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+          "unified-resumes.spec.ts",
+          "preparation-handoff.spec.ts",
+          "career-cities.spec.ts",
+          "resume-studio.spec.ts",
+          "preparation.spec.ts",
+          "preparation-history.spec.ts",
+          "preparation-pdf.spec.ts",
+          "interview.spec.ts",
+          "usability.spec.ts",
+          "astryx.spec.ts",
+          "boss-inbox.spec.ts"
         ],
-        "timeout": 45000
+        "timeout": 90000
       }
     ],
     "filteredProjects": [
       {
         "grep": {},
-        "grepInvert": null,
-        "outputDir": "/Users/gooingyu/Documents/project/interview-agents/test-results",
+        "grepInvert": {},
+        "outputDir": "/Users/gooingyu/Projects/10-apps/interview-agents/test-results/workflow",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
+          "sqliteTestDatabase": "file:/var/folders/9j/xltt_8nx6tg7ypzfrvyy9_lc0000gn/T/resume-browser-BODkzZ/app.sqlite",
           "actualWorkers": 1
         },
         "name": "",
-        "testDir": "/Users/gooingyu/Documents/project/interview-agents/tests/e2e",
-        "snapshotDir": "/Users/gooingyu/Documents/project/interview-agents/tests/e2e",
+        "testDir": "/Users/gooingyu/Projects/10-apps/interview-agents/tests/e2e",
+        "snapshotDir": "/Users/gooingyu/Projects/10-apps/interview-agents/tests/e2e",
         "testIgnore": [],
-        "testMatch": "**/*.@(spec|test).?(c|m)[jt]s?(x)",
-        "timeout": 45000,
+        "testMatch": [
+          "unified-resumes.spec.ts",
+          "preparation-handoff.spec.ts",
+          "career-cities.spec.ts",
+          "resume-studio.spec.ts",
+          "preparation.spec.ts",
+          "preparation-history.spec.ts",
+          "preparation-pdf.spec.ts",
+          "interview.spec.ts",
+          "usability.spec.ts",
+          "astryx.spec.ts",
+          "boss-inbox.spec.ts"
+        ],
+        "timeout": 90000,
         "use": {
-          "baseURL": "http://localhost:5173",
+          "baseURL": "http://localhost:15173",
           "channel": "chrome",
           "trace": "retain-on-failure"
         },
@@ -89,20 +115,1010 @@
   },
   "suites": [
     {
-      "title": "career.spec.ts",
-      "file": "career.spec.ts",
+      "title": "astryx.spec.ts",
+      "file": "astryx.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "destructive confirmation supports cancel, failed retry and pending dismissal protection",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3395,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:02:57.793Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4c96826fc524a5bcefc4-6f5099d8f02d54973310",
+          "file": "astryx.spec.ts",
+          "line": 8,
+          "column": 1
+        },
+        {
+          "title": "mobile navigation and keyboard selector preserve the selected module and filters",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3245,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:03:02.791Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4c96826fc524a5bcefc4-c313fa1b7e2ec6565b4e",
+          "file": "astryx.spec.ts",
+          "line": 45,
+          "column": 1
+        },
+        {
+          "title": "module menu supports arrow keys, boundaries and keyboard activation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1012,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:03:06.046Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4c96826fc524a5bcefc4-109152bcd7ac4b5ececa",
+          "file": "astryx.spec.ts",
+          "line": 62,
+          "column": 1
+        },
+        {
+          "title": "deployment restrictions disable model and search fields and actions",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1106,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:03:07.068Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4c96826fc524a5bcefc4-b64330bf0a137cca4cfd",
+          "file": "astryx.spec.ts",
+          "line": 80,
+          "column": 1
+        },
+        {
+          "title": "career free-form tags and switches preserve controlled values",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1282,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:03:08.186Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4c96826fc524a5bcefc4-032c81e23710102a4441",
+          "file": "astryx.spec.ts",
+          "line": 101,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "boss-inbox.spec.ts",
+      "file": "boss-inbox.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "browses snapshots, isolates owners and carries exact JD, resume and selected chat context to preparation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6150,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:03:09.818Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "29b148a52ebfeb1f94c1-8e720212dafe22987eba",
+          "file": "boss-inbox.spec.ts",
+          "line": 7,
+          "column": 1
+        },
+        {
+          "title": "starts the first-ten sync, shows durable progress and preserves it after cancellation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1435,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:03:15.974Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "29b148a52ebfeb1f94c1-e4ecb6a2c2ed9bdaadec",
+          "file": "boss-inbox.spec.ts",
+          "line": 53,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "career-cities.spec.ts",
+      "file": "career-cities.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "city search selects mainland cities by name or province and keeps removable tags",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6103,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:03:17.425Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f7f58999e8445cf32a11-ac10cd851e8edcb7e55b",
+          "file": "career-cities.spec.ts",
+          "line": 30,
+          "column": 1
+        },
+        {
+          "title": "city search rejects free text and stops at the ten-city limit",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1973,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:03:23.535Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f7f58999e8445cf32a11-c13ddbffd4cd6c230aac",
+          "file": "career-cities.spec.ts",
+          "line": 57,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "interview.spec.ts",
+      "file": "interview.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "browser: intake → interview → report → reload/history → deletion, with mobile layout",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 12993,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:03:25.898Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5e7cd2a6f7ac0afddfa8-6c54df971054b342c601",
+          "file": "interview.spec.ts",
+          "line": 5,
+          "column": 1
+        },
+        {
+          "title": "HTTP boundary: Origin, signed cookie, cross browser ownership and cancellation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 90,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:03:38.898Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5e7cd2a6f7ac0afddfa8-2d7c4d3639f6c2e59f78",
+          "file": "interview.spec.ts",
+          "line": 37,
+          "column": 1
+        },
+        {
+          "title": "model settings actually enable live interview, export excludes keys, clear restores defaults",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 13831,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:03:38.996Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5e7cd2a6f7ac0afddfa8-06f5e207a2daa0db2dc4",
+          "file": "interview.spec.ts",
+          "line": 47,
+          "column": 1
+        },
+        {
+          "title": "browser preserves intake/answer drafts and recovers failed generation using saved answer",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 17972,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:03:52.833Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5e7cd2a6f7ac0afddfa8-7b48c5f1be14c4862d65",
+          "file": "interview.spec.ts",
+          "line": 73,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "preparation-handoff.spec.ts",
+      "file": "preparation-handoff.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "valid details offer JD preparation once, keep the draft on cancel, and remember the skip across refresh",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4822,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:04:10.822Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "46f7b21dcd25ff78cd01-f3e86027f1395527f772",
+          "file": "preparation-handoff.spec.ts",
+          "line": 30,
+          "column": 1
+        },
+        {
+          "title": "opening JD preparation only carries the material and never starts a billed generation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2226,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:04:15.652Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "46f7b21dcd25ff78cd01-8375c6bea042e1d4400d",
+          "file": "preparation-handoff.spec.ts",
+          "line": 71,
+          "column": 1
+        },
+        {
+          "title": "selected questions continue without a prompt, survive a refresh, and are re-judged after the JD changes",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4457,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:04:17.887Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "46f7b21dcd25ff78cd01-e732994b7a7fb7963f60",
+          "file": "preparation-handoff.spec.ts",
+          "line": 93,
+          "column": 1
+        },
+        {
+          "title": "a carried strict question list continues without prompting and is re-judged only after the JD changes",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1738,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:04:22.351Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "46f7b21dcd25ff78cd01-2796a6c58e6f5c8c19a4",
+          "file": "preparation-handoff.spec.ts",
+          "line": 139,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "preparation-history.spec.ts",
+      "file": "preparation-history.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "keeps failed and successful preparation history, retries with an immutable source and restores the editor",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3801,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:04:24.103Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a72299b1d9bb7adc83f2-206c29034dc6ee17f9f4",
+          "file": "preparation-history.spec.ts",
+          "line": 4,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "preparation-pdf.spec.ts",
+      "file": "preparation-pdf.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "exports edited JD answers and immutable history to private, complete A4 PDFs",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4048,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:04:28.546Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c3b333936bf1397b3d43-d513c7d0d432ee710927",
+          "file": "preparation-pdf.spec.ts",
+          "line": 12,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "preparation.spec.ts",
+      "file": "preparation.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "JD-only preview, edits, selected idempotent save, refresh, export and strict practice",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6857,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:04:32.611Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "47ff6f7eed4fa2ee7144-8151697fc07e0312a132",
+          "file": "preparation.spec.ts",
+          "line": 19,
+          "column": 1
+        },
+        {
+          "title": "custom model failures preserve the previous JD draft and HR preparation stays behavioral",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2201,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:04:39.476Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "47ff6f7eed4fa2ee7144-73af7d4517afac220126",
+          "file": "preparation.spec.ts",
+          "line": 66,
+          "column": 1
+        },
+        {
+          "title": "the HTTP batch boundary accepts valid large Chinese notes and rejects duplicate save keys",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 570,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:04:41.688Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "47ff6f7eed4fa2ee7144-83f58aa2dbbcd59c55f2",
+          "file": "preparation.spec.ts",
+          "line": 89,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "resume-studio.spec.ts",
+      "file": "resume-studio.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "green theme retains the reference layout in preview, HTML and PDF",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2652,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:04:42.274Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c8ebf8f4c0a5776a4876-df4c46bb744b2ab49823",
+          "file": "resume-studio.spec.ts",
+          "line": 8,
+          "column": 1
+        },
+        {
+          "title": "converts a local resume file, persists JSON and brings a snapshot into interview preparation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4276,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:04:44.934Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c8ebf8f4c0a5776a4876-b43ad6227650fd48a9ea",
+          "file": "resume-studio.spec.ts",
+          "line": 50,
+          "column": 1
+        },
+        {
+          "title": "imports a cool-resume JSON and exports edits with extension fields intact",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1040,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:04:49.222Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c8ebf8f4c0a5776a4876-f8a3f306ed4c54745436",
+          "file": "resume-studio.spec.ts",
+          "line": 77,
+          "column": 1
+        },
+        {
+          "title": "makes independent JSON copies, restores edits, exports a PDF and freezes exact attachment bytes",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6490,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:04:50.271Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c8ebf8f4c0a5776a4876-6e710893cd0a0ef6fcae",
+          "file": "resume-studio.spec.ts",
+          "line": 96,
+          "column": 1
+        },
+        {
+          "title": "mobile menu reaches every feature, keeps deep links and does not overflow",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5594,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:04:56.771Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c8ebf8f4c0a5776a4876-5b7702a7f0c286e13825",
+          "file": "resume-studio.spec.ts",
+          "line": 182,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "unified-resumes.spec.ts",
+      "file": "unified-resumes.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "career resume library and landing guards",
-          "file": "career.spec.ts",
-          "line": 38,
+          "title": "unified resume library",
+          "file": "unified-resumes.spec.ts",
+          "line": 17,
           "column": 6,
           "specs": [
             {
-              "title": "an immutable resume version keeps the exact original bytes and can be downloaded then deleted",
+              "title": "offers one menu entry with editor and attachment views that survive refresh and history",
               "ok": true,
               "tags": [],
               "tests": [
@@ -117,12 +1133,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6404,
+                      "duration": 1604,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-30T14:34:18.238Z",
+                      "startTime": "2026-11-17T04:05:02.380Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -130,13 +1146,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "049889c74a6db2083665-b6a781c991aac0d2706b",
-              "file": "career.spec.ts",
-              "line": 42,
+              "id": "899ba92d8624e57ff591-5ce7797826874e16274d",
+              "file": "unified-resumes.spec.ts",
+              "line": 21,
               "column": 3
             },
             {
-              "title": "the landing page blocks a manual start without a model connection and never invents a ready session",
+              "title": "mobile menu shows only the unified resume library entry",
               "ok": true,
               "tags": [],
               "tests": [
@@ -151,12 +1167,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2232,
+                      "duration": 1568,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-30T14:34:26.348Z",
+                      "startTime": "2026-11-17T04:05:03.990Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -164,26 +1180,18 @@
                   "status": "expected"
                 }
               ],
-              "id": "049889c74a6db2083665-8a6c79b67e9497acf4a4",
-              "file": "career.spec.ts",
-              "line": 73,
+              "id": "899ba92d8624e57ff591-41d9d3da41ac7eec0266",
+              "file": "unified-resumes.spec.ts",
+              "line": 46,
               "column": 3
-            }
-          ]
-        },
-        {
-          "title": "career search, approval, delivery and preparation",
-          "file": "career.spec.ts",
-          "line": 90,
-          "column": 6,
-          "specs": [
+            },
             {
-              "title": "reads postings through native filters, freezes the approved greetings and resume, then shows each phase honestly",
+              "title": "legacy attachment link opens the attachments view and keeps upload, download and delete working",
               "ok": true,
               "tags": [],
               "tests": [
                 {
-                  "timeout": 240000,
+                  "timeout": 90000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "",
@@ -193,12 +1201,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 55311,
+                      "duration": 8792,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-30T14:34:28.604Z",
+                      "startTime": "2026-11-17T04:05:05.565Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -206,21 +1214,233 @@
                   "status": "expected"
                 }
               ],
-              "id": "049889c74a6db2083665-e4d60e6eeadae51f10e3",
-              "file": "career.spec.ts",
-              "line": 95,
+              "id": "899ba92d8624e57ff591-a8721d52dc127d55832c",
+              "file": "unified-resumes.spec.ts",
+              "line": 59,
+              "column": 3
+            },
+            {
+              "title": "publishing from the JSON editor hands off to the attachments view and back to the same copy",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2710,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-17T04:05:14.372Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "899ba92d8624e57ff591-b5f1e72816076f736dfb",
+              "file": "unified-resumes.spec.ts",
+              "line": 100,
               "column": 3
             }
           ]
+        }
+      ]
+    },
+    {
+      "title": "usability.spec.ts",
+      "file": "usability.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "home, reusable profiles, wizard and settings return keep data after closing the page",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3961,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:05:17.106Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d975817c2913cd240bb9-f67a9307075cbb5471de",
+          "file": "usability.spec.ts",
+          "line": 11,
+          "column": 1
+        },
+        {
+          "title": "Python editing, favorite and review survive close, route handoff and keyboard focus escape",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3400,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:05:21.074Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d975817c2913cd240bb9-996f8f00a85817bd535a",
+          "file": "usability.spec.ts",
+          "line": 48,
+          "column": 1
+        },
+        {
+          "title": "default backup excludes personal materials and restore previews without replacing current records",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1774,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:05:24.481Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d975817c2913cd240bb9-60b4c0ded6e36a59328b",
+          "file": "usability.spec.ts",
+          "line": 73,
+          "column": 1
+        },
+        {
+          "title": "two pages preserve conflicting draft versions while page preferences remain independent",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2201,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:05:26.263Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d975817c2913cd240bb9-c31c043b6cc5c1b85dbb",
+          "file": "usability.spec.ts",
+          "line": 90,
+          "column": 1
+        },
+        {
+          "title": "unavailable IndexedDB reports failure while keeping in-memory Python editable",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1102,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-17T04:05:28.474Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d975817c2913cd240bb9-408161b474587c233147",
+          "file": "usability.spec.ts",
+          "line": 108,
+          "column": 1
         }
       ]
     }
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-10-30T14:34:15.568Z",
-    "duration": 68594.081,
-    "expected": 3,
+    "startTime": "2026-11-17T04:02:52.982Z",
+    "duration": 157341.944,
+    "expected": 36,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

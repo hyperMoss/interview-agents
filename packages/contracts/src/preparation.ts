@@ -41,6 +41,12 @@ export const preparationResultSchema = preparationOutputSchema.extend({
   model: z.string().min(1).max(200),
 });
 export type PreparationResult = z.infer<typeof preparationResultSchema>;
+export const preparationPdfSchema = z.strictObject({
+  input: preparationInputSchema,
+  result: preparationResultSchema,
+  drafts: z.array(z.strictObject({ title: z.string().max(160), content: z.string().max(3000), expectedAnswer: z.string().max(8000) })).min(3).max(12).optional(),
+}).refine(value => value.result.questions.length === value.input.questionCount && (!value.drafts || value.drafts.length === value.result.questions.length), '导出题量与题单不一致。');
+export type PreparationPdf = z.infer<typeof preparationPdfSchema>;
 export const preparedBankDraftSchema = bankDraftSchema.extend({ jdRequirement: jdRequirementSchema });
 export const savePreparationSchema = z.strictObject({
   questions: z.array(bankCreateSchema.extend({ draft: preparedBankDraftSchema })).min(1).max(12).refine(

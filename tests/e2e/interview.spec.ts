@@ -1,4 +1,4 @@
-import { settingsTab, nextStep, confirmDelete } from './ui-helpers';
+import { expectStatus, settingsTab, nextStep, confirmDelete, navigateModule } from './ui-helpers';
 import { test,expect,type Page } from '@playwright/test';
 import { input,answer } from '../fixtures';
 import { startProviderFixture } from '../provider-fixture';
@@ -15,8 +15,8 @@ test('browser: intake → interview → report → reload/history → deletion, 
   await expect(page.getByLabel('练习报告')).toContainText('规则演示');
   await page.screenshot({path:'docs/evidence/screenshots/report-desktop.png',fullPage:true});
   await page.getByRole('button',{name:/加入第 \d 题复习/}).first().click();
-  await expect(page.getByRole('status')).toContainText('已加入面试复习清单');
-  await page.getByRole('button',{name:'面试复习清单',exact:true}).click();
+  await expectStatus(page, '已加入面试复习清单');
+  await navigateModule(page, '面试复习清单');
   await expect(page.getByRole('heading',{name:'面试复习清单',exact:true})).toBeVisible();
   await expect(page.locator('.review-card')).toHaveCount(1);
   await page.getByRole('button',{name:'标记已复习',exact:true}).click();
@@ -29,19 +29,20 @@ test('browser: intake → interview → report → reload/history → deletion, 
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await page.getByRole('button',{name:'删除此练习及简历资料'}).click();await confirmDelete(page);
   await expect(page.getByRole('heading',{name:'准备练习资料'})).toBeVisible();
-  await page.getByRole('button',{name:'面试复习清单',exact:true}).click();
+  await navigateModule(page, '面试复习清单');
   await expect(page.locator('.review-card')).toHaveCount(0);
   await page.getByRole('button',{name:'查看已复习',exact:true}).click();
   await expect(page.locator('.review-card')).toHaveCount(0);expect(errors).toEqual([]);
 });
-test('HTTP boundary: Origin, signed cookie, cross browser ownership and cancellation',async({browser})=>{
-  const a=await browser.newContext();const b=await browser.newContext();
-  const created=await a.request.post('http://localhost:3000/api/v1/interviews',{headers:{Origin:'http://localhost:5173'},data:{input}});expect(created.status()).toBe(201);
+test('HTTP boundary: Origin, signed cookie, cross browser ownership and cancellation',async({browser,baseURL})=>{
+  if(!baseURL)throw new Error('Missing test base URL');
+  const a=await browser.newContext({baseURL});const b=await browser.newContext({baseURL});
+  const created=await a.request.post('/api/v1/interviews',{headers:{Origin:baseURL},data:{input}});expect(created.status()).toBe(201);
   const session: {id:string}=await created.json();
-  expect((await b.request.get(`http://localhost:3000/api/v1/interviews/${session.id}`,{headers:{'x-owner-id':'spoofed'}})).status()).toBe(404);
-  expect((await a.request.post(`http://localhost:3000/api/v1/interviews/${session.id}/cancel`,{headers:{Origin:'https://attacker.invalid'},data:{}})).status()).toBe(403);
-  const cancelled=await a.request.post(`http://localhost:3000/api/v1/interviews/${session.id}/cancel`,{headers:{Origin:'http://localhost:5173'},data:{}});expect((await cancelled.json()).status).toBe('cancelled');
-  await a.request.delete(`http://localhost:3000/api/v1/interviews/${session.id}`,{headers:{Origin:'http://localhost:5173'}});await a.close();await b.close();
+  expect((await b.request.get(`/api/v1/interviews/${session.id}`,{headers:{'x-owner-id':'spoofed'}})).status()).toBe(404);
+  expect((await a.request.post(`/api/v1/interviews/${session.id}/cancel`,{headers:{Origin:'https://attacker.invalid'},data:{}})).status()).toBe(403);
+  const cancelled=await a.request.post(`/api/v1/interviews/${session.id}/cancel`,{headers:{Origin:baseURL},data:{}});expect((await cancelled.json()).status).toBe('cancelled');
+  await a.request.delete(`/api/v1/interviews/${session.id}`,{headers:{Origin:baseURL}});await a.close();await b.close();
 });
 test('model settings actually enable live interview, export excludes keys, clear restores defaults',async({page})=>{
   const provider=await startProviderFixture();
@@ -49,8 +50,8 @@ test('model settings actually enable live interview, export excludes keys, clear
     await page.goto('/#/interviews/new');await settingsTab(page, '模型设置');
     const panel=page.locator('section[aria-labelledby="model-panel-title"]');
     await panel.getByLabel('API 根地址').fill(provider.baseUrl);await panel.getByLabel('API Key',{exact:true}).fill('fixture-alpha-key');
-    await panel.getByRole('button',{name:'读取模型列表'}).click();await expect(panel.getByRole('status')).toContainText('模型列表已加载');
-    await panel.getByLabel('模型名',{exact:true}).fill('coach-alpha');await panel.getByRole('button',{name:'测试连接'}).click();await expect(panel.getByRole('status')).toContainText('连接成功');
+    await panel.getByRole('button',{name:'读取模型列表'}).click();await expectStatus(panel, '模型列表已加载');
+    await panel.getByLabel('模型名',{exact:true}).fill('coach-alpha');await panel.getByRole('button',{name:'测试连接'}).click();await expectStatus(panel, '连接成功');
     await panel.evaluate(element=>element.scrollTop=0);await page.screenshot({path:'docs/evidence/screenshots/model-settings.png'});
     await page.setViewportSize({width:390,height:844});await panel.evaluate(element=>element.scrollTop=0);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);await page.screenshot({path:'docs/evidence/screenshots/model-settings-mobile.png'});await page.setViewportSize({width:1280,height:720});
     await panel.getByRole('button',{name:'保存并启用'}).click();await expect(panel).not.toBeVisible();await expect(page.locator('.mode-indicator')).toContainText('coach-alpha');
@@ -62,9 +63,9 @@ test('model settings actually enable live interview, export excludes keys, clear
     const download=page.waitForEvent('download');await page.getByRole('button',{name:'导出本次记录'}).click();const file=await download;expect(file.suggestedFilename()).toMatch(/\.md$/);
     const {readFile}=await import('node:fs/promises');const path=await file.path();if(!path)throw new Error('Missing export');const report=await readFile(path,'utf8');expect(report).toContain('coach-alpha');expect(report).toContain('技术能力');expect(report).not.toContain('fixture-alpha-key');
     await choose(page,'导出格式','JSON 原始记录');const jsonDownload=page.waitForEvent('download');await page.getByRole('button',{name:'导出本次记录'}).click();const jsonFile=await jsonDownload;expect(jsonFile.suggestedFilename()).toMatch(/\.json$/);const jsonPath=await jsonFile.path();if(!jsonPath)throw new Error('Missing JSON export');expect(await readFile(jsonPath,'utf8')).not.toContain('fixture-alpha-key');
-    await page.evaluate(()=>window.scrollTo(0,0));await expect(page.getByRole('navigation',{name:'练习历史'})).toContainText('已完成');
+    await navigateModule(page, '面试历史');await expect(page.getByRole('navigation',{name:'练习历史'})).toContainText('已完成');await page.getByRole('navigation',{name:'练习历史'}).getByRole('button').click();
     await page.screenshot({path:'docs/evidence/screenshots/live-report.png',fullPage:true});
-    await page.getByRole('button',{name:'用相同资料再练一次'}).click();await expect(page.getByLabel('目标岗位')).toHaveValue('Web 全栈工程师');await expect(page.getByLabel('简历与项目经历')).not.toHaveValue('');await page.getByRole('navigation',{name:'练习历史'}).getByRole('button').click();await expect(page.getByLabel('练习报告')).toBeVisible();
+    await page.getByRole('button',{name:'用相同资料再练一次'}).click();await expect(page.getByLabel('目标岗位')).toHaveValue('Web 全栈工程师');await expect(page.getByLabel('简历与项目经历')).not.toHaveValue('');await navigateModule(page, '面试历史');await page.getByRole('navigation',{name:'练习历史'}).getByRole('button').click();await expect(page.getByLabel('练习报告')).toBeVisible();
     await settingsTab(page, '模型设置');await page.getByRole('button',{name:'清除连接并恢复默认'}).click();await page.getByRole('button',{name:'确认清除',exact:true}).click();await expect(page.locator('section[aria-labelledby="model-panel-title"]')).not.toBeVisible();
     await page.getByRole('button',{name:'删除此练习及简历资料'}).click();await confirmDelete(page);await expect(page.locator('.mode-indicator')).toContainText('规则演示');
   }finally{await provider.close();}

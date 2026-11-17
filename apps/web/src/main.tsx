@@ -1,6 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Button, ConfigProvider, Input, Popconfirm, Select, Tabs } from 'antd';
-import zhCN from 'antd/locale/zh_CN';
+import '@astryxdesign/core/reset.css';
+import '@astryxdesign/core/astryx.css';
+import '@astryxdesign/theme-neutral/theme.css';
+import { Banner } from '@astryxdesign/core/Banner';
+import { Button } from '@astryxdesign/core/Button';
+import { InternationalizationProvider } from '@astryxdesign/core/i18n';
+import { Selector } from '@astryxdesign/core/Selector';
+import { Tab, TabList } from '@astryxdesign/core/TabList';
+import { TextInput } from '@astryxdesign/core/TextInput';
+import { Theme } from '@astryxdesign/core/theme';
+import zhCN from '@astryxdesign/core/locales/zh-CN.generated.js';
+import { neutralTheme } from '@astryxdesign/theme-neutral/built';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from './api';
@@ -18,7 +28,6 @@ import { Intake } from './intake';
 import { Interview } from './interview';
 import { HomePanel, ReviewPanel } from './home-panel';
 import { CareerPanel, type CareerPracticeSeed } from './career-panel';
-import { ResumeLibrary } from './resume-library';
 import { DataPanel, WorkspaceSaveStatus } from './data-panel';
 import { initializeWorkspace } from './workspace-store';
 import { readSession, writeSession, tryClearInterviewDrafts } from './storage';
@@ -31,6 +40,7 @@ import './module-layout.css';
 import { resumeText } from '../../../packages/resume/src/import';
 import type { ResumeDocument } from '../../../packages/contracts/src/resume-document';
 import { removeInterviewReviews } from './personal-data';
+import { ConfirmAction } from './ui/confirm-action';
 import {BossInboxPanel,type BossInterviewSeed} from './boss-inbox-panel';
 
 const client = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: true }, mutations: { retry: 0, gcTime: 0 } } });
@@ -100,7 +110,11 @@ function App() {
   }
   function navigateMenu(next: Route) {
     if (next.page === 'preparation') setPreparationRequest(null);
-    if (next.page === 'algorithm') setAlgorithmRequest(null);
+    if (next.page === 'algorithm') {
+      setAlgorithmRequest(null);
+      navigate({ ...next, view: next.view ?? (readSession('algorithm-view') === 'patterns' ? 'patterns' : 'hot100') });
+      return;
+    }
     if (next.page === 'model' || next.page === 'search' || next.page === 'data' || next.page === 'resumeLibrary' || next.page === 'bank') openUtility(next.page);
     else navigate(next);
   }
@@ -131,38 +145,37 @@ function App() {
   return <div className="shell">
     <aside className="sidebar"><a className="brand" href="#/home"><span className="brand-mark">面</span><span>求职与面试<small>简历 · 求职 · 练习</small></span></a><ModuleNavigation page={route.page} navigate={navigateMenu} /><div className="sidebar-footer">本机工作空间 · SQLite</div></aside>
     <main className="workspace">
-      <header className="workspace-header"><MobileNavigation page={route.page} navigate={navigateMenu} /><span className="module-breadcrumb">{moduleTitle(route.page)}</span><WorkspaceSaveStatus onOpenData={() => openUtility('data')} /><Button className="mode-indicator" onClick={() => openUtility('model')}>{modelLabel}</Button></header>
+      <header className="workspace-header"><MobileNavigation page={route.page} navigate={navigateMenu} /><span className="module-breadcrumb">{moduleTitle(route.page)}</span><WorkspaceSaveStatus onOpenData={() => openUtility('data')} /><Button className="mode-indicator" label={modelLabel} onClick={() => openUtility('model')} /></header>
       <div id="workspace-panel">
-      {!online ? <Alert type="warning" showIcon message="网络已断开。本机草稿仍可编辑，恢复连接后再重试面试或生成请求。" /> : null}
-      {identity.error && !['algorithm', 'data'].includes(route.page) ? <Alert type="error" showIcon message="暂时无法连接本机 API。资料会保留，也可以继续算法练习。" action={<Button onClick={() => void identity.refetch()}>重试连接</Button>} /> : null}
-      {route.page === 'history' ? <section className="module-history"><div className="panel-heading"><div><h1>面试历史</h1><p>按岗位与状态查找，继续作答或查看报告。</p></div><Button type="primary" onClick={newPractice}>新建面试</Button></div>      <div className="history-tools"><Input className="history-search" aria-label="查找练习" maxLength={120} placeholder="查找岗位" value={historySearch} onChange={event => setHistorySearch(event.target.value)} allowClear />
-      <Select className="history-filter" aria-label="筛选练习状态" value={historyStatus} options={[{ value: 'all', label: '全部状态' }, ...Object.entries(statusLabels).map(([value, label]) => ({ value, label }))]} onChange={setHistoryStatus} />
+      {!online ? <Banner role="alert" status="warning" title="网络已断开。本机草稿仍可编辑，恢复连接后再重试面试或生成请求。" /> : null}
+      {identity.error && !['algorithm', 'data'].includes(route.page) ? <Banner role="alert" status="error" title="暂时无法连接本机 API。资料会保留，也可以继续算法练习。" endContent={<Button label="重试连接" onClick={() => void identity.refetch()} />} /> : null}
+      {route.page === 'history' ? <section className="module-history"><div className="panel-heading"><div><h1>面试历史</h1><p>按岗位与状态查找，继续作答或查看报告。</p></div><Button variant="primary" label="新建面试" onClick={newPractice} /></div>      <div className="history-tools"><TextInput containerClassName="history-search" label="查找练习" isLabelHidden placeholder="查找岗位" value={historySearch} onChange={value => setHistorySearch(value.slice(0, 120))} hasClear />
+      <Selector containerClassName="history-filter" label="筛选练习状态" isLabelHidden value={historyStatus} options={[{ value: 'all', label: '全部状态' }, ...Object.entries(statusLabels).map(([value, label]) => ({ value, label }))]} onChange={setHistoryStatus} />
 </div><nav aria-label="练习历史" className="history">
-        {items.map(item => <Button key={item.id} className={`history-item ${selected === item.id ? 'selected' : ''}`} onClick={() => navigate({ page: 'practice', sessionId: item.id })}><strong>{item.role}</strong><span>{new Date(item.createdAt).toLocaleDateString('zh-CN')} <i>{statusLabels[item.status]}</i></span></Button>)}
+        {items.map(item => <Button key={item.id} label={item.role} className={`history-item ${selected === item.id ? 'selected' : ''}`} onClick={() => navigate({ page: 'practice', sessionId: item.id })}><strong>{item.role}</strong><span>{new Date(item.createdAt).toLocaleDateString('zh-CN')} <i>{statusLabels[item.status]}</i></span></Button>)}
         {history.isSuccess && !items.length ? <p className="quiet">{historySearch || historyStatus !== 'all' ? '没有匹配的练习，请调整筛选。' : '新建第一场练习后，这里可以继续和复盘。'}</p> : null}
-        {history.isError ? <Button onClick={() => void history.refetch()}>历史加载失败，重试</Button> : null}
-        {history.hasNextPage ? <Button loading={history.isFetchingNextPage} onClick={() => void history.fetchNextPage()}>加载更早的练习</Button> : null}
+        {history.isError ? <Button label="历史加载失败，重试" onClick={() => void history.refetch()} /> : null}
+        {history.hasNextPage ? <Button label="加载更早的练习" isLoading={history.isFetchingNextPage} onClick={() => void history.fetchNextPage()} /> : null}
       </nav>
 </section> : null}
       {route.page === 'home' ? <HomePanel history={recent.data?.items ?? []} navigate={navigate} openUtility={openUtility} modelReady={Boolean(settings.data?.active) || settings.data?.mode === 'live'} /> : null}
       {route.page === 'practice' ? <>
         {(session.data?.modelMode === 'demo' || (!selected && settings.data?.mode === 'demo' && !settings.data.active)) ? <div className="demo-banner" role="note"><strong>当前是规则演示。</strong> 启用自己的模型后开始真实 AI 面试。演示评分不代表专业能力评价。</div> : null}
-        {settings.error ? <Alert type="error" message={settings.error.message} action={<Button onClick={() => void settings.refetch()}>重新读取模型状态</Button>} /> : null}
-        {!selected && settings.data?.mode === 'disabled' && !settings.data.active ? <Alert type="info" message="请先启用模型连接，再开始面试。" action={<Button onClick={() => openUtility('model')}>配置模型</Button>} /> : null}
+        {settings.error ? <Banner role="alert" status="error" title={settings.error.message} endContent={<Button label="重新读取模型状态" onClick={() => void settings.refetch()} />} /> : null}
+        {!selected && settings.data?.mode === 'disabled' && !settings.data.active ? <Banner role="alert" status="info" title="请先启用模型连接，再开始面试。" endContent={<Button label="配置模型" onClick={() => openUtility('model')} />} /> : null}
         {notice ? <p role="status">{notice}</p> : null}
         {!selected ? <Intake key={intakeVersion} pending={create.isPending} ready={ready} error={create.error?.message} onCreate={(input, search) => create.mutate({ input, search })} onSearchSettings={() => openUtility('search')} onBankSettings={() => openUtility('bank')} onPreparation={seed => { setPreparationRequest({ id: crypto.randomUUID(), seed }); navigate({ page: 'preparation' }); }} /> : null}
         {selected && session.isPending ? <p className="loading" role="status">正在读取练习记录…</p> : null}
-        {selected && session.error ? <Alert type="error" showIcon message={`练习加载失败：${session.error.message}`} action={<Button onClick={() => void session.refetch()}>重新读取</Button>} /> : null}
+        {selected && session.error ? <Banner role="alert" status="error" title={`练习加载失败：${session.error.message}`} endContent={<Button label="重新读取" onClick={() => void session.refetch()} />} /> : null}
         {selected && session.data ? <><Interview key={`${session.data.id}:${session.data.revision}`} session={session.data} connectionId={settings.data?.active?.id} searchConnectionId={searchSettings.data?.active?.id} onModelSettings={() => openUtility('model')} onSearchSettings={() => openUtility('search')} onRepeat={() => { writeSession('interview-intake', JSON.stringify({ ...session.data.input, step: 0 })); setIntakeVersion(value => value + 1); newPractice(); }} onUpdate={data => { cache.setQueryData(['session', data.id], data); invalidateHistory(); }} />
-          <div className="record-actions"><Popconfirm title="删除这场练习及简历资料？" description="同时删除服务端记录、派生数据、本机未提交答案及这场面试的复习笔记，无法撤回。独立保存的岗位档案保留。" okText="确认删除" cancelText="保留" onConfirm={() => remove.mutateAsync(selected)}><Button type="text" danger disabled={remove.isPending}>删除此练习及简历资料</Button></Popconfirm>{remove.error ? <p role="alert">删除失败：{remove.error.message}</p> : null}</div></> : null}
+          <div className="record-actions"><ConfirmAction title="删除这场练习及简历资料？" description="同时删除服务端记录、派生数据、本机未提交答案及这场面试的复习笔记，无法撤回。独立保存的岗位档案保留。" okText="确认删除" cancelText="保留" disabled={remove.isPending} onConfirm={() => remove.mutateAsync(selected)}><Button label="删除此练习及简历资料" variant="destructive" isDisabled={remove.isPending} /></ConfirmAction>{remove.error ? <p role="alert">删除失败：{remove.error.message}</p> : null}</div></> : null}
       </> : null}
       {route.page === 'preparation' ? <PreparationPanel key={preparationRequest?.id ?? 'stored'} seed={preparationRequest?.seed} onUse={usePreparation} onHistory={()=>navigate({page:'preparationHistory'})} onModelSettings={() => openUtility('model')} /> : null}
       {route.page==='preparationHistory'?<PreparationHistoryPanel route={route} navigate={navigate} onModelSettings={()=>openUtility('model')} onUse={record=>{if(loadPreparationHistory(record)){setPreparationRequest({id:crypto.randomUUID(),seed:record.input});navigate({page:'preparation'});}else setNotice('载入未成功，请先检查本机存储，历史记录仍保留。');}}/>:null}
       {route.page === 'algorithm' ? <React.Suspense fallback={<p role="status">正在打开算法练习…</p>}><AlgorithmPanel key={algorithmRequest?.id ?? 'stored'} seed={algorithmRequest?.seed} initialView={route.view ?? 'hot100'} questionId={route.questionId} patternId={route.patternId} onNavigate={next => navigate({ page: 'algorithm', ...next })} /></React.Suspense> : null}
       {route.page === 'bank' ? <div className="utility-panel"><BankPanel onClose={() => navigate(returnTo)} onAlgorithmPractice={seed => { setAlgorithmRequest({ id: crypto.randomUUID(), seed }); navigate({ page: 'algorithm', view: 'patterns' }); }} /></div> : null}
-      {['model', 'search', 'data'].includes(route.page) ? <div className="utility-panel"><Tabs activeKey={route.page === 'resumeLibrary' ? 'resumes' : route.page} onChange={page => { if (page === 'model' || page === 'search' || page === 'data' || page === 'resumes') navigate({ page: page === 'resumes' ? 'resumeLibrary' : page }); }} items={[{ key: 'model', label: '模型设置' }, { key: 'search', label: '联网搜索' }, { key: 'data', label: '本机数据' }]} />{route.page === 'model' ? <ModelPanel onClose={() => navigate(returnTo)} /> : route.page === 'search' ? <SearchPanel onClose={() => navigate(returnTo)} /> : route.page === 'resumeLibrary' ? <ResumeLibrary /> : <DataPanel />}</div> : null}
-      {route.page === 'resumeLibrary' ? <div className="utility-panel"><ResumeLibrary /></div> : null}
-      {route.page === 'resumeStudio' ? <React.Suspense fallback={<p role="status">正在打开简历制作…</p>}><ResumeStudio route={route} navigate={navigate} onPractice={useResumeForPractice} onPreparation={useResumeForPreparation} /></React.Suspense> : null}
+      {['model', 'search', 'data'].includes(route.page) ? <div className="utility-panel"><TabList value={route.page} onChange={page => { if (page === 'model' || page === 'search' || page === 'data') navigate({ page }); }} hasDivider aria-label="设置模块"><Tab value="model" label="模型设置" /><Tab value="search" label="联网搜索" /><Tab value="data" label="本机数据" /></TabList>{route.page === 'model' ? <ModelPanel onClose={() => navigate(returnTo)} /> : route.page === 'search' ? <SearchPanel onClose={() => navigate(returnTo)} /> : <DataPanel />}</div> : null}
+      {['resumeStudio', 'resumeLibrary'].includes(route.page) ? <React.Suspense fallback={<p role="status">正在打开简历库…</p>}><ResumeStudio route={route} navigate={navigate} onPractice={useResumeForPractice} onPreparation={useResumeForPreparation} /></React.Suspense> : null}
       {route.page === 'review' ? <ReviewPanel navigate={navigate} /> : null}
       {route.page === 'career' ? <CareerPanel route={route} navigate={navigate} openModelSettings={() => openUtility('model')} openResumeLibrary={() => openUtility('resumeLibrary')} onStrictPractice={useCareerPractice} /> : null}
       {route.page === 'bossInbox' ? <BossInboxPanel route={route} navigate={navigate} onUse={useBossConversation}/> : null}
@@ -173,10 +186,10 @@ function App() {
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { error: boolean }> {
   state = { error: false };
   static getDerivedStateFromError() { return { error: true }; }
-  render() { return this.state.error ? <div className="loading"><h1>页面暂时遇到了问题</h1><p>已保存的数据仍在本机。重新打开页面后继续。</p><Button onClick={() => window.location.reload()}>重新打开</Button></div> : this.props.children; }
+  render() { return this.state.error ? <div className="loading"><h1>页面暂时遇到了问题</h1><p>已保存的数据仍在本机。重新打开页面后继续。</p><Button label="重新打开" onClick={() => window.location.reload()} /></div> : this.props.children; }
 }
 const root = document.getElementById('root');
 if (!root) throw new Error('Missing root');
 const appRoot = createRoot(root);
-function renderApp() { appRoot.render(<React.StrictMode><ErrorBoundary><ConfigProvider locale={zhCN} virtual={false} theme={{ token: { colorPrimary: '#2141c6', colorLink: '#2141c6', colorTextSecondary: '#53617a', borderRadius: 8, fontFamily: '"PingFang SC", "Microsoft YaHei", sans-serif' } }}><QueryClientProvider client={client}><App /></QueryClientProvider></ConfigProvider></ErrorBoundary></React.StrictMode>); }
+function renderApp() { appRoot.render(<React.StrictMode><Theme theme={neutralTheme}><InternationalizationProvider locale="zh-CN" messages={{ 'zh-CN': zhCN }} overrides={{ 'zh-CN': { '@astryx.tokenizer.create': '添加“{value}”' } }}><ErrorBoundary><QueryClientProvider client={client}><App /></QueryClientProvider></ErrorBoundary></InternationalizationProvider></Theme></React.StrictMode>); }
 void initializeWorkspace().then(renderApp).catch(renderApp);

@@ -17,6 +17,10 @@
 - [架构与所有权](generated/01-ARCHITECTURE.md)
 - [BOSS 工作流](boss-workflow.md)
 - [BOSS 功能审查](design/boss-functional-review.md)
+- [简历、条件备题与国内城市统一计划](workflow-unification-plan.md)及[验收记录](evidence/workflow-unification-acceptance.md)。
+- [JD 备题 PDF 导出验收](evidence/preparation-pdf-acceptance.md)：编辑内容、历史快照、中文长答案分页和权限隔离。
+- [练习生成与 Markdown 分享验收](evidence/interview-generation-markdown-acceptance.md)：评分截断修复、真实模型请求和剪贴板验证。
+- [Astryx 组件迁移](astryx-migration.md)：pi 分工、迁移范围与[验收结果](evidence/astryx-acceptance.md)。
 
 ## 历史与研究
 
