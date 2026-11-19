@@ -1,30 +1,12 @@
-import { z } from 'zod';
+import type { z } from 'zod';
+import { algorithmDraftSchema } from '../../../packages/contracts/src/workspace';
 import { defaultAlgorithmPattern, getAlgorithmPattern } from '../../../packages/interview/src/algorithm-patterns';
+import { findHot100Question } from '../../../packages/interview/src/hot100';
 import { readDraftValue } from './storage';
 
-const originSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('example'), title: z.string().max(200), patternId: z.string().max(80) }),
-  z.object({ kind: z.literal('bank'), title: z.string().max(200), id: z.uuid() }),
-  z.object({ kind: z.literal('hot100'), title: z.string().max(200), id: z.number().int().positive() }),
-  z.object({ kind: z.literal('custom'), title: z.string().max(200) }),
-]);
-export const drillKindSchema = z.enum(['statement', 'code']);
-const targetSchema = z.object({
-  key: z.string().max(150),
-  kind: drillKindSchema,
-  reference: z.string().max(14000),
-});
-const drillSchema = targetSchema.extend({ typed: z.string().max(30000) });
-const algorithmDraftSchema = z.object({
-  version: z.literal(1),
-  problem: z.string().max(14000),
-  origin: originSchema,
-  patternId: z.string().max(80),
-  kind: drillKindSchema,
-  drills: z.array(drillSchema).max(20),
-});
+export { drillKindSchema } from '../../../packages/contracts/src/workspace';
 export type AlgorithmDraft = z.infer<typeof algorithmDraftSchema>;
-export type DrillTarget = z.infer<typeof targetSchema>;
+export type DrillTarget = Omit<AlgorithmDraft['drills'][number], 'typed'>;
 export const algorithmDraftKey = 'algorithm-practice-v1';
 
 export function defaultAlgorithmDraft(): AlgorithmDraft {
@@ -34,6 +16,7 @@ export function defaultAlgorithmDraft(): AlgorithmDraft {
     origin: { kind: 'example', title: defaultAlgorithmPattern.example.title, patternId: defaultAlgorithmPattern.id },
     patternId: defaultAlgorithmPattern.id,
     kind: 'code',
+    codeSource: 'pattern',
     drills: [],
   };
 }
@@ -59,4 +42,16 @@ export function sameDrill(a: DrillTarget, b: DrillTarget) {
 export function recordTyping(draft: AlgorithmDraft, target: DrillTarget, typed: string): AlgorithmDraft {
   const others = draft.drills.filter(drill => !sameDrill(drill, target));
   return { ...draft, drills: [...others, { ...target, typed }].slice(-20) };
+}
+
+export function getAlgorithmDrillTarget(draft: AlgorithmDraft): DrillTarget {
+  const origin = draft.origin;
+  const question = origin.kind === 'hot100' && draft.codeSource === 'question' ? findHot100Question(origin.id) : undefined;
+  if (draft.kind === 'code') {
+    return question
+      ? { key: `hot100-python:${question.id}`, kind: 'code', reference: question.referenceCode }
+      : { key: `python:${draft.patternId}`, kind: 'code', reference: getAlgorithmPattern(draft.patternId).code };
+  }
+  const key = origin.kind === 'bank' ? `bank:${origin.id}` : origin.kind === 'hot100' ? `hot100:${origin.id}` : origin.kind === 'example' ? `example:${origin.patternId}` : 'custom';
+  return { key, kind: 'statement', reference: draft.problem };
 }

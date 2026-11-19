@@ -4,6 +4,7 @@ import { hot100MetadataSchema, hot100StatusSchema, type Hot100Status } from '../
 import { leetcodeBatchSchema } from '../../contracts/src/bank';
 import { algorithmPatterns, getAlgorithmPattern } from './algorithm-patterns';
 import { hot100Lessons } from './hot100-lessons';
+import { hot100Solutions } from './hot100-solutions';
 
 export const hot100Metadata = hot100MetadataSchema.parse(snapshot);
 const lessonSchema = z.object({ goal: z.string().min(10), hint: z.string().min(10), patternIds: z.array(z.string()).max(3) });
@@ -11,7 +12,8 @@ const patternIds = new Set(algorithmPatterns.map(pattern => pattern.id));
 export const hot100Questions = hot100Metadata.questions.map(question => {
   const lesson = lessonSchema.parse(hot100Lessons[question.id]);
   if (lesson.patternIds.some(id => !patternIds.has(id))) throw new Error(`题目 ${question.id} 引用了不存在的套路。`);
-  return { ...question, ...lesson, url: `https://leetcode.cn/problems/${question.slug}/` };
+  const referenceCode = z.string().min(20).max(14000).parse(hot100Solutions[question.id]);
+  return { ...question, ...lesson, referenceCode, url: `https://leetcode.cn/problems/${question.slug}/` };
 });
 export type Hot100Question = typeof hot100Questions[number];
 export const hot100Groups = [...new Set(hot100Questions.map(question => question.group))];

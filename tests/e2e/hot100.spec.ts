@@ -3,7 +3,11 @@ import { navigateModule } from './ui-helpers';
 import { expectEditorValue } from './ui-helpers';
 import { test, expect, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
+import { hot100MetadataSchema } from '../../packages/contracts/src/hot100';
+import { hot100Solutions } from '../../packages/interview/src/hot100-solutions';
 import { bankListSchema, leetcodeBatchSchema } from '../../packages/contracts/src/bank';
+
+const hot100Questions = hot100MetadataSchema.parse(JSON.parse(await readFile(new URL('../../packages/interview/data/hot100.json', import.meta.url), 'utf8'))).questions.map(question => ({ ...question, referenceCode: hot100Solutions[question.id] }));
 
 test.setTimeout(90000);
 test.use({ actionTimeout: 12000 });
@@ -54,12 +58,12 @@ test('Hot 100 filters, independent Python drafts, self review and routine handof
   await expectEditorValue(code, 'def group_anagrams(words):\n    ');
 });
 
-test('uncovered routines stay explicit and next question follows the selected topic', async ({ page }) => {
+test('questions without a general routine still offer their own typing reference and next question follows the selected topic', async ({ page }) => {
   await openHot100(page);
   await select(page, 'Hot 100 专题', '子串');
   await page.getByRole('button', { name: '练习 239 滑动窗口最大值', exact: true }).click();
-  await expect(page.locator('.hot100-routines')).toContainText('还没有对应的跟打模板');
-  await expect(page.locator('.hot100-routines').getByRole('button')).toHaveCount(0);
+  await expect(page.locator('.hot100-routines')).toContainText('暂无关联通用套路');
+  await expect(page.locator('.hot100-routines').getByRole('button', { name: '本题代码跟打', exact: true })).toBeVisible();
   await page.getByRole('button', { name: '需要一点提示', exact: true }).click();
   await expect(page.locator('.hot100-hint')).toContainText('单调双端队列');
   await page.getByRole('button', { name: '下一道待练习', exact: true }).click();
@@ -114,4 +118,72 @@ test('Hot 100 mobile layout and unavailable storage keep Python practice usable'
   await expect(page.locator('.workspace-save-status')).toContainText('本机保存失败');
   await page.getByRole('textbox', { name: 'Python 独立作答', exact: true }).pressSequentially('still editable');
   await expectEditorValue(page.getByRole('textbox', { name: 'Python 独立作答', exact: true }), 'still editable');
+});
+
+
+test('all 100 questions enter typing with their own exact Python reference', async ({ page }) => {
+  test.setTimeout(180000);
+  await openHot100(page);
+  for (const question of hot100Questions) {
+    await page.getByRole('button', { name: `练习 ${question.id} ${question.title}`, exact: true }).click();
+    await page.getByRole('button', { name: '本题代码跟打', exact: true }).click();
+    await expect(page.getByRole('heading', { name: `02 / 本题参考解法 · ${question.id}. ${question.title}`, exact: true })).toBeVisible();
+    const lines = await page.getByLabel('跟打参考文本', { exact: true }).locator('code').allTextContents();
+    expect(lines.map(line => line === '\u00a0' ? '' : line).join('\n')).toBe(question.referenceCode);
+    await page.getByRole('button', { name: `← 返回 Hot 100 第 ${question.id} 题`, exact: true }).click();
+  }
+});
+
+test('question typing survives refresh and isolates shared routines, statements and independent work', async ({ page }) => {
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  await openHot100(page);
+  await page.getByRole('button', { name: '练习 1 两数之和', exact: true }).click();
+  const independent = page.getByRole('textbox', { name: 'Python 独立作答', exact: true });
+  await independent.fill('my independent answer');
+  await page.getByRole('button', { name: '本题代码跟打', exact: true }).click();
+  const typing = page.getByRole('textbox', { name: '你的代码', exact: true });
+  await typing.fill('class Solution:');
+  await page.reload();
+  await expectEditorValue(typing, 'class Solution:');
+  await page.getByRole('button', { name: '复制核心代码', exact: true }).click();
+  const reference = hot100Questions.find(question => question.id === 1)?.referenceCode;
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(reference);
+  if (!reference) throw new Error('Missing two sum reference');
+  await typing.fill(reference);
+  await page.getByRole('button', { name: '核对跟打', exact: true }).click();
+  await expect(page.getByRole('alert').filter({ hasText: '跟打一致' })).toBeVisible();
+  await page.getByRole('switch', { name: '显示参考', exact: true }).click();
+  await expect(page.getByText('参考已隐藏。试着默写，完成后再核对。', { exact: true })).toBeVisible();
+  await page.getByRole('switch', { name: '显示参考', exact: true }).click();
+  await page.getByText('题面跟打', { exact: true }).click();
+  const statement = page.getByRole('textbox', { name: '你的题面', exact: true });
+  await statement.fill('statement draft');
+  await page.reload();
+  await expectEditorValue(statement, 'statement draft');
+  await page.getByRole('button', { name: '← 返回 Hot 100 第 1 题', exact: true }).click();
+  await expectEditorValue(independent, 'my independent answer');
+  await page.getByRole('button', { name: '练习 49 字母异位词分组', exact: true }).click();
+  await page.getByRole('button', { name: '本题代码跟打', exact: true }).click();
+  await expectEditorValue(typing, '');
+  await typing.fill('anagrams draft');
+  await page.getByRole('button', { name: '← 返回 Hot 100 第 49 题', exact: true }).click();
+  await page.getByRole('button', { name: '练习 1 两数之和', exact: true }).click();
+  await page.getByRole('button', { name: '本题代码跟打', exact: true }).click();
+  await expectEditorValue(typing, reference);
+  await page.getByRole('button', { name: '重置本次跟打', exact: true }).click();
+  await page.getByRole('button', { name: '确认清空', exact: true }).click();
+  await expectEditorValue(typing, '');
+  await page.getByRole('button', { name: '← 返回 Hot 100 第 1 题', exact: true }).click();
+  await page.getByRole('button', { name: '练 哈希表', exact: true }).click();
+  await expectEditorValue(typing, '');
+  await expect(page.locator('.algorithm-example')).toContainText('模板例题 · 两数之和');
+  await typing.fill('routine draft');
+  await page.getByRole('button', { name: '← 返回 Hot 100 第 1 题', exact: true }).click();
+  await page.getByRole('button', { name: '练习 49 字母异位词分组', exact: true }).click();
+  await page.getByRole('button', { name: '本题代码跟打', exact: true }).click();
+  await expectEditorValue(typing, 'anagrams draft');
+  await expect(page.getByRole('heading', { name: '没有命中现有模式。补充题意，或在下方手动选择；仅凭关键词不能确定解法。', exact: true })).toHaveCount(0);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: 'test-results/hot100-question-typing-mobile.png', fullPage: true });
 });

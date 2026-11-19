@@ -25,7 +25,11 @@ try{
     await page.goto(`${origin}/web/geek/chat?scenario=${scenario}`);
     await service.career.writeSession(owner,{state:'ready',humanWindow:'open',engine:'patchright'});
     const job=await service.sync(owner,crypto.randomUUID(),'first_ten');
-    browser.captureFirstConversations=async(guard,save,started,plan)=>capture(guard,async(snapshot,total)=>{await save(snapshot,total);if(scenario==='cancel')await service.cancel(owner,job.id);if(scenario==='resume')throw Error('SYNTHETIC_INTERRUPTION');},started,plan);
+    browser.captureFirstConversations=async(guard,record,plan)=>capture(guard,async(next,snapshot)=>{
+      await record(next,snapshot);
+      if(scenario==='cancel'&&snapshot)await service.cancel(owner,job.id);
+      if(scenario==='resume'&&next.nextIndex===2)throw Error('SYNTHETIC_INTERRUPTION');
+    },plan);
     await worker.tick();
     let interrupted=null;
     if(scenario==='resume'){

@@ -1,6 +1,6 @@
 import { execFile, spawn, type ChildProcess } from 'node:child_process';
-import { readCurrentBossConversation } from './boss-inbox-reader';
-import { firstBossInboxRows,selectBossInboxRow,type BossInboxBatchPlan } from './boss-inbox-list';
+import { BossConversationMissingExchange, BossConversationReadError, readCurrentBossConversation } from './boss-inbox-reader';
+import { bossInboxBatchLimit, loadedBossInboxRows, selectBossInboxRow, type BossInboxBatchPlan } from './boss-inbox-list';
 import type {BossConversation} from '../../../packages/contracts/src/boss-inbox';
 import { createHash } from 'node:crypto';
 import { chmod, mkdir, readFile, rm } from 'node:fs/promises';
@@ -99,6 +99,7 @@ export type ManagedPage = {
 export type ManagedContext = {
   pages(): ManagedPage[];
   newPage(): Promise<ManagedPage>;
+  once(event: 'close', listener: () => void): unknown;
   close(): Promise<void>;
   setDefaultTimeout(timeout: number): void;
   setDefaultNavigationTimeout(timeout: number): void;
@@ -485,6 +486,7 @@ export function accountMarkerFor(rawUid: string) {
 export class BossBrowser {
   private browser: Browser | null = null;
   private context: ManagedContext | null = null;
+  private headedContextClosed = false;
   private page: ManagedPage | null = null;
   private moli: ChildProcess | null = null;
   private release: (() => Promise<void>) | null = null;
@@ -933,8 +935,14 @@ export class BossBrowser {
       return this.managePage(context);
     }
     if (!this.context) {
-      this.context = engine === 'patchright' ? await this.startPatchright() : await this.startHeadedPlaywright();
+      const context: ManagedContext = engine === 'patchright' ? await this.startPatchright() : await this.startHeadedPlaywright();
+      this.context = context;
       this.activeEngine = engine;
+      context.once('close', () => {
+        if (this.context !== context) return;
+        this.headedContextClosed = true;
+        this.headedLabel = null;
+      });
     }
     return this.managePage(this.context);
   }
@@ -1053,6 +1061,7 @@ export class BossBrowser {
     this.initialNavigation = 'not_required';
     try {
       const preferred: BossEngine = this.context || this.browser ? this.activeEngine : this.options.engine;
+      if (this.headedContextClosed) await this.closeBrowser();
       if (preferred === 'moli') {
         const page = await this.ensureBrowser('moli');
         this.recordOpen('opened');
@@ -1130,8 +1139,7 @@ export class BossBrowser {
     this.assertOwned();
     if(!await guard.stillAllowed())throw new Error('同步已取消。');
     const page=await this.ownPage();
-    await this.requireActable(page,'navigation');
-    const observed=await this.inspectSession();
+    const observed=await this.requireActable(page,'navigation');
     if(observed.state!=='ready')throw new Error('会话未就绪，请先完成登录或人工验证。');
     const captured=await readCurrentBossConversation(page,this.options.origin,observed.accountMarker);
     const snapshot=captured.snapshot;
@@ -1145,7 +1153,9 @@ export class BossBrowser {
         if(posting.sitePostingId!==snapshot.postingId)throw new Error('岗位与会话标识不一致，未同步。');
         snapshot.jdText=posting.jdText;
         if(!await guard.stillAllowed())throw new Error('同步已取消。');
-        const current=await readCurrentBossConversation(page,this.options.origin,null);
+        const currentSession=await this.requireActable(page,'navigation');
+        if(currentSession.state!=='ready')throw new Error('读取详情后会话未就绪，未保存。');
+        const current=await readCurrentBossConversation(page,this.options.origin,currentSession.accountMarker);
         if(current.snapshot.accountKey!==snapshot.accountKey||current.snapshot.conversationKey!==snapshot.conversationKey||current.snapshot.postingId!==snapshot.postingId)throw new Error('读取详情期间切换了账号或聊天，未保存。');
       }finally{
         if(!this.pause){await detailPage.close().catch(()=>{});await page.bringToFront().catch(()=>{});}
@@ -1155,38 +1165,63 @@ export class BossBrowser {
     return snapshot;
   }
 
-  async captureFirstConversations(guard:EffectGuard,save:(snapshot:BossConversation,total:number)=>Promise<void>,started:(plan:BossInboxBatchPlan)=>Promise<void>,resume?:BossInboxBatchPlan){
+  async captureFirstConversations(
+    guard:EffectGuard,
+    record:(plan:BossInboxBatchPlan,snapshot?:BossConversation)=>Promise<void>,
+    resume?:BossInboxBatchPlan,
+  ){
     this.assertOwned();
     const page=await this.ownPage();
     const check=async()=>{
-      await this.requireActable(page,'navigation');
+      const observed=await this.requireActable(page,'navigation');
       const url=new URL(page.url());
-      if(url.origin!==new URL(this.options.origin).origin||!/^\/web\/geek\/chat\/?$/.test(url.pathname))throw Error('请在专用 BOSS 窗口打开消息页后同步前十条会话。');
+      if(url.origin!==new URL(this.options.origin).origin||!/^\/web\/geek\/chat\/?$/.test(url.pathname))throw Error('请在专用 BOSS 窗口打开消息页后批量同步。');
+      if(!await guard.stillAllowed())throw Error('同步已取消。');
+      return observed;
     };
     await check();
-    const currentRows=await firstBossInboxRows(page,guard,check);
-    if(resume&&JSON.stringify(resume.targets)!==JSON.stringify(currentRows))throw Error('中断期间前十条会话列表已变化，已保留完成项，请重新发起同步。');
-    const plan=resume??{targets:currentRows,completed:0,accountKey:null};
-    const rows=plan.targets;
-    await started(plan);
-    let account=plan.accountKey;
-    for(const row of rows.slice(plan.completed)){
-      await check();if(!await guard.stillAllowed())throw Error('同步已取消。');
-      await selectBossInboxRow(page,row);
+    const rows=await loadedBossInboxRows(page,check);
+    if(resume){
+      const comparable=resume.nextIndex===undefined?rows.slice(0,resume.targets.length):rows;
+      if(JSON.stringify(resume.targets)!==JSON.stringify(comparable))throw Error('中断期间会话列表已变化，已保留完成项，请重新发起同步。');
+    }
+    let plan={targets:rows,completed:resume?.completed??0,nextIndex:resume?.nextIndex??resume?.completed??0,accountKey:resume?.accountKey??null};
+    await record(plan);
+    for(const row of rows.slice(plan.nextIndex)){
+      if(plan.completed>=bossInboxBatchLimit)break;
+      if(!row)throw Error('列表中的会话或岗位标识未确认，已停止同步。');
+      await selectBossInboxRow(page,row,check);
+      const matches=(identity:Pick<BossConversation,'conversationKey'|'postingId'>)=>identity.conversationKey===row.key&&identity.postingId===row.postingId;
       let selected=false;
+      let readError:BossConversationReadError|null=null;
       for(let attempt=0;attempt<50;attempt++){
-        await check();if(!await guard.stillAllowed())throw Error('同步已取消。');
+        const observed=await check();
         // A click can precede the new header/message render. Do not accept the preceding chat.
-        const current=await readCurrentBossConversation(page,this.options.origin,null).catch(()=>null);
-        if(current?.snapshot.conversationKey===row.key&&current.snapshot.postingId===row.postingId){selected=true;break;}
-        await page.waitForTimeout(200);
+        try{
+          const {snapshot}=await readCurrentBossConversation(page,this.options.origin,observed.accountMarker);
+          readError=null;
+          if(matches(snapshot)){selected=true;break;}
+        }catch(error){
+          if(error instanceof BossConversationReadError)readError=error;
+          else await this.pageFailure(page,error,'navigation');
+        }
+        if(attempt<49)await page.waitForTimeout(200);
       }
-      if(!selected)throw Error('会话切换后未确认岗位和简历交换证据，已停止同步。');
-      const snapshot=await this.captureConversation(guard);
-      if(snapshot.conversationKey!==row.key||snapshot.postingId!==row.postingId||account&&snapshot.accountKey!==account)throw Error('读取时账号或会话变化，已停止同步。');
-      account=snapshot.accountKey;
-      if(!await guard.stillAllowed())throw Error('同步已取消。');
-      await save(snapshot,rows.length);
+      await check();
+      let snapshot:BossConversation|undefined;
+      if(selected){
+        try{snapshot=await this.captureConversation(guard);}
+        catch(error){
+          if(!(error instanceof BossConversationMissingExchange))throw error;
+          readError=error;
+        }
+      }
+      const identity=snapshot??(readError instanceof BossConversationMissingExchange?readError.identity:null);
+      if(!identity)throw readError??Error('会话切换后未确认目标会话与岗位标识，已停止同步。');
+      if(!matches(identity)||plan.accountKey&&identity.accountKey!==plan.accountKey)throw Error('读取时账号或会话变化，已停止同步。');
+      await check();
+      plan={...plan,nextIndex:plan.nextIndex+1,completed:plan.completed+(snapshot?1:0),accountKey:identity.accountKey};
+      await record(plan,snapshot);
     }
   }
 
@@ -1238,6 +1273,7 @@ export class BossBrowser {
     }
     this.browser = null;
     this.context = null;
+    this.headedContextClosed = false;
     this.page = null;
     this.endpoint = null;
     await this.releaseOwnership();

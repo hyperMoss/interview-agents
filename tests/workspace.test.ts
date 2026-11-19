@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { IDBFactory, IDBObjectStore } from 'fake-indexeddb';
 import { WorkspaceStore } from '../apps/web/src/workspace-store';
+import { defaultAlgorithmDraft, getAlgorithmDrillTarget, recordTyping } from '../apps/web/src/algorithm-draft';
 import { workspaceBackupSchema } from '../packages/contracts/src/workspace';
 
 class LegacyStorage implements Storage {
@@ -22,6 +23,23 @@ function makeStore(factory = new IDBFactory(), legacyStorage?: Storage) {
 afterEach(() => { for (const store of stores) store.close(); stores.length = 0; vi.restoreAllMocks(); });
 
 describe('long-term browser workspace', () => {
+  it('persists question typing through reopening and backup restore, and migrates old routine drafts', async () => {
+    const factory = new IDBFactory();
+    const store = makeStore(factory); await store.initialize();
+    const question = { ...defaultAlgorithmDraft(), origin: { kind: 'hot100', id: 239, title: '滑动窗口最大值' }, codeSource: 'question' } satisfies ReturnType<typeof defaultAlgorithmDraft>;
+    const draft = recordTyping(question, getAlgorithmDrillTarget(question), 'class Solution:');
+    expect(store.write('algorithm-practice-v1', JSON.stringify(draft))).toBe(true);
+    await store.flush(); store.close();
+    const reopened = makeStore(factory); await reopened.initialize();
+    expect(JSON.parse(reopened.read('algorithm-practice-v1') ?? 'null')).toEqual(draft);
+    const restored = makeStore(); await restored.initialize();
+    await restored.restore(restored.previewImport(JSON.stringify(reopened.backup())));
+    expect(JSON.parse(restored.read('algorithm-practice-v1') ?? 'null')).toEqual(draft);
+    const { codeSource, ...legacyDraft } = defaultAlgorithmDraft();
+    expect(codeSource).toBe('pattern');
+    expect(restored.write('algorithm-practice-v1', JSON.stringify(legacyDraft))).toBe(true);
+    expect(JSON.parse(restored.read('algorithm-practice-v1') ?? 'null').codeSource).toBe('pattern');
+  });
   it('migrates valid keys independently and retains corrupt and unrelated legacy values', async () => {
     const legacy = new LegacyStorage();
     legacy.setItem('interview-intake', intake); legacy.setItem('hot100-practice-v1', hot100('return 1'));

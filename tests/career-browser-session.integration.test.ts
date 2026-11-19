@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { existsSync } from 'node:fs';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { BossBrowser, BrowserUnavailable, liveBossProfile } from '../apps/worker/src/boss-browser';
@@ -140,6 +140,30 @@ suite('patchright owned session against the synthetic BOSS site', () => {
       await restarted.close();
     }
   }, 180000);
+
+  it('reopens a closed Chrome context using the same private profile', async () => {
+    const profileDirectory = join(dataDir, 'reopen-profile');
+    const browser = new BossBrowser(options({ directory: profileDirectory }));
+    const priorLogin = fixture.state.loggedIn;
+    fixture.state.loggedIn = false;
+    try {
+      expect((await browser.openSession()).state).toBe('login_required');
+      const profileMarker = join(profileDirectory, 'fixture-profile-marker');
+      await writeFile(profileMarker, 'preserve private profile');
+      const page = await browser.ensureBrowser();
+      if (!('context' in page) || typeof page.context !== 'function') throw new Error('Missing Chrome context');
+      await page.context().close();
+      const requestCount = fixture.state.requests.length;
+      expect((await browser.checkSession()).state).toBe('absent');
+      expect(fixture.state.requests.length).toBe(requestCount);
+      const reopened = await browser.openSession();
+      expect(reopened, reopened.detail).toMatchObject({ state: 'login_required', humanWindow: 'open' });
+      expect(await readFile(profileMarker, 'utf8')).toBe('preserve private profile');
+    } finally {
+      fixture.state.loggedIn = priorLogin;
+      await browser.close();
+    }
+  }, 120000);
 
   it('stops on a safety page, keeps it for the human and refuses scan or mutation until an explicit recovery', async () => {
     const browser = new BossBrowser(options());

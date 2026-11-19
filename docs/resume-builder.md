@@ -22,6 +22,16 @@ Interview records are under **面试中心 → 面试历史**, rather than the g
 
 Unsaved JSON stays in the current tab's session storage across page navigation and refresh. Save changes before closing the tab. Saved copies live in the local API's SQLite database and belong to the current signed browser identity. General workspace backups do not include these copies. Export JSON to back them up.
 
+## Set section order
+
+The top-level `order` array controls entire sections in preview, HTML and PDF. Put `"projects"` before `"work"` to display the complete **项目经历** section before **工作经历**:
+
+```json
+"order": ["header", "summary", "projects", "work", "skills", "education"]
+```
+
+Keep only the sections you want to display. Project entries retain their order within the single project section.
+
 ## Export a resume
 
 - Click **导出 JSON** to download the current valid document, including unsaved edits and extension fields.

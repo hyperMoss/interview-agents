@@ -36,9 +36,9 @@ export const reviewItemSchema = z.strictObject({
 export const reviewListSchema = z.strictObject({ version: z.literal(1), items: z.array(reviewItemSchema).max(1000) });
 export type ReviewItem = z.infer<typeof reviewItemSchema>;
 
-const drillKindSchema = z.enum(['statement', 'code']);
+export const drillKindSchema = z.enum(['statement', 'code']);
 const drillSchema = z.strictObject({ key: z.string().max(150), kind: drillKindSchema, reference: z.string().max(14000), typed: z.string().max(30000) });
-const algorithmDraftSchema = z.strictObject({
+export const algorithmDraftSchema = z.strictObject({
   version: z.literal(1), problem: z.string().max(14000),
   origin: z.discriminatedUnion('kind', [
     z.strictObject({ kind: z.literal('example'), title: z.string().max(200), patternId: z.string().max(80) }),
@@ -46,7 +46,7 @@ const algorithmDraftSchema = z.strictObject({
     z.strictObject({ kind: z.literal('hot100'), title: z.string().max(200), id: z.number().int().positive() }),
     z.strictObject({ kind: z.literal('custom'), title: z.string().max(200) }),
   ]),
-  patternId: z.string().max(80), kind: drillKindSchema, drills: z.array(drillSchema).max(20),
+  patternId: z.string().max(80), kind: drillKindSchema, codeSource: z.enum(['pattern', 'question']).default('pattern'), drills: z.array(drillSchema).max(20),
 });
 const hot100EntrySchema = z.strictObject({
   questionId: z.number().int().positive(), code: z.string().max(12000), notes: z.string().max(3000), status: z.enum(['todo', 'doing', 'reviewed']),

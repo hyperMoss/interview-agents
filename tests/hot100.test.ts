@@ -63,6 +63,8 @@ describe('practice card tool used by the skill', () => {
   });
   it('defers hints until requested and rejects invalid selections', () => {
     expect(JSON.stringify(runAlgorithmCommand(['show', '1']))).not.toContain('先查询再记录');
+    expect(JSON.stringify(runAlgorithmCommand(['show', '1']))).not.toContain('def twoSum');
+    expect(JSON.stringify(runAlgorithmCommand(['show', '1', '--hint']))).toContain('def twoSum');
     expect(JSON.stringify(runAlgorithmCommand(['show', '1', '--hint']))).toContain('先查询再记录');
     expect(() => runAlgorithmCommand(['show', '999999'])).toThrow('不在当前');
     expect(() => runAlgorithmCommand(['list', '--group', '不存在'])).toThrow('专题不存在');

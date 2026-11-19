@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "factoryVersion": "0.1.0",
-  "specHash": "11b8127ad61cf9ce220e15dd545af8e2b468804951681fbbb77235cb376fdbd8",
+  "specHash": "969709f92e4cf870d1768952764b9c6cdb6c6ee898331b0eecf974374279ba3a",
   "catalogHash": "d9453d50b0e9f8d4ffd4ec36d68f0c4a2c2c5b3ebfd15335dca35c235b4f183b",
   "learningVersion": 0,
   "capabilities": [
@@ -15,8 +15,8 @@
     "web.search"
   ],
   "outputs": {
-    "capabilities.resolved.json": "07190d11769e5d9254a9138aeea98b07f32b0d40748a1e7585fc5207c03a88c2",
-    "docs/generated/00-PROJECT-BRIEF.md": "b06b5ba680c494552b6a9d04a99c1abe3ffc469120e4d31c9462cac6fa3a8cbf",
+    "capabilities.resolved.json": "aa6fad6f018c69be3292fc8c943365b86f926db892e2e1083ee0ca3e4c75d492",
+    "docs/generated/00-PROJECT-BRIEF.md": "fff1493dbb8746b315c6db648f02e592272d7ee441e7fd0b58a81188d44b5d64",
     "docs/generated/01-ARCHITECTURE.md": "7955bb1d6665fc6d88d956fb3d1c150e11137afe49e963cad25063f9e00189c6",
     "docs/generated/03-CAPABILITY-MATRIX.md": "c65021ddfc2b2165ce5aaba2d6108a0c432e3f619518a586e01c3a9009a45d50",
     "docs/generated/04-DATA-DESIGN.md": "f5cad3bfabcd8db06435cbf296410e4582db7e3b501c46b0364552d4262d8eb5",
@@ -25,8 +25,8 @@
     "config/generated/config.schema.json": "ba8c9195070baeb6a4d1a3f8263aeb2ad93dfdb4288b1292f380e1b987ef218d",
     "config/generated/env.example": "6969e9f3e858e207a28b689392a6b134b3e4c756b650203b41ce79011a312493",
     "docs/generated/07-SECURITY.md": "b4557961e14715bfdca65cf4e91d042befa8f6e7e06de0f5e8a291e084476605",
-    "docs/generated/08-TEST-PLAN.md": "4d4d4ffe1e0350796a5b7b3e0e611941b8ece838b93e510b8439cf5bdb35478d",
-    "docs/generated/09-TASKS.md": "9f50e55d541057f18e0cdba55b7d6b9ffdf76c189f77ea1c4990022821a896e8",
+    "docs/generated/08-TEST-PLAN.md": "c289f93efcb0e524a67671684786fd6c79485bc9338d1ba708dd8ec35195dcbb",
+    "docs/generated/09-TASKS.md": "902979c2f3c8fa9c38ebc6edd9509e6e15eeb232d226e1697bedce55591940b2",
     "docs/generated/10-OPERATIONS.md": "1c5985100facf85423c96e6ae4e05c4c43bed40f0cc4d911bbe4a9df7f9acd9d",
     "docs/generated/OPEN-QUESTIONS.md": "aed1733b147dca12024b9218b56a4dd2d918d7d3069128da3cd53f39f2815f9f",
     "docs/generated/modules/agent.runtime.md": "46c3645852eefb9872ec0498948bce4ae93c767c2e80140852dee79aaf33a04b",

@@ -43,7 +43,7 @@ try {
   const componentSaved=componentRow?await service.store.get(owner,componentRow.id):null;
   const selectionRetained=page.url()===componentUrl;
   const rejected=[];
-  for(const flag of ['mismatch','missingAccount','visibleMismatch','pending']){
+  for(const flag of ['mismatch','missingAccount','visibleMismatch','pending','failedSend','rejectedSend']){
     await page.goto(`${componentUrl}&${flag}=1`);const job=await service.sync(owner,crypto.randomUUID());await worker.tick();rejected.push(await service.job(owner,job.id));
   }
   process.stdout.write(JSON.stringify({status,saved,linked:linkedJob,enriched,replay:await service.job(owner,replay.id),pending:pendingJob,component:componentJob,componentSaved,selectionRetained,rejected,diagnostic:{count:diagnostic.elements.length,privateText:/合成测试公司|请准备|synthetic-account|请求交换简历/.test(diagnosticText),mode:(await stat(diagnosticPath)).mode&0o777},listCount:(await service.store.list(owner)).length,snapshots: saved ? (await service.store.snapshots(owner,saved.id)).length : 0}));

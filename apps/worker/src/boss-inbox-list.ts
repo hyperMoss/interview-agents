@@ -1,9 +1,15 @@
 import {z} from 'zod';
-import type {ManagedPage,EffectGuard} from './boss-browser';
+import type {ManagedPage} from './boss-browser';
 
 const exchanged=/^(有交换|有交换简历|已交换简历|已换简历|已交换)$/;
 const rowSchema=z.strictObject({key:z.string().min(1).max(200),postingId:z.string().regex(/^[A-Za-z0-9_-]{1,200}$/)});
-export const bossInboxBatchPlanSchema=z.strictObject({targets:z.array(rowSchema).min(1).max(10),completed:z.number().int().min(0).max(10),accountKey:z.string().min(1).max(200).nullable()}).refine(plan=>plan.completed<=plan.targets.length);
+export const bossInboxBatchLimit=10;
+export const bossInboxBatchPlanSchema=z.strictObject({
+  targets:z.array(rowSchema.nullable()).min(1),
+  completed:z.number().int().min(0).max(bossInboxBatchLimit),
+  nextIndex:z.number().int().nonnegative().optional(),
+  accountKey:z.string().min(1).max(200).nullable(),
+}).refine(plan=>plan.completed<=(plan.nextIndex??plan.completed)&&(plan.nextIndex??plan.completed)<=plan.targets.length);
 export type BossInboxBatchPlan=z.infer<typeof bossInboxBatchPlanSchema>;
 const rowsSelector='[data-inbox-conversation-id], .chat-user .friend-content[data-v-3d67f5a8]';
 
@@ -17,7 +23,7 @@ function observeRows(body:HTMLElement){
   });
 }
 
-export async function firstBossInboxRows(page:ManagedPage,guard:EffectGuard,check:()=>Promise<void>){
+export async function loadedBossInboxRows(page:ManagedPage,check:()=>Promise<unknown>){
   const labels=page.locator('.label-list .label-name:not(.more), .label-list .more-label li').visible();
   const find=async()=>{
     const names=await labels.evaluateAll(nodes=>nodes.map(node=>(node.matches('.label-name')?node:node.querySelector('span')??node).textContent?.trim()??''));
@@ -28,17 +34,17 @@ export async function firstBossInboxRows(page:ManagedPage,guard:EffectGuard,chec
   let index=await find();
   if(index===undefined){
     const more=page.locator('.label-list .label-name.more').visible();
-    if(await more.count()===1){await check();if(!await guard.stillAllowed())throw Error('同步已取消。');await more.click();index=await find();}
+    if(await more.count()===1){await check();await more.click();index=await find();}
   }
   if(index===undefined)throw Error('未找到原生已交换简历筛选，请在专用消息页展开该筛选后重试。');
-  await check();if(!await guard.stillAllowed())throw Error('同步已取消。');
+  await check();
   await labels.nth(index).click();
   await page.locator('.user-list-content').visible().evaluateAll(nodes=>{
     // The native list is virtualized; return to its first rendered items even if the tab was already selected.
     for(const node of nodes)node.scrollTop=0;
   });
   for(let attempt=0;attempt<50;attempt++){
-    await check();if(!await guard.stillAllowed())throw Error('同步已取消。');
+    await check();
     const list=await page.locator('body').evaluate(body=>{
       const selected=body.querySelector('.label-list li.selected');
       const label=selected?.querySelector('.label-name')?.textContent?.trim()??selected?.textContent?.trim();
@@ -52,24 +58,43 @@ export async function firstBossInboxRows(page:ManagedPage,guard:EffectGuard,chec
       if(!labelState||typeof labelState!=='object'||Reflect.get(labelState,'name')!==label||Reflect.get(runtime,'loading$')===1||Array.isArray(Reflect.get(runtime,'loading$')))return null;
       const rows:unknown=Reflect.get(runtime,'fullList');
       if(!Array.isArray(rows))return null;
-      return rows.slice(0,10).map((row:unknown)=>row&&typeof row==='object'?{key:Reflect.get(row,'uniqueId'),postingId:Reflect.get(row,'encryptJobId')}:null);
+      return rows.map((row:unknown)=>row&&typeof row==='object'?{key:Reflect.get(row,'uniqueId'),postingId:Reflect.get(row,'encryptJobId')}:null);
     },undefined,{},false);
     if(list!==null){
-      const projected=list??(await page.locator('body').evaluate(observeRows,undefined,{},false)).slice(0,10).map(({key,postingId})=>({key,postingId}));
-      const rows=z.array(rowSchema).max(10).parse(projected);
-      if(!rows.length)throw Error('已交换简历列表为空，未同步任何会话。');
-      if(new Set(rows.map(row=>row.key)).size!==rows.length)throw Error('会话列表标识重复，未开始同步。');
-      return rows;
+      const projected=list??(await page.locator('body').evaluate(observeRows,undefined,{},false)).map(({key,postingId})=>({key,postingId}));
+      if(!projected.length)throw Error('已交换简历列表为空，未同步任何会话。');
+      const seen=new Set<string>();
+      return projected.map(item=>{
+        const row=rowSchema.safeParse(item);
+        if(!row.success||seen.has(row.data.key))return null;
+        seen.add(row.data.key);
+        return row.data;
+      });
     }
     await page.waitForTimeout(200);
   }
   throw Error('已交换简历列表加载超时，请检查专用窗口后重试。');
 }
 
-export async function selectBossInboxRow(page:ManagedPage,row:z.infer<typeof rowSchema>){
-  const rows=await page.locator('body').evaluate(observeRows,undefined,{},false);
-  const matches=rows.filter(current=>current.key===row.key&&current.postingId===row.postingId);
-  const [match]=matches;
-  if(matches.length!==1||!match)throw Error('冻结的前十条会话已变化或不在当前列表，已停止同步。');
-  await page.locator(rowsSelector).nth(match.index).click();
+export async function selectBossInboxRow(page:ManagedPage,row:z.infer<typeof rowSchema>,check:()=>Promise<unknown>){
+  for(let attempt=0;attempt<40;attempt++){
+    await check();
+    const rows=await page.locator('body').evaluate(observeRows,undefined,{},false);
+    const matches=rows.filter(current=>current.key===row.key&&current.postingId===row.postingId);
+    if(matches.length===1&&matches[0]){
+      await page.locator(rowsSelector).nth(matches[0].index).click();
+      return;
+    }
+    if(matches.length>1)break;
+    const lists=page.locator('.user-list-content').visible();
+    if(await lists.count()!==1)break;
+    const moved=await lists.evaluate(list=>{
+      const before=list.scrollTop;
+      list.scrollTop+=Math.max(1,Math.floor(list.clientHeight*0.8));
+      return list.scrollTop>before;
+    });
+    if(!moved)break;
+    await page.waitForTimeout(100);
+  }
+  throw Error('冻结的会话标识已变化或不在当前列表，已停止同步。');
 }

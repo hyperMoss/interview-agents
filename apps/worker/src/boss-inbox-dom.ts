@@ -56,16 +56,23 @@ export function observeBossChat(body:HTMLElement,marker:string|null) {
     if(typeof securityId==='string'&&securityId.length<=2000)jobUrl.searchParams.set('securityId',securityId);
   }
   if(jobUrl&&postingId!==jobUrl.pathname.match(/\/job_detail\/([A-Za-z0-9_-]+)\.html$/)?.[1])return {error:'聊天岗位标识与详情链接不一致，未保存。',structure};
-  const exchangeNodes=Array.from(chat.querySelectorAll('[data-resume-exchanged="true"], .resume-exchange-status, .resume-status, .message-system, .system-message, .message-item.item-system .text, .message-item.item-myself .message-card-top-title'))
-    .filter(element=>element.getBoundingClientRect().width>0&&element.getBoundingClientRect().height>0&&getComputedStyle(element).visibility!=='hidden');
-  const exchange=exchangeNodes.map(node=>node.textContent?.trim()??'').find(value=>/已交换简历|已接收.{0,12}简历|对方已(同意|接受).{0,12}简历|已发送.{0,12}(附件)?简历|简历已发送/.test(value)&&!/请求|申请|等待/.test(value));
-  if(!exchange)return {error:'当前可见记录中没有明确的简历已交换或已接收证据；申请、请求或按钮不算成功。',structure};
+  const exchangeNodes=Array.from(chat.querySelectorAll('[data-resume-exchanged="true"], .resume-exchange-status, .resume-status, .message-system, .system-message, .message-item.item-system .text, .message-item.item-myself .message-card-top-title, .message-item .message-dialog-both :is(.message-card-top-title, .message-subtitle, .message-multi > .gray)'))
+    .filter((element):element is HTMLElement=>element instanceof HTMLElement&&element.getBoundingClientRect().width>0&&element.getBoundingClientRect().height>0&&getComputedStyle(element).visibility!=='hidden');
+  const exchange=exchangeNodes.map(node=>node.innerText.trim()).find(value=>{
+    const text=value.replace(/\s+/g,'');
+    if(/失败|未成功|未发送|拒绝|撤回|取消/.test(text))return false;
+    if(/^附件简历请求已发送[。！!]?$/.test(text)||text.includes('您的附件简历'))return true;
+    if(/请求|申请|等待/.test(text))return false;
+    const confirmed=/已交换简历|交换(?:附件|在线)?简历成功|已(?:接收|收到).{0,12}简历|对方已(?:同意|接受).{0,12}简历|已发送.{0,12}简历|简历已发送/;
+    const sentToRecruiter=/^(?:你|您)?(?:已(?:成功)?向(?:对方|招聘方|Boss)发送(?:了)?(?:你的|您的)?(?:附件|在线)?简历|已(?:成功)?将(?:附件|在线)?简历发送(?:给|至)(?:对方|招聘方|Boss)|向(?:对方|招聘方|Boss)发送了(?:附件|在线)?简历)[。！!]?$/i;
+    return confirmed.test(text)||sentToRecruiter.test(text);
+  });
   const messages=Array.from(chat.querySelectorAll('[data-message-id], .message-item')).filter(element=>element.getBoundingClientRect().width>0&&element.getBoundingClientRect().height>0&&getComputedStyle(element).visibility!=='hidden');
   if(messages.length>200)return {error:'当前消息超过 200 条，请缩小可见窗口；不会截断保存。',structure};
   return {
     structure,postingReadUrl:jobUrl?.toString()??null,
     accountKey:account,conversationKey,postingId,company,title,
-    jdText:(fields[2]?.length??0)>=20?fields[2]:null,exchangeEvidence:exchange,
+    jdText:(fields[2]?.length??0)>=20?fields[2]:null,exchangeEvidence:exchange??null,
     sourceUrl:body.ownerDocument.location.origin+body.ownerDocument.location.pathname,
     postingUrl:jobUrl?jobUrl.origin+jobUrl.pathname:null,
     observedAt:new Date().toISOString(),scope:'visible_window',

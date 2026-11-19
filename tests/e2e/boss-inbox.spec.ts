@@ -54,15 +54,15 @@ test('starts the first-ten sync, shows durable progress and preserves it after c
   const id=crypto.randomUUID();let status='processing';
   await page.route('**/api/v1/boss-conversations/sync',async route=>{
     expect(route.request().postDataJSON()).toMatchObject({mode:'first_ten'});
-    await route.fulfill({json:{id,status,progress:{total:10,completed:2},failure:null}});
+    await route.fulfill({json:{id,status,progress:{total:10,completed:2,skipped:1},failure:null}});
   });
-  await page.route(`**/api/v1/boss-conversations/sync/${id}`,route=>route.fulfill({json:{id,status,progress:{total:10,completed:2},failure:null}}));
-  await page.route(`**/api/v1/boss-conversations/sync/${id}/cancel`,async route=>{status='cancelled';await route.fulfill({json:{id,status,progress:{total:10,completed:2},failure:null}});});
+  await page.route(`**/api/v1/boss-conversations/sync/${id}`,route=>route.fulfill({json:{id,status,progress:{total:10,completed:2,skipped:1},failure:null}}));
+  await page.route(`**/api/v1/boss-conversations/sync/${id}/cancel`,async route=>{status='cancelled';await route.fulfill({json:{id,status,progress:{total:10,completed:2,skipped:1},failure:null}});});
   await page.goto('/#/boss-conversations');
-  await page.getByRole('button',{name:'自动同步前 10 条',exact:true}).click();
-  await expect(page.getByText('同步状态：正在读取 · 已同步 2 / 10 条',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'自动同步最多 10 条',exact:true}).click();
+  await expect(page.getByText('同步状态：正在读取 · 已同步 2 / 10 条 · 已跳过 1 条',{exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'同步当前会话',exact:true})).toBeDisabled();
   await page.getByRole('button',{name:'取消同步',exact:true}).click();
-  await expect(page.getByText('同步状态：已取消 · 已同步 2 / 10 条',{exact:true})).toBeVisible();
-  await page.reload();await expect(page.getByText('同步状态：已取消 · 已同步 2 / 10 条',{exact:true})).toBeVisible();
+  await expect(page.getByText('同步状态：已取消 · 已同步 2 / 10 条 · 已跳过 1 条',{exact:true})).toBeVisible();
+  await page.reload();await expect(page.getByText('同步状态：已取消 · 已同步 2 / 10 条 · 已跳过 1 条',{exact:true})).toBeVisible();
 });

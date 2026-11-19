@@ -733,17 +733,13 @@ export class CareerWorker {
         await inbox.save(work.owner,snapshot,{id:work.id,leaseGeneration:work.lease_generation,sessionGeneration:session.profile_generation});
       };
       if(work.payload.inboxMode==='first_ten'){
-        const {bossInboxBatchPlanSchema}=await import('./boss-inbox-list');
-        let plan=work.payload.inboxPlan?bossInboxBatchPlanSchema.parse(work.payload.inboxPlan):undefined;
-        const progress=async(next:NonNullable<typeof plan>)=>{
-          plan=next;
-          await this.database.pool.query("UPDATE app_career_work SET payload=json_set(payload,'$.inboxProgress',json($1),'$.inboxPlan',json($2)) WHERE id=$3 AND owner=$4 AND status='processing' AND lease_generation=$5",[JSON.stringify({total:next.targets.length,completed:next.completed}),JSON.stringify(next),work.id,work.owner,work.lease_generation]);
-        };
-        await browser.captureFirstConversations(guard,async(snapshot)=>{
-          await save(snapshot);
-          if(!plan)throw Error('同步计划缺失。');
-          await progress({...plan,completed:plan.completed+1,accountKey:snapshot.accountKey});
-        },progress,plan);
+        const {bossInboxBatchLimit,bossInboxBatchPlanSchema}=await import('./boss-inbox-list');
+        const plan=work.payload.inboxPlan?bossInboxBatchPlanSchema.parse(work.payload.inboxPlan):undefined;
+        await browser.captureFirstConversations(guard,async(next,snapshot)=>{
+          if(snapshot)await save(snapshot);
+          const progress={total:Math.min(bossInboxBatchLimit,next.targets.length),completed:next.completed,skipped:(next.nextIndex??next.completed)-next.completed};
+          await this.database.pool.query("UPDATE app_career_work SET payload=json_set(payload,'$.inboxProgress',json($1),'$.inboxPlan',json($2)) WHERE id=$3 AND owner=$4 AND status='processing' AND lease_generation=$5",[JSON.stringify(progress),JSON.stringify(next),work.id,work.owner,work.lease_generation]);
+        },plan);
       }else await save(await browser.captureConversation(guard));
       return;
     }

@@ -17,7 +17,9 @@ test('green theme retains the reference layout in preview, HTML and PDF', async 
   await expect(frame.locator('body')).toHaveCSS('margin-top', '0px');
   await expect(frame.locator('body')).toHaveCSS('margin-bottom', '0px');
   await expect(frame.locator('.resume-section-title').first()).toHaveCSS('gap', '20px');
-  await expect(frame.locator('.resume-section-icon').first()).toHaveCSS('width', '24px');
+  await expect(frame.locator('.resume-section-icon').first()).toHaveCSS('width', '18px');
+  await expect(frame.locator('.resume-header')).toHaveCSS('padding-top', '16px');
+  await expect(frame.locator('.resume-section-title').first()).toHaveCSS('margin-bottom', '8px');
   await expect(frame.locator('.resume-section-icon').first()).toHaveCSS('color', 'rgb(47, 158, 68)');
   expect(await frame.locator('.resume-section-title').first().evaluate(node => getComputedStyle(node, '::after').height)).toBe('1px');
   await page.locator('iframe').scrollIntoViewIfNeeded();
@@ -35,6 +37,8 @@ test('green theme retains the reference layout in preview, HTML and PDF', async 
     await expect(exported.locator('.resume-section-title').first()).toHaveCSS('gap', '20px');
     await expect(exported.locator('.resume-section-icon').first()).toHaveCSS('color', 'rgb(47, 158, 68)');
     await expect(exported.locator('body')).toHaveCSS('page', 'resume-green');
+    await expect(exported.locator('.resume-header')).toHaveCSS('padding-top', '16px');
+    await expect(exported.locator('.resume-entry').first()).toHaveCSS('break-inside', 'avoid');
     expect(await exported.evaluate(() => Array.from(document.styleSheets).flatMap(sheet => Array.from(sheet.cssRules)).filter(rule => rule instanceof CSSPageRule && rule.selectorText === 'resume-green').map(rule => rule.cssText))).toEqual([expect.stringContaining('margin: 0px 40px')]);
     await exported.screenshot({ path: 'test-results/resumes/green-print.png', fullPage: true });
   } finally { await exported.close(); }

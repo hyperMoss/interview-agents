@@ -10,7 +10,7 @@ import { Selector } from '@astryxdesign/core/Selector';
 import { TextArea } from '@astryxdesign/core/TextArea';
 import { TextInput } from '@astryxdesign/core/TextInput';
 import { hot100StatusSchema } from '../../../packages/contracts/src/hot100';
-import { algorithmPatterns, getAlgorithmPattern } from '../../../packages/interview/src/algorithm-patterns';
+import { getAlgorithmPattern } from '../../../packages/interview/src/algorithm-patterns';
 import { exportHot100Bank, findHot100Question, hot100Groups, hot100Metadata, hot100Questions, hot100StatusLabels, type Hot100Question } from '../../../packages/interview/src/hot100';
 import { completeHot100Review, filterHot100Practice, getHot100PracticeEntry, hot100PracticeFilterSchema, hot100TopicProgress, isHot100ReviewDue, markHot100NeedsReview, nextHot100PracticeQuestion, type Hot100PracticeEntry } from '../../../packages/interview/src/hot100-review';
 import { hot100DraftKey, restoreHot100Draft, updateHot100Entry } from './hot100-draft';
@@ -19,7 +19,7 @@ import { writeSession } from './storage';
 import './hot100.css';
 
 const difficultyLabels = { easy: '简单', medium: '中等', hard: '困难' };
-type RoutineHandoff = (question: Hot100Question, patternId: string) => void;
+type RoutineHandoff = (question: Hot100Question, patternId?: string) => void;
 
 export function Hot100Panel({ onUseRoutine, questionId, onSelectQuestion }: { onUseRoutine: RoutineHandoff; questionId?: number; onSelectQuestion?: (questionId: number) => void }) {
   const [restored] = useState(restoreHot100Draft);
@@ -69,7 +69,7 @@ export function Hot100Panel({ onUseRoutine, questionId, onSelectQuestion }: { on
   return <section className="hot100-panel" aria-labelledby="hot100-title">
     <div className="hot100-heading"><div><span className="algorithm-eyebrow">LEETCODE HOT 100</span><h2 id="hot100-title">一题一练，把套路用起来。</h2><p>官方题单 · {hot100Groups.length} 个专题 · Python 独立作答与复习</p></div><a href={hot100Metadata.source.url} target="_blank" rel="noreferrer">查看官方题单 ↗</a></div>
     <div className="hot100-stats"><div><strong>100</strong><span>道题</span></div><div><strong>{doing}</strong><span>练习中</span></div><div><strong>{reviewed}</strong><span>已复习 · 自评</span></div><div><strong>{due}</strong><span>到期复习</span></div><ProgressBar label="Hot 100 自评复习进度" isLabelHidden value={reviewed} /></div>
-    <p className="algorithm-caption">官方元数据快照 {hot100Metadata.source.capturedAt}。摘要与提示由本项目编写；完整条件、示例和提交判题请查看原题。{algorithmPatterns.length} 套现有模式可用于关联题的跟打。</p>
+    <p className="algorithm-caption">官方元数据快照 {hot100Metadata.source.capturedAt}。摘要与提示由本项目编写；完整条件、示例和提交判题请查看原题。全部 100 题均可跟打本题 Python 参考解法，也可选择关联的通用套路。</p>
     {warning ? <Banner role="alert" status="warning" title={warning} /> : null}
     {notice ? <p role="status">{notice}</p> : null}
     <details className="hot100-topic-progress"><summary>专题进度 · 已复习均为用户自评</summary><div>{topics.map(topic => <button key={topic.group} onClick={() => setDraft(current => ({ ...current, filters: { ...current.filters, group: topic.group } }))}><span><strong>{topic.group}</strong><small>{topic.reviewed} / {topic.total}{topic.due ? ` · 到期 ${topic.due}` : ''}</small></span><ProgressBar label={`${topic.group}自评复习进度`} isLabelHidden value={topic.percent} /></button>)}</div></details>
@@ -105,7 +105,7 @@ function Hot100Workspace({ question, entry, onChange, onUseRoutine, onNext, now 
     <div className="hot100-card-title"><div><Badge label={question.group} /><Badge className={`difficulty-${question.difficulty}`} label={difficultyLabels[question.difficulty]} /><h3>{question.id}. {question.title}</h3></div><a href={question.url} target="_blank" rel="noreferrer">打开完整原题 ↗</a></div>
     <div className="hot100-favorite"><Button aria-pressed={Boolean(entry.favorite)} label={entry.favorite ? '★ 已收藏' : '☆ 收藏本题'} onClick={() => onChange({ ...entry, favorite: !entry.favorite })} /><span>收藏与复习安排仅用于你的练习记录。</span></div>
     <div className="hot100-goal"><strong>本题练习目标 · 原创学习摘要</strong><p>{question.goal}</p></div>
-    <div className="hot100-routines"><span>相关套路</span>{question.patternIds.length ? question.patternIds.map(id => <Button key={id} label={`练 ${getAlgorithmPattern(id).title}`} onClick={() => onUseRoutine(question, id)} />) : <span className="algorithm-caption">当前还没有对应的跟打模板，可先独立作答并查看提示。</span>}</div>
+    <div className="hot100-routines"><Button label="本题代码跟打" onClick={() => onUseRoutine(question)} /><p className="algorithm-caption">逐题参考解法 · Python</p><span>相关套路</span>{question.patternIds.length ? question.patternIds.map(id => <Button key={id} label={`练 ${getAlgorithmPattern(id).title}`} onClick={() => onUseRoutine(question, id)} />) : <span className="algorithm-caption">暂无关联通用套路，可直接练本题代码。</span>}</div>
     <div className="hot100-hint"><Button aria-expanded={showHint} label={showHint ? '收起本题提示' : '需要一点提示'} onClick={() => setShowHint(current => !current)} />{showHint ? <p role="note">{question.hint}</p> : <span>先想输入、输出和边界，再决定用哪种方法。</span>}</div>
     <TextArea id="hot100-notes" label="你的解题思路" value={entry.notes} rows={3} maxLength={3000} placeholder="为什么选这个方法？维护什么状态？时间与空间复杂度是多少？" onChange={value => edit({ notes: value })} />
     <label htmlFor="hot100-code">Python 独立作答</label><CodeEditor id="hot100-code" label="Python 独立作答" mode="python" value={entry.code} maxLength={12000} onChange={code => edit({ code })} placeholder="# 核对原题函数签名后，在这里编写你的 Python 解法。" />
