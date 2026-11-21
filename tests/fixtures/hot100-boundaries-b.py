@@ -22,6 +22,6 @@ checks = {
 114: "r=TreeNode(1,TreeNode(2,TreeNode(3),TreeNode(4)),TreeNode(5)); s.flatten(r); assert r.val==1 and r.left is None and r.right.val==2 and r.right.right.val==3",
 105: "r=s.buildTree([1,2,3],[2,1,3]); assert r.val==1 and inorder(r)==[2,1,3]; assert s.buildTree([-1],[-1]).val==-1",
 437: "assert s.pathSum(TreeNode(1),1)==1; assert s.pathSum(TreeNode(-1,TreeNode(-1),TreeNode(1)),0)==1",
-236: "r=TreeNode(1,TreeNode(2,TreeNode(4),None),TreeNode(3)); p,q=r.left,r.left.left; assert s.lowestCommonAncestor(r,p,q) is p; assert s.lowestCommonAncestor(r,p,p) is p",
+236: "r=TreeNode(1,TreeNode(2,TreeNode(4),None),TreeNode(3)); p,q=r.left,r.left.left; assert s.lowestCommonAncestor(r,p,q) is p; assert s.lowestCommonAncestor(r,r.left,r.right) is r",
 124: "assert s.maxPathSum(TreeNode(-3))==-3; assert s.maxPathSum(TreeNode(-10,TreeNode(-20),TreeNode(-30)))==-10; assert s.maxPathSum(TreeNode(1,TreeNode(2),TreeNode(3)))==6",
 }
