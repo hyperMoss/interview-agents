@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "factoryVersion": "0.1.0",
-  "specHash": "969709f92e4cf870d1768952764b9c6cdb6c6ee898331b0eecf974374279ba3a",
+  "specHash": "7e6e0e1d0bd742e8945c122c9b6b9fe74457bdbc394368745b466ea3d4e4bbc1",
   "catalogHash": "d9453d50b0e9f8d4ffd4ec36d68f0c4a2c2c5b3ebfd15335dca35c235b4f183b",
   "learningVersion": 0,
   "capabilities": [
@@ -15,31 +15,31 @@
     "web.search"
   ],
   "outputs": {
-    "capabilities.resolved.json": "aa6fad6f018c69be3292fc8c943365b86f926db892e2e1083ee0ca3e4c75d492",
-    "docs/generated/00-PROJECT-BRIEF.md": "fff1493dbb8746b315c6db648f02e592272d7ee441e7fd0b58a81188d44b5d64",
+    "capabilities.resolved.json": "c04a3386b5762bd8088b804b8ed7366651f4108c1746e6b4e8dd676b779ba163",
+    "docs/generated/00-PROJECT-BRIEF.md": "caec190bdc85d5954c522722faecb63ec1eeb9dc9eaf7ffd93e1a6c86862a0e1",
     "docs/generated/01-ARCHITECTURE.md": "7955bb1d6665fc6d88d956fb3d1c150e11137afe49e963cad25063f9e00189c6",
-    "docs/generated/03-CAPABILITY-MATRIX.md": "c65021ddfc2b2165ce5aaba2d6108a0c432e3f619518a586e01c3a9009a45d50",
+    "docs/generated/03-CAPABILITY-MATRIX.md": "1441dcd866f2e01a0b46a47ed29b14c58ffbdf42da9b2f59653993fb1ce3f738",
     "docs/generated/04-DATA-DESIGN.md": "f5cad3bfabcd8db06435cbf296410e4582db7e3b501c46b0364552d4262d8eb5",
     "docs/generated/05-API-CONTRACT.md": "1921b2c6d179656a3a50cabe1fb9c4e6a8ef7506067bb47920ed1d909467d973",
     "docs/generated/06-CONFIGURATION.md": "27f033aaa9999c3059d490fbe437ccf19d2714e89169ca6424e0515a626c3719",
     "config/generated/config.schema.json": "ba8c9195070baeb6a4d1a3f8263aeb2ad93dfdb4288b1292f380e1b987ef218d",
     "config/generated/env.example": "6969e9f3e858e207a28b689392a6b134b3e4c756b650203b41ce79011a312493",
     "docs/generated/07-SECURITY.md": "b4557961e14715bfdca65cf4e91d042befa8f6e7e06de0f5e8a291e084476605",
-    "docs/generated/08-TEST-PLAN.md": "c289f93efcb0e524a67671684786fd6c79485bc9338d1ba708dd8ec35195dcbb",
-    "docs/generated/09-TASKS.md": "902979c2f3c8fa9c38ebc6edd9509e6e15eeb232d226e1697bedce55591940b2",
+    "docs/generated/08-TEST-PLAN.md": "d04ccd7d024bf0eaac7325bfcb7ac7d2514d1baf2388ad1dfd3a5b9ab0915aa2",
+    "docs/generated/09-TASKS.md": "7bd853780a92e408c39df8a3177bbd7337b5eb78e8a71e1e93913ae6ef9d4408",
     "docs/generated/10-OPERATIONS.md": "1c5985100facf85423c96e6ae4e05c4c43bed40f0cc4d911bbe4a9df7f9acd9d",
     "docs/generated/OPEN-QUESTIONS.md": "aed1733b147dca12024b9218b56a4dd2d918d7d3069128da3cd53f39f2815f9f",
     "docs/generated/modules/agent.runtime.md": "46c3645852eefb9872ec0498948bce4ae93c767c2e80140852dee79aaf33a04b",
     "docs/generated/modules/ai.text.md": "8a9c3d8c7888ad13b84f3fb76c85408d43b98cbc9527f7b867c19ec6946a1d1d",
     "docs/generated/modules/career.boss.md": "772ea8d3334212c8e9bcd0f448998f9c4535f324ceec948ef16815518721ae17",
     "docs/generated/modules/core.platform.md": "7da30d38764b6a6c3ea16b97a896d7ee86c1d452fd4941143e27c7b72a1e0707",
-    "docs/generated/modules/interview.practice.md": "5a2697e7320bd5270a2e71e1af5ac1bec7b3132b5f3b6db0c450b61df1ea6061",
+    "docs/generated/modules/interview.practice.md": "80a7ef980d112461c657b53312ccca1c8d2185d2f5978428d3195d35058910a8",
     "docs/generated/modules/jobs.async.md": "5fc0f7ff13684e46ff5468ccbef0115ab4f0fd99937f0edd7a0e96f5dbdc831a",
     "docs/generated/modules/resume.import.md": "303d2079162e0ab8dbd01149b53b245d34ac0e5073c845bfb2148ddb7e386a5c",
     "docs/generated/modules/web.search.md": "559f932f935e5a60677e5b27d7abf421b649ca64e51a2080455bff3a89a486e3",
     "docs/context/index.json": "6130b07cf931a0d89d40606606e52d5877625624c511b081ab050d1ed83a0d38",
     "docs/generated/AGENTS.generated.md": "63b704f150838474d514caa4df64ea92873bfcc026dcabd6e03dca599c07bc66",
-    "docs/generated/traceability.json": "8c60990845e9710cd4fc2be600d24ebee66f7695c54220f205f59674916a6276",
+    "docs/generated/traceability.json": "d8f98f3359a3aa3e4705bdd6b7f5015277e6d9edfd0263e678e37332ef9e2b78",
     "infra/generated/services.json": "624d6c4ef8567909d9f2e720094134a3e85b23edc2e4ee945f79c600bb0afb37"
   }
 }

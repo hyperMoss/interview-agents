@@ -46,7 +46,7 @@ export const algorithmDraftSchema = z.strictObject({
     z.strictObject({ kind: z.literal('hot100'), title: z.string().max(200), id: z.number().int().positive() }),
     z.strictObject({ kind: z.literal('custom'), title: z.string().max(200) }),
   ]),
-  patternId: z.string().max(80), kind: drillKindSchema, codeSource: z.enum(['pattern', 'question']).default('pattern'), drills: z.array(drillSchema).max(20),
+  patternId: z.string().max(80), kind: drillKindSchema, codeSource: z.enum(['pattern', 'question']).default('pattern'), questionCodeStyle: z.enum(['concise', 'annotated']).default('concise'), drills: z.array(drillSchema).max(20),
 });
 const hot100EntrySchema = z.strictObject({
   questionId: z.number().int().positive(), code: z.string().max(12000), notes: z.string().max(3000), status: z.enum(['todo', 'doing', 'reviewed']),

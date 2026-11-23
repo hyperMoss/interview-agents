@@ -17,6 +17,7 @@ export function defaultAlgorithmDraft(): AlgorithmDraft {
     patternId: defaultAlgorithmPattern.id,
     kind: 'code',
     codeSource: 'pattern',
+    questionCodeStyle: 'concise',
     drills: [],
   };
 }
@@ -49,7 +50,9 @@ export function getAlgorithmDrillTarget(draft: AlgorithmDraft): DrillTarget {
   const question = origin.kind === 'hot100' && draft.codeSource === 'question' ? findHot100Question(origin.id) : undefined;
   if (draft.kind === 'code') {
     return question
-      ? { key: `hot100-python:${question.id}`, kind: 'code', reference: question.referenceCode }
+      ? draft.questionCodeStyle === 'annotated'
+        ? { key: `hot100-python-annotated:${question.id}`, kind: 'code', reference: question.annotatedCode }
+        : { key: `hot100-python:${question.id}`, kind: 'code', reference: question.referenceCode }
       : { key: `python:${draft.patternId}`, kind: 'code', reference: getAlgorithmPattern(draft.patternId).code };
   }
   const key = origin.kind === 'bank' ? `bank:${origin.id}` : origin.kind === 'hot100' ? `hot100:${origin.id}` : origin.kind === 'example' ? `example:${origin.patternId}` : 'custom';

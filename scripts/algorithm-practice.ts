@@ -13,7 +13,7 @@ export function runAlgorithmCommand(args: string[]) {
     if (!id || !/^\d+$/.test(id)) throw new Error('show 后需要 Hot 100 题号，例如 show 1。');
     const question = findHot100Question(Number(id));
     if (!question) throw new Error('该题号不在当前 Hot 100 快照中。');
-    return { source: hot100Metadata.source, question: { ...question, hint: values.hint ? question.hint : undefined, referenceCode: values.hint ? question.referenceCode : undefined }, routines: question.patternIds.map(patternId => {
+    return { source: hot100Metadata.source, question: { ...question, hint: values.hint ? question.hint : undefined, referenceCode: values.hint ? question.referenceCode : undefined, annotatedCode: values.hint ? question.annotatedCode : undefined, explanation: values.hint ? question.explanation : undefined }, routines: question.patternIds.map(patternId => {
       const pattern = getAlgorithmPattern(patternId);
       return values.hint ? pattern : { id: pattern.id, title: pattern.title };
     }) };

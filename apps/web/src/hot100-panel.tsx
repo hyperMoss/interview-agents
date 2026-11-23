@@ -16,6 +16,7 @@ import { completeHot100Review, filterHot100Practice, getHot100PracticeEntry, hot
 import { hot100DraftKey, restoreHot100Draft, updateHot100Entry } from './hot100-draft';
 import { CodeEditor } from './code-editor';
 import { writeSession } from './storage';
+import { validateHot100, type ValidationResult } from './hot100-validation';
 import './hot100.css';
 
 const difficultyLabels = { easy: '简单', medium: '中等', hard: '困难' };
@@ -98,6 +99,27 @@ export function Hot100Panel({ onUseRoutine, questionId, onSelectQuestion }: { on
 
 function Hot100Workspace({ question, entry, onChange, onUseRoutine, onNext, now }: { question: Hot100Question; entry: Hot100PracticeEntry; onChange: (entry: Hot100PracticeEntry) => void; onUseRoutine: RoutineHandoff; onNext: () => void; now: Date }) {
   const [showHint, setShowHint] = useState(false);
+  const [validation, setValidation] = useState<ValidationResult | null>(null);
+  const [phase, setPhase] = useState<'loading' | 'running' | null>(null);
+  const activeRun = useRef<ReturnType<typeof validateHot100> | null>(null);
+  useEffect(() => {
+    activeRun.current?.cancel();
+    activeRun.current = null;
+    setPhase(null);
+    setValidation(null);
+    return () => { activeRun.current?.cancel(); activeRun.current = null; };
+  }, [entry.code]);
+  async function runValidation() {
+    activeRun.current?.cancel();
+    setValidation(null);
+    const run = validateHot100(question.id, entry.code, setPhase);
+    activeRun.current = run;
+    const result = await run.result;
+    if (activeRun.current !== run) return;
+    activeRun.current = null;
+    setPhase(null);
+    setValidation(result);
+  }
   function edit(patch: Partial<Pick<Hot100PracticeEntry, 'code' | 'notes'>>) {
     onChange({ ...entry, ...patch, status: entry.status === 'todo' ? 'doing' : entry.status });
   }
@@ -109,7 +131,14 @@ function Hot100Workspace({ question, entry, onChange, onUseRoutine, onNext, now 
     <div className="hot100-hint"><Button aria-expanded={showHint} label={showHint ? '收起本题提示' : '需要一点提示'} onClick={() => setShowHint(current => !current)} />{showHint ? <p role="note">{question.hint}</p> : <span>先想输入、输出和边界，再决定用哪种方法。</span>}</div>
     <TextArea id="hot100-notes" label="你的解题思路" value={entry.notes} rows={3} maxLength={3000} placeholder="为什么选这个方法？维护什么状态？时间与空间复杂度是多少？" onChange={value => edit({ notes: value })} />
     <label htmlFor="hot100-code">Python 独立作答</label><CodeEditor id="hot100-code" label="Python 独立作答" mode="python" value={entry.code} maxLength={12000} onChange={code => edit({ code })} placeholder="# 核对原题函数签名后，在这里编写你的 Python 解法。" />
-    <p className="algorithm-caption">按题号自动保存在本机浏览器。支持缩进、撤销和搜索；本页不运行代码。“已复习”是你的自评，不代表通过判题。</p>
+    <p className="algorithm-caption">按题号自动保存在本机浏览器。使用原题的 class Solution 与方法签名；设计类题使用原题类名。预置 ListNode、TreeNode、Node 和常用 typing 类型。“已复习”是自评，不代表通过判题。</p>
+    <section aria-label="固定用例验证">
+      <Button label={phase === 'loading' ? '正在加载 Python…' : phase === 'running' ? '正在验证…' : '运行固定用例验证'} isDisabled={Boolean(phase) || !entry.code.trim()} onClick={() => { void runValidation(); }} />
+      {phase ? <Button label="取消验证" onClick={() => { activeRun.current?.cancel(); }} /> : null}
+      <p className="algorithm-caption">首次运行需联网从 jsDelivr 下载 Python WebAssembly 运行时；代码仅在无同源权限的浏览器沙箱 Worker 内执行，不提交给 API 或模型。加载最多 60 秒，执行最多 5 秒。固定用例不覆盖官方全部测试，也不是防作弊判题器。</p>
+      {phase ? <p role="status">{phase === 'loading' ? '正在准备隔离 Python 环境…' : '正在运行本题固定用例…'}</p> : null}
+      {validation ? <div role="status"><strong>{validation.status === 'passed' ? '固定用例通过' : validation.status === 'failed' ? '固定用例未通过' : '验证未完成'}</strong><pre>{validation.message}</pre>{validation.check ? <pre>失败检查：{validation.check}</pre> : null}</div> : null}
+    </section>
     <div className="hot100-review"><span>本题状态 · 用户自评</span><SegmentedControl label="本题复习状态" value={entry.status} onChange={value => {
       const status = hot100StatusSchema.parse(value);
       onChange(status === 'reviewed' ? completeHot100Review(entry, new Date()) : { ...entry, status, needsReview: false, nextReviewAt: null });

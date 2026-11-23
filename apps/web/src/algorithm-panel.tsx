@@ -128,7 +128,7 @@ export function AlgorithmPanel({ seed, initialView, questionId, patternId, onNav
     {view === 'hot100' ? <Hot100Panel questionId={questionId ?? returnQuestionId} onSelectQuestion={id => {
       setReturnQuestionId(id); onNavigate?.({ view: 'hot100', questionId: id });
     }} onUseRoutine={(question, patternId) => {
-      setDraft(current => ({ ...current, problem: hot100Brief(question), origin: { kind: 'hot100', id: question.id, title: `${question.id}. ${question.title}` }, patternId: patternId ?? current.patternId, codeSource: patternId ? 'pattern' : 'question', kind: 'code' }));
+      setDraft(current => ({ ...current, problem: hot100Brief(question), origin: { kind: 'hot100', id: question.id, title: `${question.id}. ${question.title}` }, patternId: patternId ?? current.patternId, codeSource: patternId ? 'pattern' : 'question', questionCodeStyle: 'annotated', kind: 'code' }));
       setReturnQuestionId(question.id); setChecked(false); setNotice(''); setView('patterns');
       onNavigate?.({ view: 'patterns', questionId: question.id, patternId });
     }} /> : <>
@@ -163,7 +163,7 @@ export function AlgorithmPanel({ seed, initialView, questionId, patternId, onNav
       {suggestions.warnings.map(warning => <Banner role="alert" key={warning} status="warning" title={warning} />)}
     </section>
 
-    {referenceQuestion ? <section className="algorithm-recipe" aria-labelledby="algorithm-question-title"><h2 id="algorithm-question-title">02 / 本题参考解法 · {referenceQuestion.id}. {referenceQuestion.title}</h2><p>{referenceQuestion.hint}</p><p className="algorithm-caption">本项目编写的 Python 参考实现；ListNode、TreeNode 与 Node 由原题环境提供。请核对原题输入、输出与限制；跟打一致不代表通过原站判题。</p><a href={referenceQuestion.url} target="_blank" rel="noreferrer">打开完整原题 ↗</a></section> : <section className="algorithm-recipe" aria-labelledby="algorithm-recipe-title">
+    {referenceQuestion ? <section className="algorithm-recipe" aria-labelledby="algorithm-question-title"><h2 id="algorithm-question-title">02 / 本题参考解法 · {referenceQuestion.id}. {referenceQuestion.title}</h2><p>{referenceQuestion.hint}</p><h3>解题步骤</h3><ol>{referenceQuestion.explanation.steps.map(step => <li key={step}>{step}</li>)}</ol><h3>边界与易错点</h3><ul>{referenceQuestion.explanation.pitfalls.map(pitfall => <li key={pitfall}>{pitfall}</li>)}</ul><p className="algorithm-complexity">{referenceQuestion.explanation.complexity}</p><p className="algorithm-caption">本项目编写的 Python 参考实现；ListNode、TreeNode 与 Node 由原题环境提供。请核对原题输入、输出与限制；跟打一致不代表通过原站判题。</p><a href={referenceQuestion.url} target="_blank" rel="noreferrer">打开完整原题 ↗</a></section> : <section className="algorithm-recipe" aria-labelledby="algorithm-recipe-title">
       <div className="algorithm-section-heading"><h2 id="algorithm-recipe-title">02 / 拆开这个套路</h2><Selector label="选择算法模式" isLabelHidden value={pattern.id} options={algorithmPatterns.map(item => ({ value: item.id, label: item.title }))} onChange={choosePattern} /></div>
       <h3>{pattern.title}<span>{pattern.summary}</span></h3>
       <div className="algorithm-keywords" aria-label="本模式识别关键词"><span>识别词</span>{pattern.keywords.map(keyword => <Badge key={keyword} label={keyword} />)}</div>
@@ -181,6 +181,9 @@ export function AlgorithmPanel({ seed, initialView, questionId, patternId, onNav
       <div className="algorithm-section-heading"><h2 id="algorithm-drill-title">03 / 动手跟打</h2><SegmentedControl label="跟打对象" value={draft.kind} onChange={value => {
         setDraft(current => ({ ...current, kind: drillKindSchema.parse(value) })); setChecked(false); setNotice('');
       }}><SegmentedControlItem value="code" label="核心代码跟打" /><SegmentedControlItem value="statement" label="题面跟打" /></SegmentedControl></div>
+      {referenceQuestion && draft.kind === 'code' ? <SegmentedControl label="本题代码版本" value={draft.questionCodeStyle} onChange={value => {
+        setDraft(current => ({ ...current, questionCodeStyle: value === 'annotated' ? 'annotated' : 'concise' })); setChecked(false); setNotice('');
+      }}><SegmentedControlItem value="annotated" label="讲解注释版" /><SegmentedControlItem value="concise" label="精简版" /></SegmentedControl> : null}
       <div className="algorithm-drill-heading"><strong>{draft.kind === 'code' ? `Python · ${referenceQuestion ? `${referenceQuestion.id}. ${referenceQuestion.title}` : pattern.example.title}` : draft.origin.title}</strong><Switch size="sm" label="显示参考" value={showReference} onChange={setShowReference} /></div>
       <div className="algorithm-editors">
         <div className="algorithm-reference-column"><div className="algorithm-editor-label">参考{draft.kind === 'code' ? '代码' : '题面'}</div>
@@ -190,7 +193,7 @@ export function AlgorithmPanel({ seed, initialView, questionId, patternId, onNav
           <CodeEditor key={`${target.key}:${target.kind}:${target.reference}`} id="algorithm-typing" label={`你的${draft.kind === 'code' ? '代码' : '题面'}`} describedBy="algorithm-typing-help" mode={draft.kind === 'code' ? 'drill-code' : 'text'} value={typed} disabled={!target.reference} maxLength={30000} placeholder={!target.reference ? '先填写题面，或使用一份模板例题。' : draft.kind === 'code' ? '看左侧参考，从第一行开始手打…' : '照着左侧题面逐字练习…'} onChange={changeTyping} />
         </div>
       </div>
-      <p id="algorithm-typing-help" className="algorithm-caption">保留空格与缩进，统一换行格式。跟打模式关闭自动补全、自动缩进与括号补齐。草稿自动保存在本机浏览器，最多恢复最近 20 个跟打对象。</p>
+      <p id="algorithm-typing-help" className="algorithm-caption">保留空格与缩进，统一换行格式。跟打模式关闭自动补全、自动缩进与括号补齐。草稿自动保存在本机浏览器，最多恢复最近 20 个跟打对象；注释版与精简版独立保存，旧精简版草稿可切换查看。</p>
       <div className="algorithm-progress"><ProgressBar label="跟打文本匹配进度" isLabelHidden value={comparison.progress} variant={comparison.complete ? 'success' : 'accent'} /><span>连续匹配 {comparison.prefix} / {comparison.total} 字符{typed.length ? ` · 已输入 ${comparison.entered} 字符` : ''}</span></div>
       <div className="algorithm-drill-actions"><Button variant="primary" label="核对跟打" onClick={() => setChecked(true)} isDisabled={!target.reference} /><ConfirmAction title="清空当前跟打内容？" description="只清空当前对象的输入，其他对象的草稿保留。" okText="确认清空" cancelText="保留内容" disabled={!typed} onConfirm={() => { changeTyping(''); setNotice('当前跟打已清空，其他对象的草稿保留。'); }}><Button label="重置本次跟打" isDisabled={!typed} /></ConfirmAction>{draft.kind === 'code' ? <Button label="复制核心代码" onClick={() => void copyCode()} /> : null}<span>仅做文本对照，不执行代码或判题。</span></div>
       {notice ? <p role="status">{notice}</p> : null}

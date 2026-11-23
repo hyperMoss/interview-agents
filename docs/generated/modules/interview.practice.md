@@ -2,7 +2,7 @@
 
 简历/JD、轮次问答、逐题反馈与报告
 
-当前成熟度：supported；选择原因：REQ-001, REQ-002, REQ-007, REQ-010, REQ-011, REQ-012, REQ-013, REQ-014, REQ-015, REQ-016, REQ-017, REQ-018, REQ-019, REQ-020, REQ-021, REQ-022, REQ-049, REQ-051, REQ-053, REQ-054, REQ-055, REQ-057, REQ-058, REQ-059, REQ-060, REQ-061, REQ-062, REQ-065, blueprint:interview-practice, career.boss, explicit。
+当前成熟度：supported；选择原因：REQ-001, REQ-002, REQ-007, REQ-010, REQ-011, REQ-012, REQ-013, REQ-014, REQ-015, REQ-016, REQ-017, REQ-018, REQ-019, REQ-020, REQ-021, REQ-022, REQ-049, REQ-051, REQ-053, REQ-054, REQ-055, REQ-057, REQ-058, REQ-059, REQ-060, REQ-061, REQ-062, REQ-065, REQ-067, REQ-068, blueprint:interview-practice, career.boss, explicit。
 
 依赖：agent.runtime。
 

@@ -801,5 +801,29 @@
     ],
     "acceptance": "TEST-REQ-066",
     "task": "TASK-REQ-066"
+  },
+  {
+    "requirement": "REQ-067",
+    "capabilities": [
+      "interview.practice"
+    ],
+    "docs": [
+      "docs/generated/00-PROJECT-BRIEF.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "acceptance": "TEST-REQ-067",
+    "task": "TASK-REQ-067"
+  },
+  {
+    "requirement": "REQ-068",
+    "capabilities": [
+      "interview.practice"
+    ],
+    "docs": [
+      "docs/generated/00-PROJECT-BRIEF.md",
+      "docs/generated/08-TEST-PLAN.md"
+    ],
+    "acceptance": "TEST-REQ-068",
+    "task": "TASK-REQ-068"
   }
 ]

@@ -5,6 +5,7 @@ import { leetcodeBatchSchema } from '../../contracts/src/bank';
 import { algorithmPatterns, getAlgorithmPattern } from './algorithm-patterns';
 import { hot100Lessons } from './hot100-lessons';
 import { hot100Solutions } from './hot100-solutions';
+import { annotateHot100Code, hot100Explanations } from './hot100-explanations';
 
 export const hot100Metadata = hot100MetadataSchema.parse(snapshot);
 const lessonSchema = z.object({ goal: z.string().min(10), hint: z.string().min(10), patternIds: z.array(z.string()).max(3) });
@@ -13,7 +14,13 @@ export const hot100Questions = hot100Metadata.questions.map(question => {
   const lesson = lessonSchema.parse(hot100Lessons[question.id]);
   if (lesson.patternIds.some(id => !patternIds.has(id))) throw new Error(`题目 ${question.id} 引用了不存在的套路。`);
   const referenceCode = z.string().min(20).max(14000).parse(hot100Solutions[question.id]);
-  return { ...question, ...lesson, referenceCode, url: `https://leetcode.cn/problems/${question.slug}/` };
+  const explanation = z.object({
+    steps: z.array(z.string().min(8)).min(3), pitfalls: z.array(z.string().min(8)).min(1),
+    complexity: z.string().min(10),
+    annotations: z.array(z.object({ before: z.string().min(1), comment: z.string().min(5) })).min(2),
+  }).parse(hot100Explanations[question.id]);
+  const annotatedCode = z.string().max(14000).parse(annotateHot100Code(referenceCode, explanation));
+  return { ...question, ...lesson, referenceCode, annotatedCode, explanation, url: `https://leetcode.cn/problems/${question.slug}/` };
 });
 export type Hot100Question = typeof hot100Questions[number];
 export const hot100Groups = [...new Set(hot100Questions.map(question => question.group))];

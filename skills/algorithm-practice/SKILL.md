@@ -7,7 +7,7 @@ description: "在 interview-agents 项目中用 LeetCode Hot 100 练习 Python �
 
 使用本项目同一份 Hot 100 数据做有题号、来源和边界的练习。默认语言为 Python；用户指定其他语言时遵从用户。当前网页提供独立作答、思路记录、自评、收藏、复习安排、全部 100 题的本题代码跟打与通用套路跟打，入口为“算法练习 → Hot 100 题单”。
 
-代码与草稿保存在本机浏览器，可在“设置 → 本机数据”备份和恢复。完成自评按 1、3、7、14 天安排复习，需要再练安排次日。复习日期不代表判题结果。
+代码与草稿保存在本机浏览器，可在“设置 → 本机数据”备份和恢复。完成自评按 1、3、7、14 天安排复习，需要再练安排次日。复习日期不代表判题结果。独立作答可显式运行固定用例验证：浏览器无同源权限沙箱内的 Worker 加载 Python WebAssembly（首次需联网下载 jsDelivr 运行时），加载最多 60 秒、执行最多 5 秒，支持取消；代码不交给 API 或主机 Python。固定用例通过不是 LeetCode 判题通过，也不是防作弊判题器。
 
 ## 选题
 
@@ -28,7 +28,7 @@ rtk pnpm algorithm show 1 --hint
 - `show 题号 --hint` 返回 `question.referenceCode`，与网页“本题代码跟打”共用逐题 Python 参考实现。链表与树节点类由原题环境提供；跟打草稿按题号独立，保留最近 20 个对象。
 - 关联的 `routines` 是各自例题的通用模板，适用边界在 `conditions`，例题在 `example`。将模板改写成当前题的输入、输出、状态与边界，再称为本题代码。没有关联模板时，从本题条件推导实现，不能把最近的模板强套进去。
 - 讲代码时给出核心 Python 实现、关键步骤、时间与额外空间复杂度，以及能区分错误实现的边界案例。关注空输入、重复值、负数、原地修改、节点引用、环与不可达等当前题真正涉及的条件。
-- 复盘用户代码时先定位具体失败条件，再给最小修正与同类迁移练习。标记“静态检查”“已运行固定用例”或“原站提交结果”，使结论与证据相符。网页不运行用户代码，自评“已复习”与跟打一致均不代表通过判题。
+- 复盘用户代码时先定位具体失败条件，再给最小修正与同类迁移练习。标记“静态检查”“已运行固定用例”或“原站提交结果”，使结论与证据相符。网页只在显式点击固定用例验证后隔离运行用户代码；自评“已复习”、跟打一致和本地固定用例通过均不代表原站判题通过。
 
 ## 题库与数据维护
 
@@ -39,6 +39,6 @@ rtk pnpm --silent algorithm export-bank
 rtk pnpm --silent algorithm export-bank --group 回溯
 ```
 
-`list` 和 `show` 输出来源、快照日期及官方元数据的 SHA-256；此哈希只覆盖元数据，不覆盖原创提示与作答。`export-bank` 只输出符合导入契约的 questions，方便直接导入。官方元数据在 `packages/interview/data/hot100.json`；本项目摘要、提示和模式关联在 `packages/interview/src/hot100-lessons.ts`；逐题参考代码在 `packages/interview/src/hot100-solutions.ts`，固定用例见 `tests/hot100-solutions.test.ts`。查询、网页和导出共同使用 `packages/interview/src/hot100.ts`，维护时保持一个数据来源。
+`list` 和 `show` 输出来源、快照日期及官方元数据的 SHA-256；此哈希只覆盖元数据，不覆盖原创提示与作答。`export-bank` 只输出符合导入契约的 questions，方便直接导入。官方元数据在 `packages/interview/data/hot100.json`；本项目摘要、提示和模式关联在 `packages/interview/src/hot100-lessons.ts`；逐题参考代码在 `packages/interview/src/hot100-solutions.ts`，共享固定用例在 `packages/interview/src/hot100-checks.py`，浏览器运行器在 `packages/interview/src/hot100-runner.py`；参考回归见 `tests/hot100-solutions.test.ts`，验证回归见 `tests/hot100-validation.test.ts`。查询、网页和导出共同使用 `packages/interview/src/hot100.ts`，维护时保持一个数据来源。
 
 只在用户要求刷新题单时，读取官方学习计划公开页面，用 `pnpm algorithm:update --html 文件路径` 提取快照，再运行 `tests/hot100.test.ts`。题号变化需要同步练习提示；解析失败保留已有快照。完整题面和题解仍链接原站，更新过程不需要 Cookie 或付费内容。
