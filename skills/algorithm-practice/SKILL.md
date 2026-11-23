@@ -39,6 +39,6 @@ rtk pnpm --silent algorithm export-bank
 rtk pnpm --silent algorithm export-bank --group 回溯
 ```
 
-`list` 和 `show` 输出来源、快照日期及官方元数据的 SHA-256；此哈希只覆盖元数据，不覆盖原创提示与作答。`export-bank` 只输出符合导入契约的 questions，方便直接导入。官方元数据在 `packages/interview/data/hot100.json`；本项目摘要、提示和模式关联在 `packages/interview/src/hot100-lessons.ts`；逐题参考代码在 `packages/interview/src/hot100-solutions.ts`；固定回归见 `tests/hot100-solutions.test.ts` 与 `tests/fixtures/check-hot100.py`，独立边界验证见 `tests/hot100-boundaries.test.ts`、`tests/fixtures/check-hot100-boundaries.py` 及四组边界数据文件，可单独运行 `pnpm test:hot100:boundary`。两套用例独立维护，只执行仓库内参考代码，不执行用户输入。查询、网页和导出共同使用 `packages/interview/src/hot100.ts`，维护时保持一个数据来源。
+`list` 和 `show` 输出来源、快照日期及官方元数据的 SHA-256；此哈希只覆盖元数据，不覆盖原创提示与作答。`export-bank` 只输出符合导入契约的 questions，方便直接导入。官方元数据在 `packages/interview/data/hot100.json`；本项目摘要、提示和模式关联在 `packages/interview/src/hot100-lessons.ts`；逐题参考代码在 `packages/interview/src/hot100-solutions.ts`，固定用例见 `tests/hot100-solutions.test.ts`。查询、网页和导出共同使用 `packages/interview/src/hot100.ts`，维护时保持一个数据来源。
 
 只在用户要求刷新题单时，读取官方学习计划公开页面，用 `pnpm algorithm:update --html 文件路径` 提取快照，再运行 `tests/hot100.test.ts`。题号变化需要同步练习提示；解析失败保留已有快照。完整题面和题解仍链接原站，更新过程不需要 Cookie 或付费内容。
