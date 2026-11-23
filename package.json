@@ -37,7 +37,6 @@
     "typecheck": "tsc --noEmit",
     "build": "pnpm factory:check && pnpm typecheck && vite build --config apps/web/vite.config.ts && pnpm skill:bundle && pnpm skill:validate",
     "test": "vitest run",
-    "test:hot100:boundary": "vitest run tests/hot100-boundaries.test.ts",
     "test:e2e": "playwright test",
     "test:e2e:resumes": "playwright test --config tests/resume-playwright.config.ts",
     "db:migrate": "node --import tsx --env-file=.env scripts/migrate.ts",
